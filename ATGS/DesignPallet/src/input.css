@@ -1,0 +1,360 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+@reference "tailwindcss";
+
+
+@theme {
+  --color-primary: #843953;
+  --color-secondary: #622d54;
+  --color-accent: #292929;
+  --color-background: #f2f3f3;
+  --color-success-light: oklch(96.2% 0.044 156.743);
+  --color-success-dark: oklch(44.8% 0.119 151.328);
+  --color-info-light: oklch(93.2% 0.032 255.585);
+  --color-info-dark: oklch(42.4% 0.199 265.638);
+  --color-warning-light: oklch(97.3% 0.071 103.193);
+  --color-warning-dark: oklch(47.6% 0.114 61.907);
+  --color-error-light: oklch(93.6% 0.032 17.717);
+  --color-error-dark: oklch(44.4% 0.177 26.899);
+
+  --color-bdr-light: oklch(92.8% 0.006 264.531);
+  --color-bdr: oklch(70.7% 0.022 261.325);
+  --color-bdr-dark: oklch(44.6% 0.03 256.802);
+  
+  --font-roboto: "JetBrains Mono", monospace;
+  
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1.125rem;
+  --text-body1: 1rem;
+  --text-body2: 0.875rem;
+  --text-caption: 0.75rem;
+  --color-defaultText: #404040;
+  
+  --color-bg-normal: ;
+
+  --font-weight-regular: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+ 
+  --spacing-xl: 32px;
+  --spacing-lg: 24px;
+  --spacing-base: 16px;
+  --spacing-sm: 8px;
+  --spacing-xs: 4px;
+
+}
+
+/* TYPOGRAPHY */
+.H1{ @apply text-h1; }
+.H2{ @apply text-h2; }
+.H3{ @apply text-h3; }
+.Body1{ @apply text-body1; }
+.Body2{ @apply text-body2; }
+.Caption{ @apply text-caption; }
+
+/* BUTTON */
+.btn{
+  @apply outline-0 border-2 px-lg py-sm mx-1.5 my-3 rounded text-base shadow-sm cursor-pointer hover:shadow-gray-600 
+}
+.primary{
+  @apply border-primary bg-primary text-gray-50;
+}
+.secondary{
+  @apply border-primary bg-primary/20 text-primary;
+}
+.tertiary{
+  @apply border-0! outline-0! decoration-1 underline text-primary shadow-none!;
+}
+
+/* CHIPS */
+.chip{
+  @apply mx-xs my-xs px-sm py-xs border rounded-full text-caption shadow-xs hover:cursor-pointer;
+}
+.chip-green{
+  @apply border-success-dark bg-success-light text-success-dark;
+}
+.chip-red{
+  @apply border-error-dark bg-error-light text-error-dark;
+}
+.chip-blue{
+  @apply border-info-dark bg-info-light text-info-dark;
+}
+
+/* SEGMENTED CONTROL */
+.sgmnt-ctrls{
+  @apply border-1 border-bdr rounded;
+}
+.sgmnt-ctrls .divider{
+  @apply border-l-1 border-bdr-light w-[1px];
+}
+.sgmnt-ctrls .sgmnt-ctrl{
+  @apply px-2.5 py-1 border-bdr  text-center rounded w-full hover:cursor-pointer;
+}
+.sgmnt-ctrls .active{
+  @apply bg-primary text-gray-50 border-primary;
+}
+
+/* INPUTS */
+input{ 
+  @apply outline-0 border-2 h-10 border-bdr rounded w-70 px-base py-sm uppercase focus:border-primary/50;
+}
+
+.dropdown{ 
+  @apply outline-none h-10! border-2 font-bold border-bdr rounded px-2.5 py-1 uppercase;
+}
+
+/* PROGRESS BAR */
+.progressBar{
+  @apply h-4 w-70 border-2 border-bdr rounded-full;
+}
+.progressBar .mover{
+  @apply h-full bg-primary w-[75%] rounded-full px-[7px];
+}
+
+/* TIMEPICKER */
+.timePicker {
+    @apply flex items-end gap-4;
+}
+.time-group {
+    @apply  flex flex-col gap-1;
+}
+.time-input {
+    @apply w-16 h-10 text-center tracking-wider font-bold
+}
+.separator {
+    @apply text-xl font-bold text-gray-500;
+}
+.time-input::-webkit-outer-spin-button,
+.time-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.time-input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+
+/* FEEDBACK */
+.feedback{
+  @apply m-1 px-6 flex-2 py-3 border border-gray-300 rounded w-80 md:w-full ;
+}
+.feedback-heading{
+  @apply font-bold text-lg uppercase tracking-wider;
+}
+.feedback-description{
+  @apply text-sm text-justify;
+}
+.feedback-success{
+  @apply  text-success-dark bg-success-light;
+}
+.feedback-info{
+  @apply  text-info-dark bg-info-light;
+}
+.feedback-warning{
+  @apply text-warning-dark bg-warning-light;
+}
+.feedback-error{
+  @apply  text-error-dark bg-error-light;
+}
+
+/* DIALOG BOX */
+.dialog{
+  @apply w-full max-w-[400px] m-sm px-xl py-base shadow-sm shadow-accent/20 border border-bdr-light rounded-xl 
+}
+.dialog-heading{
+  @apply text-h3 text-center tracking-wide font-bold mb-1;
+}
+.dialog-description{
+  @apply text-body1 text-center;
+}
+.dialog .dialog-button-group{
+  @apply flex justify-center mt-2;
+}
+
+
+
+body{
+  @apply max-w-[700px] mx-auto font-roboto grid bg-primary/2 *:text-defaultText justify-center;
+}
+.category{
+  @apply border-gray-300 border rounded-2xl m-3 p-2 h-fit;
+}
+.cat-head{
+  @apply tracking-wide m-2 px-1 text-primary border-b-2 border-gray-600;
+}
+.cat-number{
+  @apply text-h3 font-bold inline p-1 text-secondary;
+}
+.cat-heading{
+  @apply text-h3 font-bold inline uppercase;
+}
+.card-01 .pallete{
+  @apply flex flex-col lg:flex-row flex-nowrap justify-center;
+}
+.card-01 .pallete .color-block{
+  @apply p-0.5 my-sm mx-base flex justify-center flex-row lg:flex-col items-center;
+}
+.card-01 .pallete .color-block .color{
+  @apply border border-gray-600 w-15 h-15 rounded-full;
+}
+.card-01 .pallete .color-block .color-background{@apply bg-background;}
+.card-01 .pallete .color-block .color-primary{@apply bg-primary;}
+.card-01 .pallete .color-block .color-secondary{@apply bg-secondary;}
+.card-01 .pallete .color-block .color-accent{@apply bg-accent;}
+
+.card-01 .pallete .color-block .color-Decs{
+  @apply ml-sm mt-0 lg:ml-0 lg:mt-sm
+}
+
+.card-01 .pallete .color-block .color-class,
+.card-01 .pallete .color-block .color-id{
+  @apply lg:text-center w-35 ;
+}
+.card-01 .pallete .color-block .color-id{
+  @apply font-bold tracking-wide text-h3 text-accent uppercase m-0 p-0;
+}
+.card-01 .pallete .color-block .color-class{
+  @apply uppercase text-accent/50 font-regular m-0 p-0;
+}
+
+
+.card-02 .typography{
+  @apply block border-collapse lg:flex lg:gap-10
+}
+.card-02 .typography .font{
+  @apply block w-full mb-sm lg:m-0 lg:w-100 lg:flex lg:items-center lg:justify-center lg:flex-col border-bdr border;
+}
+.card-02 .typography .font .font-head{
+  @apply text-8xl font-extrabold m-1 tracking-tight text-center;
+}
+.card-02 .typography .font .font-family{
+  @apply uppercase m-1 text-body1 font-bold text-center;
+}
+.card-02 .typography table{
+  @apply w-full;
+}
+.card-02 .typography table tr{
+  @apply border-2 border-gray-300 p-1;
+}
+.card-02 .typography table tr td{
+  @apply p-1 text-center;
+}
+
+.card-03 .spacing-container{
+  @apply flex w-full justify-center;
+}
+.card-03 .spacing-container .spacing{
+  @apply text-center m-base flex flex-col items-center justify-end;
+}
+.card-03 .spacing-container .spacing .spacing-example{
+  @apply border-dashed border-2 border-primary  text-center;
+}
+.card-03 .spacing-container .spacing .spc-xs{@apply p-xs;}
+.card-03 .spacing-container .spacing .spc-sm{@apply p-sm;}
+.card-03 .spacing-container .spacing .spc-base{@apply p-base;}
+.card-03 .spacing-container .spacing .spc-lg{@apply p-lg;}
+.card-03 .spacing-container .spacing .spc-xl{@apply p-xl;}
+
+.card-03 .spacing-container .spacing .spacing-example-size{
+ @apply text-center text-h3 font-bold text-accent/70 mb-0 pb-0 leading-8 ;
+}
+.card-03 .spacing-container .spacing .spacing-example-size-class{
+ @apply text-center text-body2 mt-0 pt-0 leading-1 text-accent lowercase;
+}
+
+.card-04 .button-container{
+  @apply flex flex-wrap justify-center w-full;
+}
+.card-04 .button-container .button-block{
+  @apply border border-bdr
+}
+.card-04 .button-container .button-block .button-label{
+  @apply text-base text-center font-bold mt-1 mx-1.5 border-b-1;
+}
+
+
+
+.card-05 .component-container{
+  @apply flex flex-col lg:grid lg:grid-cols-2 gap-x-5 h-max;
+}
+.card-05 .component-container .component{
+  @apply m-3 border-1 border-gray-200 px-3 py-1.5 h-max;
+}
+.card-05 .component-container .component .component-label{
+  @apply text-base text-gray-500 font-bold underline underline-offset-2;
+}
+.card-05 .component-container .component .component-subgroup{
+  @apply flex flex-nowrap justify-center;
+}
+
+/* CHIP */
+
+
+/* SEGMENTED_CONTROLS */
+
+
+
+.card-05 .component-container .component-inputs{
+  @apply col-span-2;
+}
+.card-05 .component-container .component .inputs{
+  @apply grid lg:grid-cols-2;
+}
+.card-05 .component-container .component .inputs .individual-input{
+  @apply w-full m-2
+}
+.card-05 .component-container .component .inputs .individual-input label{
+  @apply text-base font-stretch-200% block! py-1
+}
+
+/* INPUT_BOX */
+
+
+/* RADIO_BUTTON */
+.card-05 .component-container .component .inputs .myRadiodiv .radio-labelInput-group,
+.card-05 .component-container .component .inputs .myRadiodiv .checkbox-labelInput-group{
+  @apply flex flex-col;
+}
+.card-05 .component-container .component .inputs .myRadiodiv .radio-labelInput-group p,
+.card-05 .component-container .component .inputs .myRadiodiv .checkbox-labelInput-group p{
+  @apply flex;
+}
+.card-05 .component-container .component .inputs .myRadiodiv .radio-labelInput-group p input{
+  @apply w-max min-w-7 m-1 ;
+}
+
+/* CHECKBOX */
+.card-05 .component-container .component .inputs .myRadiodiv .checkbox-labelInput-group p input{
+  @apply  w-6 h-6
+          border-2 border-slate-400
+          rounded
+          cursor-pointer
+          transition-all
+}
+.card-05 .component-container .component .inputs .myRadiodiv .checkbox-labelInput-group p input:checked{
+  @apply  relative
+          w-6 h-6
+          border-0 border-slate-400
+          rounded
+          cursor-pointer
+          checked:bg-emerald-600
+}
+
+
+/* SLIDER */
+
+
+/* TIME */
+
+.card-06 .feedback-container{
+  @apply flex flex-wrap flex-col lg:flex-row justify-center items-center;
+}
+
+
+.card-07 .dialog-container{
+  @apply flex flex-col lg:flex-row justify-center items-center ;
+}
+
+
+

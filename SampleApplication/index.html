@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        .inpBox{
+            width: 10rem;
+            margin: 5px 10px;
+            padding: 5px 10px;
+            outline: none;
+            border: 1px solid grey;
+            border-radius: 3px;
+        }
+        .btn{
+            display: block;
+            margin: 5px 10px;
+            padding: 5px 10px;
+        }
+        hr{
+            margin: 20px 0;
+        }
+    </style>
+    <title>Sample Application</title>
+</head>
+<body>
+    <form action="index.php" method="post">
+        <input class="inpBox" type="number" name="prodId" id="prodId" placeholder="ID*">
+        <input class="inpBox" type="text" name="prodName" id="prodName" placeholder="Name*">
+        <input class="inpBox" type="number" name="prodPrice" id="prodPrice" placeholder="Price*">
+        <input class="btn" type="submit" value="Add / Update" name="add">
+    </form> 
+    <hr>
+    <form action="index.php" method="post">
+        <input class="inpBox" type="number" name="prodId" id="prodId" placeholder="ID*">
+        <input class="btn" type="submit" value="GetOne" name="getOne" style="display: inline-block;">
+        <input class="btn" type="submit" value="Delete" name="Delete" style="display: inline-block;">
+    </form> 
+    <hr>
+    <form action="index.php" method="post">
+        <input class="btn" type="submit" value="GetAll" name="getAll" style="display: inline-block;">
+    </form>
+</body>
+</html>

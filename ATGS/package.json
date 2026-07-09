@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  },
+"scripts": {
+  "dev": "npx @tailwindcss/cli -i ./DesignPallet/input.css -o ./DesignPallet/style.css --watch",
+  "build": "npx @tailwindcss/cli -i ./DesignPallet/input.css -o ./DesignPallet/style.css --minify"
+}
+}
