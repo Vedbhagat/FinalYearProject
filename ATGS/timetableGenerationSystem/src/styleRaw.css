@@ -78,6 +78,9 @@ npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./A
 .tertiary{
   @apply border-0! outline-0! decoration-1 underline text-primary shadow-none!;
 }
+.ghost{
+  @apply border-0 shadow-none decoration-1 underline text-error-dark
+}
 .critical{
   @apply bg-error-dark border-error-dark  my-xs
 }
@@ -121,17 +124,23 @@ input,
   @apply outline-0 border-2 border-bdr rounded h-10 px-base py-sm m-xs uppercase focus:border-primary/50;
 }
 .inp-w-sm{
-  @apply lg:w-30 lg:col-span-1
+  /* @apply lg:w-30 lg:col-span-1 */
+  @apply w-full
 }
 .inp-w-base{
-  @apply lg:w-60 lg:col-span-1
+  /* @apply lg:w-60 lg:col-span-1 */
+  @apply w-full
 }
 .inp-w-lg{
-  @apply lg:w-full lg:col-span-2
+  /* @apply lg:w-full lg:col-span-2 */
+  @apply w-full
 }
 
 input[type="password"]{ 
   @apply tracking-[10px];
+}
+input[type="checkbox"]{ 
+  @apply w-4!;
 }
 .dropdown{ 
   @apply outline-none h-10 border-1 border-bdr font-bold  rounded  py-0! uppercase;
@@ -344,22 +353,46 @@ npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timeta
   @apply bg-white m-0
 }
 
+
+
+
+.addnew-block{
+  @apply min-h-100 min-w-[700px] flex flex-col place-self-center m-base
+
+}
+.addnew-block .blockHeading{
+  @apply text-h2 font-black uppercase tracking-wide text-center
+}
 .addnew-block form{
-  @apply grid grid-cols-2 gap-4;
+  @apply m-base
 }
-.addnew-block form label{
-  @apply block;
+.addnew-block form input{
+  @apply mb-base
 }
-.dropdown-grp{
-  @apply grid  grid-cols-3 col-span-3
+.addnew-block form fieldset{
+  @apply border-b-1 border-bdr flex flex-col justify-center p-base
 }
-.dropdown-grp div{
-  @apply w-max
+.addnew-block form fieldset div{
+  @apply flex items-center
+}
+.addnew-block form fieldset div label{
+  @apply w-70
+}
+.addnew-block form fieldset input,
+.addnew-block form fieldset .dropdown{
+  @apply w-full font-black
+}
+.addnew-block form fieldset .checkboxGroup div{
+  @apply mx-base
+}
+.addnew-block form fieldset .checkboxGroup label{
+  @apply w-max!
+}
+.addnew-block .btn-grp{
+  @apply flex justify-center
 }
 
-.addnew-block form .btn-grp{
-  @apply col-span-3
-}
+
 
 .timetable-view-table table{
   @apply font-medium! *:font-medium

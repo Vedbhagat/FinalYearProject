@@ -1,28 +1,34 @@
 <div class="addnew-block">
+    <p class="blockHeading">Add New Classroom</p>
     <form action="" method="post">
-        <div>
-            <label for="clsrm_floor">*Floor</label>
-            <select name="clsrm_floor" id="clsrm_floor" class="dropdown">
-                <option value="" disabled selected>Select Floor</option>
-                <option value="">Ground Floor</option>
-                <option value="">First Floor</option>
-                <option value="">Second Floor</option>
-                <option value="">Third Floor</option>
-                <option value="">Fourth Floor</option>
-                <option value="">Fifth Floor</option>
-            </select>
-        </div>
-        <div>
-            <label for="clsrm_room">*Room Identifier</label>
-            <input id="clsrm_room" type="text" placeholder="105 / IT LAB 01">
-        </div>
-        <div>
-            <label for="clsrm_capacity">*Capacity</label>
-            <input id="clsrm_capacity" type="number" placeholder="60/100/120/200/etc">
-        </div>
-        <div class="btn-grp col-span-2">
+        <fieldset>
+            <div>
+                <label for="clsrm_floor">*Floor</label>
+                <select name="clsrm_floor" id="clsrm_floor" class="dropdown">
+                    <option value="" disabled selected>Select Floor</option>
+                    <option value="">Ground Floor</option>
+                    <option value="">First Floor</option>
+                    <option value="">Second Floor</option>
+                    <option value="">Third Floor</option>
+                    <option value="">Fourth Floor</option>
+                    <option value="">Fifth Floor</option>
+                </select>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="clsrm_room">*Room Identifier</label>
+                <input id="clsrm_room" type="text" placeholder="105 / IT LAB 01">
+            </div>
+            <div>
+                <label for="clsrm_capacity">*Capacity</label>
+                <input id="clsrm_capacity" type="number" placeholder="60/100/120/200/etc">
+            </div>
+        </fieldset>
+        <div class="btn-grp">
             <button class="secondary btn">Clear</button>
             <button class="primary btn">Create</button>
+            <button class="ghost  btn">close form</button>
         </div>
     </form>
 </div>

@@ -1,6 +1,7 @@
 <div class="addnew-block">
+    <p class="blockHeading">Add New Programme</p>
     <form action="" method="post">
-        <div class="grid col-span-2">
+        <fieldset class="grid col-span-2">
             <div>
                 <select class="dropdown myInput" name="" id="">
                     <option value="" disabled selected>Select Department</option>
@@ -10,25 +11,40 @@
                     <option value="">Dept. of comm and Mgt</option>
                 </select>
             </div>
-        </div>
-        <div>
-            <label for="pgrm_fname">*Programme Fullname</label>
-            <input id="pgrm_fname" type="text" placeholder="Bachelor of Science (Information Technology)">
-        </div>
-        <div>
-            <label for="pgrm_sname">*Programme ShortName</label>
-            <input id="pgrm_sname" type="text" placeholder="B. Sc. (I.T.)">
-        </div>
-        <div>
-            <input type="checkbox" checked><label for="">First Year</label>
-            <input type="checkbox" checked><label for="">Second Year</label>
-            <input type="checkbox" checked><label for="">Third Year</label>
-            <input type="checkbox" ><label for="">Fourth Year</label>
-            <input type="checkbox" ><label for="">Fifth Year</label>
-        </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="pgrm_fname">*Programme Fullname</label>
+                <input id="pgrm_fname" type="text" placeholder="Bachelor of Science (Information Technology)">
+            </div>
+            <div>
+                <label for="pgrm_sname">*Programme ShortName</label>
+                <input id="pgrm_sname" type="text" placeholder="B. Sc. (I.T.)">
+            </div>
+        </fieldset>
+        <fieldset>
+            <div class="checkboxGroup">
+                <div>
+                    <input type="checkbox" checked><label for="">First Year</label>
+                </div>
+                <div>
+                    <input type="checkbox" checked><label for="">Second Year</label>
+                </div>
+                <div>
+                    <input type="checkbox" checked><label for="">Third Year</label>
+                </div>
+                <div>
+                    <input type="checkbox" ><label for="">Fourth Year</label>
+                </div>
+                <div>
+                    <input type="checkbox" ><label for="">Fifth Year</label>
+                </div>
+            </div>
+        </fieldset>
         <div class="btn-grp">
             <button class="secondary btn">Clear</button>
             <button class="primary btn">Create</button>
+            <button class="ghost  btn">close form</button>
         </div>
     </form>
 </div>

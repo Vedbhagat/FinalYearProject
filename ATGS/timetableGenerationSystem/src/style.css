@@ -653,6 +653,15 @@
   outline-style: var(--tw-outline-style) !important;
   outline-width: 0px !important;
 }
+.ghost {
+  border-style: var(--tw-border-style);
+  border-width: 0px;
+  color: var(--color-error-dark);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  --tw-shadow: 0 0 #0000;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
 .critical {
   margin-block: var(--spacing-xs);
   border-color: var(--color-error-dark);
@@ -748,32 +757,20 @@ input, .myInput, .dropdown {
   }
 }
 .inp-w-sm {
-  @media (width >= 64rem) {
-    grid-column: span 1 / span 1;
-  }
-  @media (width >= 64rem) {
-    width: calc(var(--spacing, 0.25rem) * 30);
-  }
+  width: 100%;
 }
 .inp-w-base {
-  @media (width >= 64rem) {
-    grid-column: span 1 / span 1;
-  }
-  @media (width >= 64rem) {
-    width: calc(var(--spacing, 0.25rem) * 60);
-  }
+  width: 100%;
 }
 .inp-w-lg {
-  @media (width >= 64rem) {
-    grid-column: span 2 / span 2;
-  }
-  @media (width >= 64rem) {
-    width: 100%;
-  }
+  width: 100%;
 }
 input[type="password"] {
   --tw-tracking: 10px;
   letter-spacing: 10px;
+}
+input[type="checkbox"] {
+  width: calc(var(--spacing, 0.25rem) * 4) !important;
 }
 .dropdown {
   height: calc(var(--spacing, 0.25rem) * 10);
@@ -1215,24 +1212,59 @@ main {
   margin: 0;
   background-color: var(--color-white, #fff);
 }
+.addnew-block {
+  margin: var(--spacing-base);
+  display: flex;
+  min-height: calc(var(--spacing, 0.25rem) * 100);
+  min-width: 700px;
+  flex-direction: column;
+  place-self: center;
+}
+.addnew-block .blockHeading {
+  text-align: center;
+  font-size: var(--text-h2);
+  --tw-font-weight: var(--font-weight-black, 900);
+  font-weight: var(--font-weight-black, 900);
+  --tw-tracking: var(--tracking-wide, 0.025em);
+  letter-spacing: var(--tracking-wide, 0.025em);
+  text-transform: uppercase;
+}
 .addnew-block form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: calc(var(--spacing, 0.25rem) * 4);
+  margin: var(--spacing-base);
 }
-.addnew-block form label {
-  display: block;
+.addnew-block form input {
+  margin-bottom: var(--spacing-base);
 }
-.dropdown-grp {
-  grid-column: span 3 / span 3;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.addnew-block form fieldset {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 1px;
+  border-color: var(--color-bdr);
+  padding: var(--spacing-base);
 }
-.dropdown-grp div {
-  width: max-content;
+.addnew-block form fieldset div {
+  display: flex;
+  align-items: center;
 }
-.addnew-block form .btn-grp {
-  grid-column: span 3 / span 3;
+.addnew-block form fieldset div label {
+  width: calc(var(--spacing, 0.25rem) * 70);
+}
+.addnew-block form fieldset input, .addnew-block form fieldset .dropdown {
+  width: 100%;
+  --tw-font-weight: var(--font-weight-black, 900);
+  font-weight: var(--font-weight-black, 900);
+}
+.addnew-block form fieldset .checkboxGroup div {
+  margin-inline: var(--spacing-base);
+}
+.addnew-block form fieldset .checkboxGroup label {
+  width: max-content !important;
+}
+.addnew-block .btn-grp {
+  display: flex;
+  justify-content: center;
 }
 .timetable-view-table table {
   --tw-font-weight: var(--font-weight-medium, 500) !important;

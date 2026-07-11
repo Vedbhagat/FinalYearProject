@@ -1,31 +1,33 @@
 
 <div class="addnew-block">
+    <p class="blockHeading">Add New Division</p>
     <form action="" method="post">
-        <div class="grid col-span-2 dropdown-grp">
-            <div>
-                <select class="dropdown myInput" name="" id="">
-                    <option value="" disabled selected>Select Department</option>
-                    <option value="">Dept. of I.T</option>
-                    <option value="">Dept. of A & F</option>
-                    <option value="">Dept. of Science</option>
-                    <option value="">Dept. of comm and Mgt</option>
-                </select>
-            </div>
-            <div>
-                <select class="dropdown myInput" name="" id="">
-                    <option value="" disabled selected>Select Programme</option>
-                    <option value="">Dept. of I.T</option>
-                    <option value="">Dept. of A & F</option>
-                    <option value="">Dept. of Science</option>
-                    <option value="">Dept. of comm and Mgt</option>
-                </select>
-            </div>
-            <div>
-                <label for="">Division Idenifier</label>
-                <input type="text" placeholder="a/b/c/d">
-            </div>
-            <hr>
-            <div>
+        <fieldset class="grid col-span-2 dropdown-grp">
+            <fieldset>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Department</option>
+                        <option value="">Dept. of I.T</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Programme</option>
+                        <option value="">Dept. of I.T</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="">Division Idenifier</label>
+                    <input type="text" placeholder="a/b/c/d">
+                </div>
+            </fieldset>
+            <fieldset>
                 prefrences
                 <div class="">
                     <select class="dropdown myInput" name="" id="">
@@ -63,10 +65,10 @@
                         <option value="">Dept. of comm and Mgt</option>
                     </select>
                 </div>
-            </div>
-            <div>
+            </fieldset>
+            <fieldset>
                 Working day
-                <div>
+                <div class="checkboxGroup">
                     <div>
                         <input type="checkbox" name="" id="" checked>
                         <label for="">Monday</label>
@@ -92,11 +94,12 @@
                         <label for="">Saturday</label>
                     </div>
                 </div>
-            </div>
-        </div>
+            </fieldset>
+        </fieldset>
         <div class="btn-grp">
             <button class="secondary btn">Clear</button>
             <button class="primary btn">Create</button>
+            <button class="ghost  btn">close form</button>
         </div>
     </form>
 </div>

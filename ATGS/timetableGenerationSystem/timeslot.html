@@ -1,17 +1,21 @@
 <div class="addnew-block">
+    <p class="blockHeading">Add New Timeslot</p>
     <form action="" method="post">
         <div class="timePicker">
-            <input type="time" class="time-input" name="" id="" value="00:00">
+            <input type="time" class="time-input" name="" id="" value="00:00" step="900">
             <span class="separator">-</span>
-            <input type="time" class="time-input" name="" id="" value="00:00">
+            <input type="time" class="time-input" name="" id="" value="00:00" step="900">
         </div>
-        <div>
-            <input name="" id="" type="checkbox">
-            <span><label for="">Is Break</label></span>
+        <div class="checkboxGroup">
+            <div>
+                <input name="" id="" type="checkbox">
+                <span><label for="">Is Break</label></span>
+            </div>
         </div>
         <div class="btn-grp">
             <button class="secondary btn">Clear</button>
             <button class="primary btn">Create</button>
+            <button class="ghost  btn">close form</button>
         </div>
     </form>
 </div>

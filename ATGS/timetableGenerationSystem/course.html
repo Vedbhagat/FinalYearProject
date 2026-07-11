@@ -1,6 +1,7 @@
 <div class="addnew-block">
+    <p class="blockHeading">Add New Course</p>
     <form action="" method="post">
-        <div class="dropdown-grp">
+        <fieldset class="dropdown-grp">
             <div>
                 <select class="dropdown inp-w-base" name="" id="">
                     <option value="" disabled selected>Select Department</option>
@@ -19,18 +20,21 @@
                     <option value="">B.com</option>
                 </select>
             </div>
-        </div>
-        <div>
-            <label for="crse_fname">*Course Fullname</label>
-            <input class="inp-w-lg" id="crse_fname" type="text" placeholder="Bookkeeping and Accountancy">
-        </div>
-        <div>
-            <label for="crse_sname">*Course ShortName</label>
-            <input class="inp-w-sm"  id="crse_sname" type="text" placeholder="B.K." class="inp-w-base">
-        </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="crse_fname">*Course Fullname</label>
+                <input class="inp-w-lg" id="crse_fname" type="text" placeholder="Bookkeeping and Accountancy">
+            </div>
+            <div>
+                <label for="crse_sname">*Course ShortName</label>
+                <input class="inp-w-sm"  id="crse_sname" type="text" placeholder="B.K." class="inp-w-base">
+            </div>
+        </fieldset>
         <div class="btn-grp">
             <button class="secondary btn">Clear</button>
             <button class="primary btn">Create</button>
+            <button class="ghost  btn">close form</button>
         </div>
     </form>
 </div>
