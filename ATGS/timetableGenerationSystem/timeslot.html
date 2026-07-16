@@ -1,20 +1,20 @@
 <div class="addnew-block">
     <p class="blockHeading">Add New Timeslot</p>
-    <form action="" method="post">
+    <form onsubmit="">
         <div class="timePicker">
-            <input type="time" class="time-input" name="" id="" value="00:00" step="900">
+            <input type="time" class="time-input" name="startTime" id="" value="01:00" step="900">
             <span class="separator">-</span>
-            <input type="time" class="time-input" name="" id="" value="00:00" step="900">
+            <input type="time" class="time-input" name="endTime" id="" value="23:00" step="900">
         </div>
         <div class="checkboxGroup">
             <div>
-                <input name="" id="" type="checkbox">
-                <span><label for="">Is Break</label></span>
+                <input name="isbreak" id="isbreak" type="checkbox">
+                <span><label for="isbreak">Is Break</label></span>
             </div>
         </div>
         <div class="btn-grp">
-            <button class="secondary btn">Clear</button>
-            <button class="primary btn">Create</button>
+            <button class="secondary btn" type="reset">Clear</button>
+            <button class="primary btn" onclick="event.preventDefault();add_timeslot(event);">Create</button>
             <button class="ghost  btn">close form</button>
         </div>
     </form>

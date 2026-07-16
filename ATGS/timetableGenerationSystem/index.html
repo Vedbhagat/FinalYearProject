@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="src/style.css">
     <script src="jquery-4.0.0.min.js"></script>
+    <script src="apiCaller.js"></script>
     <title>Home</title>
 </head>
 <body>
@@ -14,16 +15,16 @@
             <div class="user">Ved Bhagat</div>
             <div class="header-tag">
                 <select id="navigator" class="navigator dropdown" on name="" id="">
-                    <option value="" data-loc="dashboard.html" selected>Dashboard</option>
-                    <option value="" data-loc="classroom.html">Classrooms</option>
-                    <option value="" data-loc="course.html">Courses</option>
-                    <option value="" data-loc="department.html">Departments</option>
-                    <option value="" data-loc="division.html">Divisions</option>
-                    <option value="" data-loc="programme.html">Programmes</option>
-                    <option value="" data-loc="teacher.html">Teachers</option>
-                    <option value="" data-loc="teacherWorkload.html">Teacher Workload</option>
-                    <option value="" data-loc="timeslot.html">Timeslot</option>
-                    <option value="" data-loc="timetable.html">Timetable</option>
+                    <option id="navigatordashboard" value="" data-loc="dashboard.html" selected>Dashboard</option>
+                    <option id="navigatorclassroom" value="" data-loc="classroom.html">Classrooms</option>
+                    <option id="navigatorcourse" value="" data-loc="course.html">Courses</option>
+                    <option id="navigatordepartment" value="" data-loc="department.html">Departments</option>
+                    <option id="navigatordivision" value="" data-loc="division.html">Divisions</option>
+                    <option id="navigatorprogramme" value="" data-loc="programme.html">Programmes</option>
+                    <option id="navigatorteacher" value="" data-loc="teacher.html">Teachers</option>
+                    <option id="navigatorteacherWorkload" value="" data-loc="teacherWorkload.html">Teacher Workload</option>
+                    <option id="navigatortimeslot" value="" data-loc="timeslot.html">Timeslot</option>
+                    <option id="navigatortimetable" value="" data-loc="timetable.html">Timetable</option>
                 </select>
             </div>
             <div class="header-menu">
@@ -42,14 +43,19 @@
 </body>
 <script src="https://kit.fontawesome.com/1042c9c102.js" crossorigin="anonymous"></script>
 <script>
+    
+    
     $(document).ready(function(){
         $("#MainContents").load('dashboard.html');
         $(".navigator").change(
             function () {
                 $("#MainContents").load($(".navigator>option:selected").attr("data-loc"));
-                console.log(this)
             }
         );
-    })
+    });
+
+    
+
+
 </script>
 </html>
