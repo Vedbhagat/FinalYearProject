@@ -1,21 +1,23 @@
-
-/* Compiler 
-npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
+/* 
 npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./ATGS/timetableGenerationSystem/src/style.css --watch
 */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @reference "tailwindcss";
 
-
 @theme {
-  --color-primary: oklch(0.6 0.12 290);
-  --color-secondary: oklch(0.7 0.14 295);
-  --color-accent: oklch(0.78 0.14 300);
-  --color-background: oklch(0.88 0.08 308);
-  --color-defaultText: #000000;
+  /* Strictly Monochromatic Color Scheme */
+  --color-primary: #18181b;        /* Zinc 900 */
+  --color-primary-hover: #27272a;  /* Zinc 800 */
+  --color-secondary: #f4f4f5;      /* Zinc 100 */
+  --color-secondary-hover: #e4e4e7;/* Zinc 200 */
   
+  --color-background: #fafafa;     /* Zinc 50 */
+  --color-surface: #ffffff;        /* Pure White */
+  --color-defaultText: #09090b;    /* Zinc 950 */
+  --color-mutedText: #71717a;      /* Zinc 500 */
+
   --color-success-light: oklch(92.5% 0.084 155.995);
   --color-success-dark: oklch(52.7% 0.154 150.069);
   --color-info-light: oklch(88.2% 0.059 254.128);
@@ -24,70 +26,149 @@ npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./A
   --color-warning-dark: oklch(55.4% 0.135 66.442);
   --color-error-light: oklch(88.5% 0.062 18.334);
   --color-error-dark: oklch(50.5% 0.213 27.518);
+  
+  /* Monochromatic Feedback States */
+  --color-border-light: #e4e4e7;   /* Zinc 200 */
+  --color-border: #d4d4d8;         /* Zinc 300 */
+  --color-border-dark: #27272a;    /* Zinc 800 */
 
-  --color-bdr-light: oklch(92.8% 0.006 264.531);
-  --color-bdr: oklch(70.7% 0.022 261.325);
-  --color-bdr-dark: oklch(44.6% 0.03 256.802);
+  --font-monospace: "JetBrains Mono", monospace;
   
-  --font-monospace: "Jetbrains Mono",'consolas', monospace;
-  
-  --text-h1: 1.4rem;
-  --text-h2: 1.2rem;
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
   --text-h3: 1.1rem;
   --text-body1: 1rem;
-  --text-body2: 0.9rem;
-  --text-caption: 0.8rem;
-  --text-caption2: 0.7rem;
-  
-  --color-bg-normal: ;
-
-  --font-weight-regular: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
- 
-  --spacing-3xl: 24px;
-  --spacing-2xl: 21px;
-  --spacing-xl: 18px;
-  --spacing-lg: 15px;
-  --spacing-base: 12px;
-  --spacing-sm: 9px;
-  --spacing-xs: 6px;
-  --spacing-2xs: 3px;
-
+  --text-body2: 0.875rem;
+  --text-caption: 0.75rem;
 }
 
-/* TYPOGRAPHY */
-.H1{ @apply text-h1; }
-.H2{ @apply text-h2; }
-.H3{ @apply text-h3; }
-.Body1{ @apply text-body1; }
-.Body2{ @apply text-body2; }
-.Caption{ @apply text-caption; }
-.Caption2{ @apply text-caption2; }
-
-/* BUTTON */
-.btn{
-  @apply outline-0 border-2 px-lg py-sm mx-1.5 my-3 rounded uppercase font-bold text-caption shadow-sm cursor-pointer hover:shadow-gray-600 
+/* ==========================================================================
+   GLOBAL BASE STYLES
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box !important;
+  font-family: var(--font-monospace);
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
-.primary{
-  @apply border-primary bg-primary text-gray-50;
+html{
+  @apply text-[15px] lg:text-[17px] xl:text-[19px] 2xl:text-[21px] 
 }
-.secondary{
-  @apply border-primary bg-secondary/15 text-primary;
-}
-.tertiary{
-  @apply border-0! outline-0! decoration-1 underline text-primary shadow-none!;
-}
-.ghost{
-  @apply border-0 shadow-none decoration-1 underline text-error-dark
-}
-.critical{
-  @apply bg-error-dark border-error-dark  my-xs
+body {
+  @apply bg-zinc-100 text-zinc-900 min-h-screen flex justify-center items-center antialiased
 }
 
-/* CHIPS */
+.appBody {
+  @apply min-h-screen 2xl:min-h-0 2xl:h-[90vh] w-full 2xl:max-w-7xl bg-white 2xl:rounded-2xl 2xl:shadow-2xl border-zinc-200 2xl:border flex flex-col overflow-hidden;
+}
+
+hr {
+  @apply border-zinc-200 my-6;
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITIES
+   ========================================================================== */
+.H1 { @apply text-xl font-bold tracking-tight text-zinc-900; }
+.H2 { @apply text-xl font-semibold tracking-tight text-zinc-800; }
+.H3 { @apply text-lg font-medium text-zinc-800; }
+.Body1 { @apply text-base text-zinc-700; }
+.Body2 { @apply text-sm text-zinc-600; }
+.Caption { @apply text-xs text-zinc-500 uppercase tracking-wider; }
+
+/* ==========================================================================
+   HEADER & NAVIGATION
+   ========================================================================== */
+header {
+  @apply flex flex-wrap items-center justify-between gap-4 px-8 py-4 bg-zinc-900 text-zinc-100 border-b border-zinc-800 shadow-sm;
+}
+
+header .user {
+  @apply text-sm font-semibold tracking-wide uppercase text-zinc-300 hover:text-white transition-colors cursor-default;
+}
+
+header .header-tag select {
+  @apply bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400;
+}
+
+header .header-menu {
+  @apply flex items-center gap-3;
+}
+
+header .header-menu select {
+  @apply bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase cursor-pointer hover:bg-zinc-700 focus:outline-none;
+}
+
+#MainContents {
+  @apply py-2 px-4.5
+}
+
+/* ==========================================================================
+   BUTTON SYSTEM & HOVER EFFECTS
+   ========================================================================== */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.primary {
+  @apply bg-zinc-900 text-white border-zinc-900 shadow-sm hover:bg-zinc-800 hover:shadow hover:-translate-y-0.5 active:translate-y-0 active:bg-black focus:ring-zinc-900;
+}
+
+.secondary {
+  @apply bg-zinc-100 text-zinc-900 border-zinc-300 hover:bg-zinc-200 hover:border-zinc-400 hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0 focus:ring-zinc-400;
+}
+
+.tertiary {
+  @apply bg-transparent text-zinc-700 border-transparent hover:text-black hover:bg-zinc-100 underline decoration-zinc-400 underline-offset-4 shadow-none;
+}
+
+.critical {
+  @apply bg-zinc-900 text-zinc-100 border-zinc-800 hover:bg-black hover:border-black hover:text-white focus:ring-zinc-900;
+}
+
+.ghost {
+  @apply bg-transparent border border-zinc-300 rounded-lg px-4 py-2 font-semibold text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 hover:text-black hover:border-zinc-400 hover:shadow-sm cursor-pointer transition-all;
+}
+
+/* ==========================================================================
+   INPUTS, DROPDOWNS & FORM CONTROL
+   ========================================================================== */
+input[type="text"],
+input[type="time"],
+input[type="password"],
+input[type="number"],
+.myInput,
+.dropdown {
+  @apply w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-sm font-medium text-zinc-900 placeholder-zinc-400 uppercase transition-all shadow-xs hover:border-zinc-400 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900;
+}
+
+input[readonly],
+.dropdown[read-only] {
+  @apply bg-zinc-100 text-zinc-500 border-zinc-200 cursor-not-allowed hover:border-zinc-200;
+}
+
+input[type="checkbox"] {
+  @apply appearance-none h-4 w-4 rounded border border-zinc-400 bg-white checked:bg-zinc-900 checked:border-zinc-900 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1 transition-all cursor-pointer relative checked:after:content-['✓'] checked:after:text-white checked:after:text-xs checked:after:font-bold checked:after:absolute checked:after:top-[-2px] checked:after:left-[2px];
+}
+
+/* Segmented Control */
+.sgmnt-ctrls {
+  @apply inline-flex border border-zinc-300 rounded-lg p-1 bg-zinc-100 gap-1;
+}
+
+.sgmnt-ctrls .sgmnt-ctrl {
+  @apply px-4 py-1.5 rounded-md text-xs font-semibold uppercase text-zinc-600 cursor-pointer hover:text-zinc-900 hover:bg-zinc-200/60 transition-all;
+}
+
+.sgmnt-ctrls .active {
+  @apply bg-white text-zinc-900 shadow-xs font-bold border-zinc-200;
+}
+
 .chip{
-  @apply mx-xs my-auto px-xs py-2xs border rounded-full align-middle text-caption font-regular shadow-xs hover:cursor-pointer;
+  @apply m-1 my-auto px-2 py-1 border rounded-xl align-middle text-caption shadow-xs hover:cursor-pointer;
 }
 .chip-green{
   @apply border-success-dark bg-success-light text-success-dark;
@@ -103,382 +184,222 @@ npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./A
 }
 
 
-/* SEGMENTED CONTROL */
-.sgmnt-ctrls{
-  @apply border-1 border-bdr rounded;
+
+
+/* ==========================================================================
+   FORM BLOCK (ADD / EDIT SECTIONS)
+   ========================================================================== */
+.none{
+  display: none;
 }
-.sgmnt-ctrls .divider{
-  @apply border-l-1 border-bdr-light w-[1px];
+#formInfoLine{
+  @apply fixed inset-0 z-50 bg-zinc-950/30 backdrop-blur-xs flex items-center justify-center p-4
 }
-.sgmnt-ctrls .sgmnt-ctrl{
-  @apply px-2.5 py-1 border-bdr  text-center rounded w-full hover:cursor-pointer;
-}
-.sgmnt-ctrls .active{
-  @apply bg-primary text-gray-50 border-primary;
+#formInfoLine span{
+  @apply px-40 py-10 align-middle text-h2 font-bold rounded-2xl shadow-xs bg-white;
 }
 
-/* INPUTS */
-input,
-.myInput,
-.dropdown{ 
-  @apply outline-0 border-2 border-bdr rounded h-10 px-base py-sm m-xs uppercase focus:border-primary/50;
-}
-.inp-w-sm{
-  /* @apply lg:w-30 lg:col-span-1 */
-  @apply w-full
-}
-.inp-w-base{
-  /* @apply lg:w-60 lg:col-span-1 */
-  @apply w-full
-}
-.inp-w-lg{
-  /* @apply lg:w-full lg:col-span-2 */
-  @apply w-full
+.addnew-block {
+  @apply bg-white border border-zinc-200 rounded-2xl py-8 px-10 max-w-4xl w-full mx-auto my-6 shadow-sm hover:shadow-md transition-shadow;
+  display: none;
 }
 
-input[type="password"]{ 
-  @apply tracking-[10px];
-}
-input[type="checkbox"]{ 
-  @apply w-4!;
-}
-.dropdown{ 
-  @apply outline-none h-10 border-1 border-bdr font-bold  rounded  py-0! uppercase;
-}
-.dropdown option{
-  @apply p-base m-base
+.addnew-block .blockHeading {
+  @apply text-2xl font-extrabold uppercase tracking-wide text-zinc-900 text-center  pb-3 border-b border-zinc-100;
 }
 
-/* PROGRESS BAR */
-.progressBar{
-  @apply h-4 w-70 border-2 border-bdr rounded-full;
-}
-.progressBar .mover{
-  @apply h-full bg-primary w-[75%] rounded-full px-[7px];
+.addnew-block form {
+  @apply flex flex-col ;
 }
 
-/* TIMEPICKER */
+.addnew-block fieldset {
+  @apply border border-zinc-200 rounded-lg p-5 flex flex-col gap-4 bg-zinc-50/50;
+}
+
+.addnew-block label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 mb-1 inline-block;
+}
+
+.addnew-block .btn-grp {
+  @apply flex justify-end gap-3 mt-4 pt-4 border-t border-zinc-100;
+}
+
+/* Time Picker Component */
 .timePicker {
-    @apply flex items-center  gap-4;
+  @apply flex items-center justify-center gap-4 bg-zinc-50 p-4 rounded-lg border border-zinc-200;
 }
-.time-group {
-    @apply  flex flex-col gap-1;
-}
+
 .time-input {
-    @apply w-30 h-10 text-center tracking-wider font-bold
+  @apply w-36 text-center font-bold tracking-wider text-zinc-900 bg-white border border-zinc-300 rounded-md py-2 focus:border-zinc-900;
 }
+
 .separator {
-    @apply text-xl font-bold text-gray-500;
-}
-.time-input::-webkit-outer-spin-button,
-.time-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-.time-input[type="number"] {
-    -moz-appearance: textfield;
+  @apply text-lg font-black text-zinc-400 select-none;
 }
 
-
-/* FEEDBACK */
-.feedback{
-  @apply m-1 px-6 flex-2 py-3 border border-gray-300 rounded w-80 md:w-full ;
-}
-.feedback-heading{
-  @apply font-bold text-lg uppercase tracking-wider;
-}
-.feedback-description{
-  @apply text-sm text-justify;
-}
-.feedback-success{
-  @apply  text-success-dark bg-success-light;
-}
-.feedback-info{
-  @apply  text-info-dark bg-info-light;
-}
-.feedback-warning{
-  @apply text-warning-dark bg-warning-light;
-}
-.feedback-error{
-  @apply  text-error-dark bg-error-light;
+/* Checkbox Groups */
+.checkboxGroup {
+  @apply flex flex-wrap gap-4 items-center bg-zinc-50 p-4 rounded-lg border border-zinc-200;
 }
 
-/* DIALOG BOX */
-.dialog{
-  @apply w-full max-w-[400px] m-sm px-xl py-base shadow-sm shadow-accent/20 border border-bdr-light rounded-xl 
-}
-.dialog-heading{
-  @apply text-h3 text-center tracking-wide font-bold mb-1;
-}
-.dialog-description{
-  @apply text-body1 text-center;
-}
-.dialog .dialog-button-group{
-  @apply flex justify-center mt-2;
+.checkboxGroup > div {
+  @apply flex items-center gap-2 hover:opacity-80 cursor-pointer;
 }
 
-/* ################### UTILITY CSS END ################### */
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-
-/* ######## Login Page ######## */
-*{
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box !important;
-  font-family:  "JetBrains Mono", monospace;
-  transition-duration: 200ms;
-  transition-property: none;
-  @apply text-body2
-}
-html{
-  @apply min-h-100 xl:min-h-100
-}
-body{
-  @apply min-h-100 xl:h-full bg-gray-100 flex justify-center items-center;
-}
-.appBody{
-  @apply min-h-full xl:h-full flex w-full xl:w-[1500px] xl:max-h-[900px] border-bdr xl:border-x
-}
-hr{
-  @apply border-bdr my-xl;
-}
-.lgn-main{
-  @apply h-100 flex justify-center items-center;
-}
-.lgn-container{
-  @apply p-xl w-full md:w-max flex flex-col border-1 border-bdr-dark/30 rounded-2xl bg-white shadow-lg
-}
-.lgn-heading{
-  @apply mb-lg text-center text-h1 font-bold tracking-wide uppercase;
-}
-.lgn-form form{
-  @apply flex flex-col;
-}
-.lgn-form form label{
-  @apply text-sm uppercase font-semibold;
-}
-.lgn-form form input{
-  @apply mb-base;
-}
-.lgn-form form .lgn-btn-grp .lgn-button{
-  @apply w-full m-0 mt-base font-semibold
+.checkboxGroup label {
+  @apply text-xs font-semibold uppercase text-zinc-700 cursor-pointer mb-0;
 }
 
-
-/* header{
-  @apply flex justify-between items-center bg-white px-base py-sm border-b border-bdr-light
-} */
-header{
-  @apply grid grid-cols-3 gap-1 w-full px-base py-sm border-b-2 border-bdr-dark bg-background/60 *:text-h3 *:font-bold
-}
-header .user{
-  @apply items-start place-self-start align-middle uppercase my-auto
-}
-header .header-tag{
-  @apply uppercase place-self-center
-}
-header .header-tag select option{
-  @apply text-center
-}
-header .header-menu{
-  @apply flex place-self-end
-}
-header .header-menu select{
-  @apply text-left uppercase p-xs mx-base
+/* ==========================================================================
+   TABLE DESIGN & HOVER EFFECTS
+   ========================================================================== */
+.view-table {
+  @apply bg-white border border-zinc-200 rounded-2xl p-6 my-6 shadow-sm overflow-hidden;
 }
 
-
-main{
-  @apply h-screen w-full
-}
-.mainLoaderCurtain{
-  @apply h-screen
-}
-.mainLoader{
-  @apply h-screen flex
-}
-.progressBar{
-  @apply w-50 my-auto mx-auto
+table {
+  @apply w-full border-collapse text-left;
 }
 
-
-/* Compiler 
-npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
-*/
-#MainContents{
-  @apply p-base;
-}
-.cards{
-  @apply inline-flex grow-1 justify-between w-full items-center flex-wrap
-}
-.card{
-  @apply bg-white relative inline-flex flex-col justify-center items-center aspect-5/3 border p-base m-base w-max grow-1 shadow-accent/50  shadow border-bdr-light/50 border-1 basis-1/7 ;
-}
-.card:hover .btn{
-  @apply visible!;
-}
-.card .card-data{
-  @apply flex justify-center items-center flex-col
-}
-.card .card-data .card-count{
-  @apply text-2xl font-extrabold text-center
-}
-.card .card-data .card-label{
-  @apply text-center text-caption text-gray-800 font-semibold uppercase
-}
-.card .card-btn-grp{
-  @apply inline-flex justify-center items-center w-full
-}
-.card .card-btn-grp .btn{
-  @apply absolute invisible bottom-0 rounded-none transition px-base! py-sm! w-full h-full mb-0 text-body1 uppercase! font-semibold bg-primary/90 backdrop-blur-xs opacity-95;
-  transition-property:backdrop-filter,opacity;
+table caption {
+  @apply text-lg font-bold text-zinc-900 text-left mb-4 uppercase tracking-wide border-b border-zinc-100 pb-2;
 }
 
-.timetable-status{
-  @apply bg-white bg-primary! *:text-white m-base p-base flex flex-row justify-between items-center shadow-accent/50 shadow
-}
-.timetable-status-data{
-  @apply w-full text-left
-}
-.timetable-status-label{
-  @apply text-h1 font-extrabold
-}
-.timetable-status-caption{
-  @apply text-caption font-semibold
-}
-.timetable-status-btn-grp{
-  @apply bg-white rounded
-}
-.timetable-status-btn-grp button{
-  @apply bg-white m-0
+table thead {
+  @apply bg-zinc-100 border-b border-zinc-300;
 }
 
-
-
-
-.addnew-block{
-  @apply min-h-100 min-w-[700px] flex flex-col place-self-center m-base
-
-}
-.addnew-block .blockHeading{
-  @apply text-h2 font-black uppercase tracking-wide text-center
-}
-.addnew-block form{
-  @apply m-base
-}
-.addnew-block form input{
-  @apply mb-base
-}
-.addnew-block form fieldset{
-  @apply border-b-1 border-bdr flex flex-col justify-center p-base
-}
-.addnew-block form fieldset div{
-  @apply flex items-center
-}
-.addnew-block form fieldset div label{
-  @apply w-70
-}
-.addnew-block form fieldset input,
-.addnew-block form fieldset .dropdown{
-  @apply w-full font-black
-}
-.addnew-block form fieldset .checkboxGroup div{
-  @apply mx-base
-}
-.addnew-block form fieldset .checkboxGroup label{
-  @apply w-max!
-}
-.addnew-block .btn-grp{
-  @apply flex justify-center
+table thead td, 
+table thead th {
+  @apply py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-zinc-700 text-center border-b border-zinc-200;
 }
 
-
-
-.timetable-view-table table{
-  @apply font-medium! *:font-medium
+table tbody tr {
+  @apply border-b border-zinc-200/80 transition-colors hover:bg-zinc-100/80;
 }
 
-.timetable-view-table table th{
-  @apply text-body1 border-3! uppercase font-monospace tracking-widest;
+table tbody tr:nth-child(even) {
+  @apply bg-zinc-50/50;
 }
 
+table tbody tr:hover {
+  @apply bg-zinc-100;
+}
+
+table td {
+  @apply px-4 py-3 text-body2 font-medium text-zinc-800 text-center align-middle;
+}
+
+table td button {
+  @apply shadow-xs px-3 py-1 mx-1 text-[11px];
+}
+
+/* Specialized Timetable View Grid */
 .timetable-view-table table th,
-.timetable-view-table table td{
-  @apply border-3 border-bdr p-xs
-}
-.timetable-view-table table .course{
-  @apply text-h3 font-extrabold text-center text-primary
-}
-.timetable-view-table table .more-details{
-  @apply text-gray-500
-}
-.timetable-view-table table .break{
-  @apply col-span-6 uppercase text-center text-h2 font-extrabold tracking-[10px] border-2!
-}
-/* .dept-addnew-block form,
-.clsrm-addnew-block form,
-.crse-addnew-block form{
-  @apply grid grid-cols-1 lg:grid-cols-2 grid-flow-row gap-5
+.timetable-view-table table td {
+  @apply border border-zinc-300 p-3;
 }
 
-.dept-addnew-block form div,
-.clsrm-addnew-block form div,
-.crse-addnew-block form div{
-  @apply p-base h-15
-}
-.dept-addnew-block form select,
-.clsrm-addnew-block form select,
-.crse-addnew-block form select{
-  @apply w-full! h-full!
+.timetable-view-table table .course {
+  @apply text-sm font-bold text-zinc-900 uppercase;
 }
 
-.dept-addnew-block form label,
-.clsrm-addnew-block form label,
-.crse-addnew-block form label{
-  @apply w-full block  
-}
-.dept-addnew-block form .btn-grp,
-.clsrm-addnew-block form .btn-grp,
-.crse-addnew-block form .btn-grp{
-  @apply col-span-3
+.timetable-view-table table .break {
+  @apply bg-zinc-100 text-zinc-500 font-bold uppercase tracking-[6px] text-center text-xs py-4;
 }
 
-.dept-view-table,
-.clsrm-addnew-block,
-.crse-addnew-block{
-  @apply m-xs
+/* ==========================================================================
+   CARDS & DASHBOARD WIDGETS
+   ========================================================================== */
+.cards {
+  @apply flex flex-wrap gap-4 justify-between my-4;
 }
-table{
-  @apply table-auto w-full
-}
-table caption{
-  @apply text-h3 font-semibold underline decoration-2
-}
-table thead{
-  @apply uppercase text-center font-semibold border-b border-bdr
-}
-table tbody tr{
-  @apply hover:bg-primary/10!
-}
-table tr:nth-child(2n){
-  @apply bg-primary/7
-}
-table td{
-  @apply px-base py-2xs table-cell capitalize text-center
-}
-table td button{
-  @apply py-2xs! px-xs!
-}
-table tr{
-  @apply my-lg
-} */
 
+.card {
+  @apply bg-white border border-zinc-200 rounded-2xl p-5 flex-1 min-w-[200px] relative overflow-hidden shadow-xs hover:shadow-md hover:border-zinc-300 transition-all;
+}
 
+.card .card-data .card-count {
+  @apply text-3xl font-black text-zinc-900 mb-1  transition-transform origin-left;
+}
 
+.card .card-data .card-label {
+  @apply text-xs font-bold text-zinc-500 uppercase tracking-wider;
+}
 
+.card .card-btn-grp .btn {
+  @apply absolute inset-x-0 bottom-0 rounded-none border-none bg-zinc-900/95 text-white opacity-0  transition-opacity py-2 text-xs uppercase font-bold backdrop-blur-xs;
+}
 
+/* Status Banner */
+.timetable-status {
+  @apply bg-zinc-900 text-white rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4 shadow-md my-4;
+}
 
-/* Compiler 
-npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
-npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./ATGS/timetableGenerationSystem/src/style.css --watch
-*/
+.timetable-status-label {
+  @apply text-2xl font-black tracking-tight uppercase text-white;
+}
+
+.timetable-status-caption {
+  @apply text-xs font-medium text-zinc-400 uppercase tracking-wide mt-1;
+}
+
+/* ==========================================================================
+   MODAL DIALOGS & OVERLAYS
+   ========================================================================== */
+.tempPopup {
+  @apply fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4;
+}
+
+.dialog {
+  @apply bg-white border border-zinc-300 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-150;
+}
+
+.dialog-heading {
+  @apply text-lg font-extrabold uppercase tracking-wide text-zinc-900 text-center mb-2;
+}
+
+.dialog-description {
+  @apply text-sm text-zinc-600 text-center mb-6 leading-relaxed;
+}
+
+.dialog-button-group {
+  @apply flex justify-center gap-3 pt-2;
+}
+
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 700px) {
+  header {
+    @apply flex-col items-stretch text-center;
+  }
+  
+  header .header-menu {
+    @apply justify-center flex-wrap;
+  }
+
+  .addnew-block {
+    @apply p-4 mx-2;
+  }
+
+  .timePicker {
+    @apply flex-col;
+  }
+
+  .checkboxGroup{
+    @apply flex flex-col items-start
+  }
+
+  .time-input {
+    @apply w-full;
+  }
+
+  .btn-grp {
+    @apply flex-col;
+  }
+  
+  .btn-grp .btn {
+    @apply w-full;
+  }
+}

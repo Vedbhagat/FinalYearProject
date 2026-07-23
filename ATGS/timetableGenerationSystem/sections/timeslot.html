@@ -1,0 +1,185 @@
+<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
+<div class="addnew-block" id="newTimeslot">
+    <p class="blockHeading">Add New Timeslot</p>
+    <form onsubmit="">
+        <div>
+            <label for="slotId">Slot Id</label>
+            <input type="text" name="slotId" id="slotId" placeholder="Auto Generated (Disabled)" readonly>
+        </div>
+        <div class="timePicker">
+            <input type="time" class="time-input" name="startTime" id="startTime" value="00:00" step="900">
+            <span class="separator">-</span>
+            <input type="time" class="time-input" name="endTime" id="endTime" value="00:00" step="900">
+        </div>
+        <div class="checkboxGroup">
+            <div>
+                <input name="isbreak" id="isbreak" type="checkbox" value=1>
+                <span><label for="isbreak">Is Break</label></span>
+            </div>
+        </div>
+        <div class="btn-grp">
+            <button class="secondary btn" id="sndyBtn" onclick="$('form').trigger('reset');" type="reset">Clear</button>
+            <button class="primary btn" id="prmyBtn" onclick="add_timeslot(event);">Create</button>
+        </div>
+    </form>
+</div>
+<div class="view-table">
+    <table>
+        <caption>
+            Existing Programmes
+        </caption>
+        <thead>
+            <tr>
+                <td >Sr No</td>
+                <td >UID</td>
+                <td >Start Time</td>
+                <td >End Time</td>
+                <td >Is Break</td>
+                <td >Date Created</td>
+                <td >Actions</td>
+            </tr>
+        </thead>
+        <tbody class="recordTable">
+            
+        </tbody>
+    </table>
+</div>
+<script>
+
+    
+async function add_timeslot(event) {
+    event.preventDefault();
+    const closestForm = event.target.closest('form');
+    const formData = new FormData(closestForm);
+    formData.append('formType', 'add_timeslot');
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        closestForm.reset();
+        showInfoInline(result.responseBody);
+        createTimeslotTable();
+    })
+    .fail(function(xhr, status, error) {   
+        // When status code is 429 or 400, responseJSON is available
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+
+async function prefillUpdateform(event){
+    event.preventDefault();
+    var recordId = $(event.currentTarget).attr('data-recordId');
+    var oldData = await get_one_timeslot(recordId);
+    var parsedOldData = await oldData.responseBody;
+    // await console.log(parsedOldData)
+    setTimeout(()=>{
+        turnOn();
+        $('#slotId').attr('value', parsedOldData.SLOT_ID);
+        $('#startTime').attr('value', parsedOldData.START_TIME);
+        $('#endTime').attr('value',parsedOldData.END_TIME);
+        $('#isbreak').prop('checked',parsedOldData.ISBREAK ? 'true':'false');
+        $('#prmyBtn').text('Update');
+        $('#prmyBtn').attr('data-recordId',parsedOldData.SLOT_ID);
+        $('#prmyBtn').attr('onclick','update_timeslot(event)');
+        showInfoInline("Update Form Ready");
+    },1000);
+}
+
+async function update_timeslot(event){
+    event.preventDefault();
+    const closestForm = event.target.closest('form');
+    const formData = new FormData(closestForm);
+    formData.append('formType','update_timeslot');
+    
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        closestForm.reset();
+        showInfoInline(result.responseBody);
+        createTimeslotTable();
+    })
+    .fail(function(xhr, status, error) {   
+        // When status code is 429 or 400, responseJSON is available
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function get_one_timeslot(slotId) {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('formType', 'get_one_timeslot');
+    formData.append('slotId', slotId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false
+    });
+    return result;
+}
+
+async function delete_timeslot(recordId) {
+    const formData = new FormData();
+    formData.append('formType', 'delete_timeslot');
+    formData.append('slotId', recordId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false
+    });
+    showInfoInline(result.responseBody);
+    await createTimeslotTable();
+    return result;
+}
+
+async function createTimeslotTable(){
+    const slots = await load_existing('timeslot');
+    var count = 1;
+    // console.log(slots.responseBody);
+    $('.recordTable').html('');
+    (slots.responseBody).forEach(element => {
+        var template =
+            '<tr>' +
+            '<td>' + count++ + '</td>' +
+            '<td>' + element[0] + '</td>' +
+            '<td>' + element[1] + '</td>' +
+            '<td>' + element[2] + '</td>' +
+            '<td>' + (element[3] ? 'True' : 'False') + '</td>' +
+            '<td>' + element[4] + '</td>' +
+            '<td>' +
+            '<button class="btn primary" data-recordId="' + element[0] + '" onclick="prefillUpdateform(event);">update</button>' +
+            '<button class="btn secondary" data-recordId="' + element[0] + '" onclick="confirmDeleteDialog(`Delete ?`,`confirm the delete operations`,'+element[0]+',delete_timeslot);">Delete</button>' +
+            '</td>' +
+            '</tr>';
+        $('.recordTable').append('<tr>'+template+'</tr>');
+    });
+}
+
+createTimeslotTable();
+
+console.log($.fn.jquery);
+</script>

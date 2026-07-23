@@ -1,0 +1,155 @@
+<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
+<div class="addnew-block">
+    <p class="blockHeading">Add New Division</p>
+    <form action="" method="post">
+        <fieldset class="grid col-span-2 dropdown-grp">
+            <fieldset>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Department</option>
+                        <option value="">Dept. of I.T</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Programme</option>
+                        <option value="">Dept. of I.T</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="">Division Idenifier</label>
+                    <input type="text" placeholder="a/b/c/d">
+                </div>
+            </fieldset>
+            <fieldset>
+                prefrences
+                <div class="">
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Classroom Floor</option>
+                        <option value="" selected>Any</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Room Number</option>
+                        <option value="" selected>Any</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Day Starting</option>
+                        <option value="" selected>Any</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+                <div>
+                    <select class="dropdown myInput" name="" id="">
+                        <option value="" disabled selected>Select Day Ending</option>
+                        <option value="" selected>Any</option>
+                        <option value="">Dept. of A & F</option>
+                        <option value="">Dept. of Science</option>
+                        <option value="">Dept. of comm and Mgt</option>
+                    </select>
+                </div>
+            </fieldset>
+            <fieldset>
+                Working day
+                <div class="checkboxGroup">
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Monday</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Tuesday</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Wednesday</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Thursday</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Friday</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="" id="" checked>
+                        <label for="">Saturday</label>
+                    </div>
+                </div>
+            </fieldset>
+        </fieldset>
+        <div class="btn-grp">
+            <button class="secondary btn">Clear</button>
+            <button class="primary btn">Create</button>
+        </div>
+    </form>
+</div>
+<hr>
+<div class="view-table">
+    <table>
+        <caption>
+            Existing Programmmes
+        </caption>
+        <thead>
+            <tr>
+                <td class="w-20!">sr no</td>
+                <td class="w-50!">Department</td>
+                <td class="w-30!">Programme</td>
+                <td class="w-30!">Programme(ShortName)</td>
+                <td class="w-30!">Actions</td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td class="text-left!">Department of Information Technology</td>
+                <td>Dept of I.T.</td>
+                <td>
+                    <button class="btn secondary">Delete</button>
+                </td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td class="text-left!">Department of Commerce</td>
+                <td>Dept of I.T.</td>
+                <td>
+                    <button class="btn secondary">Delete</button>
+                </td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td class="text-left!">Department of Tourism and Hospitality</td>
+                <td>Dept of I.T.</td>
+                <td>
+                    <button class="btn secondary">Delete</button>
+                </td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td class="text-left!">Department of Accounting and finance</td>
+                <td>Dept of A & F</td>
+                <td>
+                    <button class="btn secondary">Delete</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
