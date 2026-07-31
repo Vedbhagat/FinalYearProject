@@ -1,10 +1,10 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
 <div class="addnew-block">
     <p class="blockHeading">Add New Programme</p>
-    <form action="" method="post">
-        <fieldset class="grid col-span-2">
+    <form id="form" onsubmit="" method="POST">
+        <fieldset>
             <div>
-                <select class="dropdown myInput" name="" id="">
+                <select class="dropdown myInput" name="department" id="department">
                     <option value="" disabled selected>Select Department</option>
                     <option value="">Dept. of I.T</option>
                     <option value="">Dept. of A & F</option>
@@ -15,36 +15,29 @@
         </fieldset>
         <fieldset>
             <div>
-                <label for="pgrm_fname">*Programme Fullname</label>
-                <input id="pgrm_fname" type="text" placeholder="Bachelor of Science (Information Technology)">
+                <label for="fullname">*Programme Fullname</label>
+                <input id="fullname" type="text" placeholder="Bachelor of Science in Information Technology">
             </div>
             <div>
-                <label for="pgrm_sname">*Programme ShortName</label>
-                <input id="pgrm_sname" type="text" placeholder="B. Sc. (I.T.)">
+                <label for="shortname">*Programme ShortName</label>
+                <input id="shortname" type="text" placeholder="B. Sc. I.T.">
             </div>
         </fieldset>
         <fieldset>
-            <div class="checkboxGroup">
-                <div>
-                    <input type="checkbox" checked><label for="">First Year</label>
-                </div>
-                <div>
-                    <input type="checkbox" checked><label for="">Second Year</label>
-                </div>
-                <div>
-                    <input type="checkbox" checked><label for="">Third Year</label>
-                </div>
-                <div>
-                    <input type="checkbox" ><label for="">Fourth Year</label>
-                </div>
-                <div>
-                    <input type="checkbox" ><label for="">Fifth Year</label>
-                </div>
+            <div>
+                <select class="dropdown myInput" name="duration" id="duration">
+                    <option value="" disabled selected>Select Duration</option>
+                    <option value="1">One Year</option>
+                    <option value="2">Two Years</option>
+                    <option value="3" selected>Three Years</option>
+                    <option value="4">Four Years</option>
+                    <option value="5">Five Years</option>
+                </select>
             </div>
         </fieldset>
         <div class="btn-grp">
-            <button class="secondary btn">Clear</button>
-            <button class="primary btn">Create</button>
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="primary btn" id="prmyBtn" onclick="add_programme();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -52,50 +45,72 @@
 <div class="view-table">
     <table>
         <caption>
-            Existing Programmmes
+            Existing Programmes
         </caption>
         <thead>
             <tr>
-                <td class="w-20!">sr no</td>
-                <td class="w-50!">Department</td>
-                <td class="w-30!">Programme</td>
-                <td class="w-30!">Programme(ShortName)</td>
-                <td class="w-30!">Actions</td>
+                <td >Sr No</td>
+                <td >UID</td>
+                <td >Department</td>
+                <td >Programme</td>
+                <td >Programme(ShortName)</td>
+                <td >Years</td>
+                <td >Actions</td>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td class="text-left!">Department of Information Technology</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td class="text-left!">Department of Commerce</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td class="text-left!">Department of Tourism and Hospitality</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td class="text-left!">Department of Accounting and finance</td>
-                <td>Dept of A & F</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
+        <tbody class="recordTable">
+
         </tbody>
     </table>
 </div>
+<script>
+
+var form = document.getElementById('form');
+
+async function add_programme() {
+    if(!form.checkValidity()){
+        form.reportValidity();
+        return;
+    };
+    const formData = new FormData(form);
+    formData.append('formType', 'add_programme');
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        createProgrammeTable();
+    })
+    .fail(function(xhr, status, error) {   
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function prefillUpdateform(recordId){
+    var oldData = await get_one_programme(recordId);
+    var parsedOldData = await oldData.responseBody;
+    turnOn();
+    $('#programmeId').attr('value', parsedOldData.PROGRAMME_ID);
+    $('#department').attr('value', parsedOldData.DEPARTMENT_ID);
+    $('#fullname').attr('value', parsedOldData.LONG_NAME);
+    $('#shortname').attr('value',parsedOldData.SHORT_NAME);
+    $('#duration').prop(checked,parsedOldData.YEAR);
+    $('#fullname').focus(); 
+    $('#prmyBtn').text('Update');
+    $('#prmyBtn').attr('data-recordId',parsedOldData.SLOT_ID);
+    $('#prmyBtn').attr('onclick','update_programme('+recordId+')');
+    $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
+    showInfoInline("Update Form Ready");
+}
+</script>

@@ -1,20 +1,26 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
 <div class="addnew-block">
     <p class="blockHeading">Add New Department</p>
-    <form action="" method="post">
+    <form id="form" onsubmit="" method="POST">
         <fieldset>
             <div>
-                <label for="dept_fname">*Department FullName</label>
-                <input class="inp-w-lg"  id="dept_fname" type="text" placeholder="Information Technology">
+                <label for="departmentId">Department Id</label>
+                <input type="text" name="departmentId" id="departmentId" placeholder="Auto Generated (Disabled)" readonly>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="fullname">*Department FullName</label>
+                <input class="inp-w-lg"  name="fullname" id="fullname" type="text" placeholder="Information Technology">
             </div>
             <div>
-                <label for="dept_sname">*Department ShortName</label>
-                <input class="inp-w-sm"  id="dept_sname" type="text" placeholder="I.T.">
+                <label for="shortname">*Department ShortName</label>
+                <input class="inp-w-sm" name="shortname" id="shortname" type="text" placeholder="I.T.">
             </div>
         </fieldset>
         <div class="btn-grp">
-            <button class="secondary btn">Clear</button>
-            <button class="primary btn">Create</button>
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="primary btn" id="prmyBtn" onclick="add_department();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -26,45 +32,152 @@
         </caption>
         <thead>
             <tr>
-                <td class="w-20!">sr no</td>
-                <td class="w-50!">Department Fullname</td>
-                <td class="w-30!">Department Shortname</td>
-                <td class="w-30!">Actions</td>
+                <td >Sr No</td>
+                <td >UID</td>
+                <td >Department Fullname</td>
+                <td >Department Shortname</td>
+                <td >Actions</td>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td class="text-left!">Department of Information Technology</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td class="text-left!">Department of Commerce</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td class="text-left!">Department of Tourism and Hospitality</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td class="text-left!">Department of Accounting and finance</td>
-                <td>Dept of A & F</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
+        <tbody class="recordTable">
+            
         </tbody>
     </table>
 </div>
+<script>
+
+var form = document.getElementById('form');
+
+async function add_department() {
+    if(!form.checkValidity()){
+        form.reportValidity();
+        return;
+    };
+    const formData = new FormData(form);
+    formData.append('formType', 'add_department');
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        createDepartmentTable();
+    })
+    .fail(function(xhr, status, error) {   
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function prefillUpdateform(recordId){
+    var oldData = await get_one_department(recordId);
+    var parsedOldData = await oldData.responseBody;
+    turnOn();
+    $('#departmentId').attr('value', parsedOldData.DEPARTMENT_ID);
+    $('#fullname').attr('value', parsedOldData.LONG_NAME);
+    $('#shortname').attr('value',parsedOldData.SHORT_NAME);
+    $('#fullname').focus(); 
+    $('#prmyBtn').text('Update');
+    $('#prmyBtn').attr('data-recordId',parsedOldData.SLOT_ID);
+    $('#prmyBtn').attr('onclick','update_department('+recordId+')');
+    $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
+    showInfoInline("Update Form Ready");
+}
+function cancelPrefilledUpdateform(){
+    form.reset();    
+    $('#departmentId').val("");
+    $('#fullname').val(""); 
+    $('#shortname').val("");
+    $('#prmyBtn').text('Create');
+    $('#prmyBtn').attr('onclick','add_department()');
+    $('#sndyBtn').attr('onclick','form.reset()');
+}
+
+async function update_department(recordId){
+    const formData = new FormData(form);
+    formData.append('formType','update_department');
+    
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        // form.reset();
+        cancelPrefilledUpdateform();
+        showInfoInline(result.responseBody);
+        createDepartmentTable();
+    })
+    .fail(function(xhr, status, error) {  
+        cancelPrefilledUpdateform();
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        }else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function get_one_department(departmentId) {
+    const formData = new FormData();
+    formData.append('formType', 'get_one_department');
+    formData.append('departmentId', departmentId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false
+    });
+    return result;
+}
+async function delete_department(recordId) {
+    const formData = new FormData();
+    formData.append('formType', 'delete_department');
+    formData.append('departmentId', recordId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false
+    });
+    showInfoInline(result.responseBody);
+    await createDepartmentTable();
+    return result;
+}
+
+async function createDepartmentTable(){
+    const slots = await load_existing('department');
+    var count = 1;
+    $('.recordTable').html('');
+    (slots.responseBody).forEach(element => {
+        var template =
+            `<tr>
+                <td>${count++}</td>
+                <td>${element[0]}</td>
+                <td>${element[2]}</td>
+                <td>${element[3]}</td>
+                <td>
+                    <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
+                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_department);">Delete</button>
+                </td>
+            </tr>`;
+        $('.recordTable').append('<tr>'+template+'</tr>');
+    });
+}
+
+createDepartmentTable();
+</script>

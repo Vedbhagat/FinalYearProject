@@ -55,7 +55,7 @@ npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./A
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 html{
-  @apply text-[15px] lg:text-[17px] xl:text-[19px] 2xl:text-[21px] 
+  @apply text-[15px] lg:text-[16px] 2xl:text-[20px] 
 }
 body {
   @apply bg-zinc-100 text-zinc-900 min-h-screen flex justify-center items-center antialiased
@@ -167,20 +167,44 @@ input[type="checkbox"] {
   @apply bg-white text-zinc-900 shadow-xs font-bold border-zinc-200;
 }
 
-.chip{
-  @apply m-1 my-auto px-2 py-1 border rounded-xl align-middle text-caption shadow-xs hover:cursor-pointer;
+/* RANGE PICKER */
+.range-picker {
+  @apply flex flex-col gap-2 w-full p-2;
 }
-.chip-green{
-  @apply border-success-dark bg-success-light text-success-dark;
+.range-slider {
+  @apply appearance-none w-full h-1.5 bg-zinc-200 rounded-full outline-none cursor-pointer accent-zinc-900 transition-colors hover:bg-zinc-300;
 }
-.chip-yellow{
-  @apply border-warning-dark bg-warning-light text-warning-dark;
+.range-slider::-webkit-slider-thumb {
+  @apply appearance-none h-4 w-4 bg-zinc-900 rounded-full transition-transform duration-150 hover:scale-125 active:scale-95;
 }
-.chip-red{
-  @apply border-error-dark bg-error-light text-error-dark;
+.range-slider::-moz-range-thumb {
+  @apply h-4 w-4 bg-zinc-900 border-none rounded-full transition-transform duration-150 hover:scale-125 active:scale-95;
 }
-.chip-blue{
-  @apply border-info-dark bg-info-light text-info-dark;
+.range-labels {
+  @apply flex justify-between items-center text-xs font-semibold text-zinc-600 tracking-tight;
+}
+
+/* ==========================================================================
+   PROFESSIONAL CHIPS & STATUS BADGES
+   ========================================================================== */
+
+/* Base Chip Layout & Typography */
+.chip {
+  @apply inline-flex items-center justify-center px-3 py-1 rounded-full 
+         text-xs font-bold uppercase tracking-wide border-0 shadow-xs select-none;
+}
+
+.chip-green {
+  @apply bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400;
+}
+.chip-yellow {
+  @apply bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400;
+}
+.chip-red {
+  @apply bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-100 hover:border-rose-400;
+}
+.chip-blue {
+  @apply bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-100 hover:border-sky-400;
 }
 
 
@@ -213,7 +237,7 @@ input[type="checkbox"] {
 }
 
 .addnew-block fieldset {
-  @apply border border-zinc-200 rounded-lg p-5 flex flex-col gap-4 bg-zinc-50/50;
+  @apply border border-zinc-200 rounded-lg p-5 m-3 flex flex-col gap-4 bg-zinc-50/50;
 }
 
 .addnew-block label {
@@ -224,18 +248,30 @@ input[type="checkbox"] {
   @apply flex justify-end gap-3 mt-4 pt-4 border-t border-zinc-100;
 }
 
-/* Time Picker Component */
+/* Timepicker input */
 .timePicker {
-  @apply flex items-center justify-center gap-4 bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+  @apply flex flex-wrap sm:flex-nowrap items-end justify-center gap-4 bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+}
+.timePicker > p {
+  @apply flex flex-col gap-1.5 flex-1 min-w-[140px] m-0;
+}
+.timePicker label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 mb-0;
+}
+.timePicker .time-input {
+  @apply w-full text-center font-bold tracking-wider text-zinc-900 bg-white border border-zinc-300 rounded-md py-2 transition-all focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900;
+}
+.timePicker .time-input[readonly] {
+  @apply bg-zinc-100 text-zinc-500 border-zinc-200 cursor-not-allowed hover:border-zinc-200;
+}
+.timePicker .separator {
+  @apply text-lg font-black text-zinc-400 select-none pb-2 self-end sm:self-center;
+}
+#partTimeSection,
+#partTimeSection .timePicker{
+  display: none;
 }
 
-.time-input {
-  @apply w-36 text-center font-bold tracking-wider text-zinc-900 bg-white border border-zinc-300 rounded-md py-2 focus:border-zinc-900;
-}
-
-.separator {
-  @apply text-lg font-black text-zinc-400 select-none;
-}
 
 /* Checkbox Groups */
 .checkboxGroup {
@@ -249,12 +285,42 @@ input[type="checkbox"] {
 .checkboxGroup label {
   @apply text-xs font-semibold uppercase text-zinc-700 cursor-pointer mb-0;
 }
+/* ==========================================================================
+   RADIO BUTTONS
+   ========================================================================== */
+
+.radiobuttonGroup {
+  @apply flex flex-wrap gap-5 items-center bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+}
+
+.radiobuttonGroup > div {
+  @apply flex items-center cursor-pointer;
+}
+
+input[type="radio"] {
+  @apply appearance-none m-0 h-4 w-4 rounded-full border border-zinc-400 bg-white
+         relative cursor-pointer 
+         focus:outline-none 
+         group-hover:border-zinc-600
+         checked:border-zinc-900 checked:bg-white;
+}
+
+input[type="radio"]:checked::after {
+  content: "";
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+         w-2 h-2 rounded-full bg-zinc-900;
+}
+.radiobuttonGroup label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 
+         cursor-pointer transition-colors duration-200
+         group-hover:text-zinc-900 mb-0 p-1;
+}
 
 /* ==========================================================================
    TABLE DESIGN & HOVER EFFECTS
    ========================================================================== */
 .view-table {
-  @apply bg-white border border-zinc-200 rounded-2xl p-6 my-6 shadow-sm overflow-hidden;
+  @apply bg-white border border-zinc-200 rounded-2xl p-6 my-6 shadow-sm overflow-x-auto;
 }
 
 table {

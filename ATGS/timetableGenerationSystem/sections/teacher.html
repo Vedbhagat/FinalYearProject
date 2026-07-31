@@ -1,31 +1,40 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
-<div class="addnew-block">
+<div class="addnew-block" id="newTeacher">
     <p class="blockHeading">Add New Teacher</p>
-    <form action="" method="post">
-        <fieldset class="grid col-span-2">
+    <form id="form" onsubmit="" method="POST">
+        <fieldset>
             <div>
-                <select class="dropdown myInput" name="" id="">
+                <label for="teacherId">Teacher Id</label>
+                <input type="text" name="teacherId" id="teacherId" placeholder="Auto Generated (Disabled)" readonly>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <select class="dropdown myInput" name="departmentDropdown" id="departmentDropdown" disabled required>
                     <option value="" disabled selected>Select Department</option>
-                    <option value="">Dept. of I.T</option>
-                    <option value="">Dept. of A & F</option>
-                    <option value="">Dept. of Science</option>
-                    <option value="">Dept. of comm and Mgt</option>
                 </select>
             </div>
         </fieldset>
         <fieldset>
             <div>
-                <label for="tchr_fname">*Teacher FirstName</label>
-                <input id="tchr_fname" type="text" placeholder="John">
+                <label for="fname">*Teacher FirstName</label>
+                <input id="fname" type="text" name="fname" placeholder="John" required>
             </div>
             <div>
-                <label for="tchr_lname">*Techer LastName</label>
-                <input id="tchr_lname" type="text" placeholder="Doe">
+                <label for="lname">*Techer LastName</label>
+                <input id="lname" type="text" name="lname" placeholder="Doe" required>
             </div>
         </fieldset>
+        <fieldset>
+            <div>
+                <input name="isPartTime" id="isPartTime" type="checkbox" onchange="togglePartTimeSection()" required="false">
+                <span><label for="isPartTime">Part Time</label></span>
+            </div>
+            <div id="partTimeSection"></div> 
+        </fieldset>
         <div class="btn-grp">
-            <button class="secondary btn">Clear</button>
-            <button class="primary btn">Create</button>
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="primary btn" id="prmyBtn" onclick="add_teacher();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -33,51 +42,171 @@
 <div class="view-table">
     <table>
         <caption>
-            Existing Programmmes
+            Existing Teachers
         </caption>
         <thead>
             <tr>
-                <td class="w-20!">sr no</td>
-                <td class="w-50!">Department</td>
-                <td class="w-30!">Programme</td>
-                <td class="w-30!">Programme(ShortName)</td>
-                <td class="w-30!">Actions</td>
+                <td >sr no</td>
+                <td >Department</td>
+                <td >Teacher name</td>
+                <td >Part Time</td>
+                <td >Actions</td>
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>1</td>
-                <td class="text-left!">Department of Information Technology</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td class="text-left!">Department of Commerce</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td class="text-left!">Department of Tourism and Hospitality</td>
-                <td>Dept of I.T.</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td class="text-left!">Department of Accounting and finance</td>
-                <td>Dept of A & F</td>
-                <td>
-                    <button class="btn secondary">Delete</button>
-                </td>
-            </tr>
         </tbody>
     </table>
 </div>
+<script>
+
+function togglePartTimeSection(){
+    if($('#isPartTime').is(':checked')){
+        $('#partTimeSection').attr('disabled', false);
+        $('#partTimeSection').attr('hidden', false);
+        $('#partTimeSection').css('display', 'block');
+    }
+    else{
+        $('#partTimeSection').attr('disabled', true);
+        $('#partTimeSection').attr('hidden', true);
+        $('#partTimeSection').css('display', 'none');
+    }
+}
+function togglePartTimeDay(event){
+    const fieldset = event.target.closest('fieldset');
+    const timepicker = fieldset.querySelector('.timePicker');
+    timepicker.style.display = event.target.checked ? "flex" : "none";
+}
+async function makePartTimeDay() {
+    // console.log("In the maker function");
+    const result = await load_existing("timeslot");
+    const days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+    ];
+    
+    const data = result.responseBody;
+    const punchInOptions = data.map(item =>
+        `<option value="${item[0]}">${item[1]}</option>`
+    ).join("");
+    const punchOutOptions = data.map(item =>
+        `<option value="${item[0]}">${item[2]}</option>`
+    ).join("");
+    // console.log(punchInOptions);
+    // console.log(punchOutOptions);
+    const container = $("#partTimeSection");
+    container.html("");
+    // console.log("creatind day wise item");
+    days.forEach(day => {
         
+        const id = day.toLowerCase();
+        container.append(`
+            <fieldset>
+                <div>
+                    <input
+                        type="checkbox"
+                        id="${id}"
+                        name="${id}"
+                        onchange="togglePartTimeDay(event)">
+                    <label for="${id}">${day}</label>
+                </div>
+
+                <div class="timePicker" style="display:none">
+                    <p>
+                        <label>Punch In</label>
+                        <select name="punchIn_${id}" id="punchIn_${id}" class="dropdown myInput" required>
+                            <option value="" selected disabled>00:00:00</option>
+                            ${punchInOptions}
+                        </select>
+                    </p>
+
+                    <span class="separator">-</span>
+
+                    <p>
+                        <label>Punch Out</label>
+                        <select name="punchOut_${id}" id="punchOut_${id}" class="dropdown myInput" required>
+                            <option value="" selected disabled>00:00:00</option>
+                            ${punchOutOptions}
+                        </select>
+                    </p>
+                </div>
+            </fieldset>
+        `);
+    });
+}
+async function extractDepartment() {
+    const minimalData = await getPrerequisits();
+    const depts = minimalData.responseBody.departments;
+    const departmentSelect = $('#departmentDropdown');
+    depts.forEach(dept => {
+        departmentSelect.append(`
+            <option value="${dept.Department_id}">
+                ${dept.Long_name}
+            </option>
+        `);
+    });
+    departmentSelect.prop('disabled', false);
+}
+
+makePartTimeDay();
+extractDepartment();
+
+
+var form = document.getElementById('form');
+
+async function add_teacher() {
+    console.log("Adding new Teacher");
+    debugger;
+    if(!form.checkValidity()){
+        // form.reportValidity();
+        // return;
+    };
+    const formData = new FormData(form);
+    formData.append('formType', 'add_teacher');
+    
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        createTimeslotTable();
+    })
+    .fail(function(xhr, status, error) {   
+        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+async function prefillUpdateform(recordId){
+    var oldData = await get_one_timeslot(recordId);
+    var parsedOldData = await oldData.responseBody;
+    turnOn();
+    $('#departmentId').attr('value', parsedOldData.TEACHER_ID);
+    $('#fname').attr('value', parsedOldData.FIRST_NAME);
+    $('#lname').attr('value',parsedOldData.LAST_NAME);
+    $('#isPartTime').prop('checked',parsedOldData.ISPARTTIME ? 'true':'false');
+    if($('#isPartTime').prop('checked')){
+        if($('#monday').prop('checked')){
+            ///pending from here
+        }
+    }
+
+    $('#prmyBtn').text('Update');
+    $('#prmyBtn').attr('data-recordId',parsedOldData.TEACHER_ID);
+    $('#prmyBtn').attr('onclick','update_teacher('+recordId+')');
+    $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
+    showInfoInline("Update Form Ready");
+}
+
+</script>

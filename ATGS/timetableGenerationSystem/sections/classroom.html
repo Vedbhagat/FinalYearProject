@@ -1,7 +1,7 @@
-<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
-<div class="addnew-block">
-    <p class="blockHeading">Add New Classroom</p>
-    <form onsubmit="">
+<!-- <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button> -->
+<div class="addnew-block" id="newClassroom">
+    <p class="blockHeading">Add Classroom Capacity</p>
+    <form onsubmit="" method="POST" id="form">
         <fieldset>
             <div>
                 <label for="classroomId">Classroom Id</label>
@@ -11,30 +11,20 @@
         <fieldset>
             <div>
                 <label for="floor">*Floor</label>
-                <select name="floor" id="floor" class="dropdown">
-                    <option value="" disabled selected>Select Floor</option>
-                    <option value="Ground Floor">Ground Floor</option>
-                    <option value="First Floor">First Floor</option>
-                    <option value="Second Floor">Second Floor</option>
-                    <option value="Third Floor">Third Floor</option>
-                    <option value="Fourth Floor">Fourth Floor</option>
-                    <option value="Fifth Floor">Fifth Floor</option>
-                </select>
+                <input name="floor" id="floor" class="dropdown" type="text" required readonly placeholder="Auto Fetched">
             </div>
-        </fieldset>
-        <fieldset>
             <div>
                 <label for="room">*Room Identifier</label>
-                <input id="room" name="room" type="text" placeholder="105 / IT LAB 01">
+                <input id="room" name="room" type="text" required readonly placeholder="Auto Fetched">
             </div>
             <div>
                 <label for="capacity">*Capacity</label>
-                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc">
+                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc" required autofocus>
             </div>
         </fieldset>
         <div class="btn-grp">
-            <button class="secondary btn" id="sndyBtn" onclick="$('form').trigger('reset');" type="reset">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="add_classroom(event);">Create</button>
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="primary btn" id="prmyBtn" onclick="" type="button">Update</button>
         </div>
     </form>
 </div>
@@ -51,7 +41,7 @@
                 <td>Floor</td>
                 <td>Room</td>
                 <td>Capacity</td>
-                <td>Date Created</td>
+                <td>Status</td>
                 <td>Actions</td>
             </tr>
         </thead>
@@ -60,62 +50,40 @@
     </table>
 </div>
 <script>
-async function add_classroom(event) {
-    console.log(event);
-    event.preventDefault();
-    const closestForm = event.target.closest('form');
-    const formData = new FormData(closestForm);
-    formData.append('formType', 'add_classroom');
-    console.log(formData)
-    
-    $.ajax({
-        url: 'api.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: "json"
-    })
-    .done(function(result) {
-        console.log(result);
-        closestForm.reset();
-        showInfoInline(result.responseBody);
-        createClassroomTable();
-    })
-    .fail(function(xhr, status, error) {
-        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
-            showInfoInline(xhr.responseJSON.responseBody);
-        } else {
-            showInfoInline("An unexpected error occurred.");
-        }
-    });
-}
 
-async function prefillUpdateform(event){
-    event.preventDefault();
-    var recordId = $(event.currentTarget).attr('data-recordId');
+var form = document.getElementById('form');
+
+async function prefillUpdateform(recordId){
     var oldData = await get_one_classroom(recordId);
     var parsedOldData = await oldData.responseBody;
-    // await console.log(parsedOldData)
-    setTimeout(()=>{
-        turnOn();
-        $('#classroomId').attr('value', parsedOldData.CLASSROOM_ID);
-        $('#floor').attr('value', parsedOldData.FLOOR_NUMBER);
-        $('#room').attr('value',parsedOldData.ROOM_NUMBER);
-        $('#capacity').attr('value',parsedOldData.CAPACITY);
-        $('#prmyBtn').text('Update');
-        $('#prmyBtn').attr('data-recordId',parsedOldData.CLASSROOM_ID);
-        $('#prmyBtn').attr('onclick','update_classroom(event)');
-        showInfoInline("Update Form Ready");
-    },1000);
+    turnOn();
+    $('#classroomId').attr('value', parsedOldData.CLASSROOM_ID);
+    $('#floor').attr('value', parsedOldData.FLOOR_NUMBER);
+    $('#room').attr('value',parsedOldData.ROOM_NUMBER);
+    $('#capacity').prop('checked',parsedOldData.CAPACITY);
+    $('#capacity').focus();
+    $('#prmyBtn').text('Update');
+    $('#prmyBtn').attr('data-recordId',parsedOldData.CLASSROOM_ID);
+    $('#prmyBtn').attr('onclick','update_classroom('+recordId+')');
+    $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
+    showInfoInline("Update Form Ready");
 }
 
-async function update_classroom(event) {
-    event.preventDefault();
-    const closestForm = event.target.closest('form');
-    const formData = new FormData(closestForm);
-    formData.append('formType', 'update_classroom');
+function cancelPrefilledUpdateform(){
+    form.reset();    
+    $('#classroomId').val("");
+    $('#floor').val("");
+    $('#room').val("");
+    $('#capacity').val("");
+    $('#lecture').prop("checked",true);
+    $('#sndyBtn').attr('onclick','form.reset()');
+}
 
+async function update_classroom(recordId){
+    debugger;
+    const formData = new FormData(form);
+    console.log(formData);
+    formData.append('formType','update_classroom');
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -125,12 +93,14 @@ async function update_classroom(event) {
         dataType: "json"
     })
     .done(function(result) {
-        closestForm.reset();
+        cancelPrefilledUpdateform();
+        turnOff();
         showInfoInline(result.responseBody);
         createClassroomTable();
     })
-    .fail(function(xhr, status, error) {
-        // When status code is 422, 429, or 400, responseJSON is available
+    .fail(function(xhr, status, error) {   
+        // When status code is 429 or 400, responseJSON is available        
+        cancelPrefilledUpdateform();
         if (xhr.responseJSON && xhr.responseJSON.responseBody) {
             showInfoInline(xhr.responseJSON.responseBody);
         } else {
@@ -140,7 +110,6 @@ async function update_classroom(event) {
 }
 
 async function get_one_classroom(classroomId) {
-    event.preventDefault();
     const formData = new FormData();
     formData.append('formType', 'get_one_classroom');
     formData.append('classroomId', classroomId);
@@ -154,42 +123,31 @@ async function get_one_classroom(classroomId) {
     return result;
 }
 
-async function delete_classroom(recordId) {
-    const formData = new FormData();
-    formData.append('formType', 'delete_classroom');
-    formData.append('classroomId', recordId);
-    const result = await $.ajax({
-        url: 'api.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false
-    });
-    showInfoInline(result.responseBody);
-    await createClassroomTable();
-    return result;
-}
 
 async function createClassroomTable(){
-    const rooms = await load_existing('classroom');
+    const slots = await load_existing('classroom');
     var count = 1;
     $('.recordTable').html('');
-    (rooms.responseBody).forEach(element => {
+    (slots.responseBody).forEach(element => {
         var template =
-            '<tr>' +
-            '<td>' + count++ + '</td>' +
-            '<td>' + element[0] + '</td>' +
-            '<td>' + element[1] + '</td>' +
-            '<td>' + element[2] + '</td>' +
-            '<td>' + element[3] + '</td>' +
-            '<td>' + element[4] + '</td>' +
-            '<td>' +
-            '<button class="btn primary" data-recordId="' + element[0] + '" onclick="prefillUpdateform(event);">update</button>' +
-            '<button class="btn secondary" data-recordId="' + element[0] + '" onclick="confirmDeleteDialog(`Delete ?`,`confirm the delete operations`,'+element[0]+',delete_classroom);">Delete</button>' +
-            '</td>' +
-            '</tr>';
+            `<tr>
+                <td>${count++}</td>
+                <td>${element[0]}</td>
+                <td>${element[1]}</td>
+                <td>${element[2]}</td>
+                <td>${element[3]}</td>
+                <td>
+                    ${element[3] == null ? 
+                    `<span class="chip chip-red">capacity required</span>`:
+                    `<span class="chip chip-green">Ready</span>`}
+                </td>
+                <td>
+                    <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
+                </td>
+            </tr>`;
         $('.recordTable').append('<tr>'+template+'</tr>');
     });
 }
+
 createClassroomTable();
 </script>

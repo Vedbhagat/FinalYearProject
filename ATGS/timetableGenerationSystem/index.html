@@ -17,14 +17,14 @@
                 <select id="navigator" class="navigator dropdown" on name="" id="">
                     <option id="dashboard" value="" data-loc="sections/dashboard.html" selected>Dashboard</option>
                     <option id="classroom" value="" data-loc="sections/classroom.html">Classrooms</option>
-                    <option id="course" value="" data-loc="sections/course.html">Courses</option>
+                    <option id="course" disabled value="" data-loc="sections/course.html">Courses</option>
                     <option id="department" value="" data-loc="sections/department.html">Departments</option>
-                    <option id="division" value="" data-loc="sections/division.html">Divisions</option>
+                    <option id="division" disabled value="" data-loc="sections/division.html">Divisions</option>
                     <option id="programme" value="" data-loc="sections/programme.html">Programmes</option>
                     <option id="teacher" value="" data-loc="sections/teacher.html">Teachers</option>
-                    <option id="teacherWorkload" value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
+                    <option id="teacherWorkload" disabled value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
                     <option id="timeslot" value="" data-loc="sections/timeslot.html">Timeslot</option>
-                    <option id="timetable" value="" data-loc="sections/timetable.html">Timetable</option>
+                    <option id="timetable" disabled value="" data-loc="sections/timetable.html">Timetable</option>
                 </select>
             </div>
             <div class="header-menu">
@@ -45,14 +45,16 @@
 <script>
        
     $(document).ready(function(){
-        $("#MainContents").load('sections/dashboard.html');
+        $("#MainContents").load('sections/programme.html');
         $(".navigator").change(
             function () {
                 var currentlyViewing = $(".navigator>option:selected").attr("data-loc");
                 $("#MainContents").load(currentlyViewing);
             }
         );
+        
     });
+    
     async function load_existing(tablename){
         const formData = new FormData();
         formData.append('formType', 'load_existing');
@@ -110,14 +112,26 @@
             form.css('display','block');
         }  
     }
-
+    
     function showInfoInline(infoBody){
         const info = $(`<p id="formInfoLine" class="none" ><span>${infoBody}</span></p>`);
         $('body').append(info);
-        setTimeout(()=>{info.remove();},3000);
+        setTimeout(()=>{info.remove();},2500);
     }   
 
-
+    async function getPrerequisits(){
+        const formData = new FormData();
+            formData.append('formType', 'getMinimalJson');
+            const result = await $.ajax({
+                url: 'api.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            });
+            // console.log(result);
+            return result;
+    }
     
 </script>
 </html>

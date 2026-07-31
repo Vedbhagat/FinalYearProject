@@ -3,8 +3,7 @@ include 'dbConnect.php';
 echo "Creating Tables";
 
 
-function runquery($connection, $query, $tablename)
-{
+function runquery($connection, $query, $tablename){
   echo "<br>Creating " . $tablename . " table...<br>";
   try {
     $stmt = $connection->query($query);
@@ -13,24 +12,34 @@ function runquery($connection, $query, $tablename)
     echo "  Error creating " . $tablename . " table..." . $e->getMessage() . "<br>";
   }
 }
-
+function AddClassrooms($connection,$classroom){
+  foreach($classroom as $room){
+    $query = "INSERT INTO CLASSROOM (FLOOR_NUMBER,ROOM_NUMBER) VALUES('{$room[0]}',{$room[1]})";
+    $result = $connection -> query($query);
+    if($connection->affected_rows==1){
+      echo "Added classroom as ". $room[0] .' - ' .$room[1] .'<br>';
+    }
+    else{
+      echo "Couldn't add classroom as ". $room[0] .' - ' .$room[1] .'<br>';
+    }
+  }
+}
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS CLASSROOM(
         CLASSROOM_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         FLOOR_NUMBER VARCHAR(15) NOT NULL,
-        ROOM_NUMBER INT NOT NULL UNIQUE,
-        CAPACITY INT NOT NULL,
-        DATE_CREATED DATE NOT NULL DEFAULT CURRENT_DATE
+        ROOM_NUMBER VARCHAR(15) NOT NULL UNIQUE,
+        CAPACITY INT
       );
     ", "Classroom");
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS TIMESLOT(
         SLOT_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-        START_TIME TIME NOT NULL UNIQUE,
-        END_TIME TIME NOT NULL UNIQUE,
-        ISBREAK BOOLEAN NOT NULL DEFAULT FALSE,
-        DATE_CREATED DATE NOT NULL DEFAULT CURRENT_DATE
+        START_TIME TIME NOT NULL,
+        END_TIME TIME NOT NULL,
+        WEEK_DAY ENUM('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY') NOT NULL,
+        SLOT_TYPE VARCHAR(15) NOT NULL DEFAULT 'LECTURE'
       );
     ", "Timeslot");
 
@@ -38,7 +47,6 @@ runquery($conn, "
       CREATE TABLE IF NOT EXISTS USER(
         USERNAME VARCHAR(31) NOT NULL PRIMARY KEY,
         PASSWORD VARCHAR(255) NOT NULL,
-        DATE_CREATED DATE NOT NULL DEFAULT CURRENT_DATE,
         ISBLOCKED BOOLEAN DEFAULT FALSE,
         ISDELETED BOOLEAN DEFAULT FALSE,
         LOGIN_TIME DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -52,7 +60,6 @@ runquery($conn, "
         USERNAME VARCHAR(31),
         LONG_NAME VARCHAR(63) NOT NULL,
         SHORT_NAME VARCHAR(31) NOT NULL,
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         CONSTRAINT fk_usrnm_deptTbl
         FOREIGN KEY (USERNAME) 
@@ -69,7 +76,6 @@ runquery($conn, "
         FIRST_NAME VARCHAR(15) NOT NULL,
         LAST_NAME VARCHAR(15) NOT NULL,
         ISPARTTIME BOOLEAN NOT NULL DEFAULT(0),
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         CONSTRAINT fk_deptId_tchrTbl
         FOREIGN KEY (DEPARTMENT_ID) 
@@ -108,7 +114,6 @@ runquery($conn, "
         LONG_NAME VARCHAR(63) NOT NULL,
         SHORT_NAME VARCHAR(15) NOT NULL,
         DIVISION_COUNT INT NOT NULL DEFAULT(0),
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         CONSTRAINT fk_deptId_pgrmTbl 
         FOREIGN KEY (DEPARTMENT_ID) 
@@ -124,7 +129,6 @@ runquery($conn, "
         PROGRAMME_ID INT,
         NAME CHAR NOT NULL,
         STUDENT_COUNT INT NOT NULL DEFAULT(0),
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         CONSTRAINT fk_pgrmId_dvsnTbl 
         FOREIGN KEY (PROGRAMME_ID) 
@@ -142,7 +146,6 @@ runquery($conn, "
         SHORT_NAME VARCHAR(15) NOT NULL,
         WEEKLY_LECTURES INT NOT NULL,
         ISPRACTICAL BOOLEAN DEFAULT 0,
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         CONSTRAINT fk_pgrmId_crseTbl 
         FOREIGN KEY (PROGRAMME_ID) 
@@ -186,7 +189,6 @@ runquery($conn, "
         COURSE_ID INT,
         DIVISION_ID INT,
         LECTURE_COUNT INT NOT NULL DEFAULT(0),
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
         
         PRIMARY KEY(TEACHER_ID,COURSE_ID,DIVISION_ID),
 
@@ -220,7 +222,6 @@ runquery($conn, "
         TEACHER_ID INT,
         ACADEMIC_YEAR VARCHAR(7) NOT NULL,
         SEMESTER VARCHAR(4) NOT NULL,
-        DATE_CREATED DATE NOT NULL DEFAULT(CURRENT_DATE),
 
         PRIMARY KEY(COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, TEACHER_ID, ACADEMIC_YEAR, SEMESTER),
 
@@ -259,5 +260,14 @@ runquery($conn, "
 
 
 
+$rooms = [
+  ['Ground Floor',001],
+  ['Ground Floor',002],
+  ['First Floor',101],
+  ['First Floor',102],
+  ['Second Floor',201],
+  ['Second Floor',202]
+];
+AddClassrooms($conn,$rooms);
 
 
