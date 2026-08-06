@@ -46,14 +46,15 @@
         </caption>
         <thead>
             <tr>
-                <td >sr no</td>
+                <td >Sr No</td>
+                <td >UID</td>
                 <td >Department</td>
                 <td >Teacher name</td>
                 <td >Part Time</td>
                 <td >Actions</td>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="recordTable">
         </tbody>
     </table>
 </div>
@@ -77,7 +78,7 @@ function togglePartTimeDay(event){
     timepicker.style.display = event.target.checked ? "flex" : "none";
 }
 async function makePartTimeDay() {
-    // console.log("In the maker function");
+    console.log("In the maker function");
     const result = await load_existing("timeslot");
     const days = [
         "Monday",
@@ -138,17 +139,17 @@ async function makePartTimeDay() {
     });
 }
 async function extractDepartment() {
-    const minimalData = await getPrerequisits();
-    const depts = minimalData.responseBody.departments;
+    const minimalData = await getPrerequisits('department');
+    const depts = await minimalData.responseBody.departments;
     const departmentSelect = $('#departmentDropdown');
-    depts.forEach(dept => {
+    await depts.forEach(dept => {
         departmentSelect.append(`
-            <option value="${dept.Department_id}">
-                ${dept.Long_name}
+            <option value="${dept.DEPARTMENT_ID}">
+                ${dept.LONG_NAME}
             </option>
         `);
     });
-    departmentSelect.prop('disabled', false);
+    await departmentSelect.prop('disabled', false);
 }
 
 makePartTimeDay();
@@ -159,12 +160,12 @@ var form = document.getElementById('form');
 
 async function add_teacher() {
     console.log("Adding new Teacher");
-    debugger;
     if(!form.checkValidity()){
         // form.reportValidity();
         // return;
     };
     const formData = new FormData(form);
+    formData.append('formCategory', 'teacher');
     formData.append('formType', 'add_teacher');
     
     $.ajax({
@@ -188,25 +189,108 @@ async function add_teacher() {
         }
     });
 }
+
+async function get_one_teacher(teacherId){
+    const formData = new FormData();
+    formData.append("formCategory","teacher");
+    formData.append("formType","get_one_teacher");
+    formData.append("teacherId",teacherId);
+    return await $.ajax({
+        url:"api.php",
+        type:"POST",
+        data:formData,
+        processData:false,
+        contentType:false
+    });
+
+}
+
 async function prefillUpdateform(recordId){
-    var oldData = await get_one_timeslot(recordId);
+    var oldData = await get_one_teacher(recordId);
     var parsedOldData = await oldData.responseBody;
     turnOn();
-    $('#departmentId').attr('value', parsedOldData.TEACHER_ID);
-    $('#fname').attr('value', parsedOldData.FIRST_NAME);
-    $('#lname').attr('value',parsedOldData.LAST_NAME);
-    $('#isPartTime').prop('checked',parsedOldData.ISPARTTIME ? 'true':'false');
-    if($('#isPartTime').prop('checked')){
-        if($('#monday').prop('checked')){
-            ///pending from here
-        }
-    }
-
+    $('#teacherId').val(parsedOldData.TEACHER_ID);
+    $('#fname').val(parsedOldData.FIRST_NAME);
+    $('#lname').val(parsedOldData.LAST_NAME);
+    $('#isPartTime').prop('checked', parsedOldData.ISPARTTIME == 1);
+    togglePartTimeSection();
     $('#prmyBtn').text('Update');
     $('#prmyBtn').attr('data-recordId',parsedOldData.TEACHER_ID);
     $('#prmyBtn').attr('onclick','update_teacher('+recordId+')');
     $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
     showInfoInline("Update Form Ready");
 }
+
+function cancelPrefilledUpdateform(){
+    form.reset();
+    $('#teacherId').val("");
+    $('#prmyBtn').text("Create");
+    $('#prmyBtn').attr("onclick","add_teacher()");
+    $('#sndyBtn').attr("onclick","resetForm()");
+    togglePartTimeSection();
+}
+
+async function update_teacher(){
+    const formData = new FormData(form);
+    formData.append("formCategory","teacher");
+    formData.append("formType","update_teacher");
+    $.ajax({
+        url:"api.php",
+        type:"POST",
+        data:formData,
+        processData:false,
+        contentType:false,
+        dataType:"json"
+    })
+    .done(function(result){
+        cancelPrefilledUpdateform();
+        showInfoInline(result.responseBody);
+        createTeacherTable();
+    })
+    .fail(function(xhr){
+        if(xhr.responseJSON) showInfoInline(xhr.responseJSON.responseBody);
+        else showInfoInline("Unexpected Error");
+    });
+}
+
+async function delete_teacher(recordId){
+    const formData = new FormData();
+    formData.append("formCategory","teacher");
+    formData.append("formType","delete_teacher");
+    formData.append("teacherId",recordId);
+    const result = await $.ajax({
+        url:"api.php",
+        type:"POST",
+        data:formData,
+        processData:false,
+        contentType:false
+    });
+    showInfoInline(result.responseBody);
+    createTeacherTable();
+}
+
+async function createTeacherTable(){
+    const slots = await load_existing('teacher');
+    var count = 1;
+    $('.recordTable').html('');
+    (slots.responseBody).forEach(element => {
+        console.log("Createing Teacher")
+        var template =
+            `<tr>
+                <td>${count++}</td>
+                <td>${element[0]}</td>
+                <td>${element[1]}</td>
+                <td>${element[2] + " " + element[3]}</td>
+                <td>${element[4]}</td>
+                <td>
+                    <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
+                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_department);">Delete</button>
+                </td>
+            </tr>`;
+        $('.recordTable').append('<tr>'+template+'</tr>');
+    });
+}
+
+createTeacherTable();
 
 </script>

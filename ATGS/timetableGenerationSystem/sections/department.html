@@ -79,12 +79,13 @@ async function add_department() {
 }
 
 async function prefillUpdateform(recordId){
+    debugger;
     var oldData = await get_one_department(recordId);
     var parsedOldData = await oldData.responseBody;
     turnOn();
-    $('#departmentId').attr('value', parsedOldData.DEPARTMENT_ID);
-    $('#fullname').attr('value', parsedOldData.LONG_NAME);
-    $('#shortname').attr('value',parsedOldData.SHORT_NAME);
+    $('#departmentId').val( parsedOldData.DEPARTMENT_ID);
+    $('#fullname').val( parsedOldData.LONG_NAME);
+    $('#shortname').val(parsedOldData.SHORT_NAME);
     $('#fullname').focus(); 
     $('#prmyBtn').text('Update');
     $('#prmyBtn').attr('data-recordId',parsedOldData.SLOT_ID);
@@ -115,13 +116,12 @@ async function update_department(recordId){
         dataType: "json"
     })
     .done(function(result) {
-        // form.reset();
+        form.reset();
         cancelPrefilledUpdateform();
         showInfoInline(result.responseBody);
         createDepartmentTable();
     })
-    .fail(function(xhr, status, error) {  
-        cancelPrefilledUpdateform();
+    .fail(function(xhr, status, error) { 
         if (xhr.responseJSON && xhr.responseJSON.responseBody) {
             showInfoInline(xhr.responseJSON.responseBody);
         }else {

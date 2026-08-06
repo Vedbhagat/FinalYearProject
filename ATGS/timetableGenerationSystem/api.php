@@ -5,6 +5,7 @@ use LDAP\Result;
 include_once 'dbConnect.php';
 header('Content-Type: application/json');
 
+$formCategory = $_REQUEST['formCategory'] ?? '';
 $formtype = $_REQUEST['formType'] ?? '';
 $user_id = $_SESSION['user_id'] ?? null;
 
@@ -78,7 +79,7 @@ function validateTimeslot($startTime, $endTime, $slotType, $slotId = null) {
 }
 function isValidName(string $str){
     $containsNumber = preg_match('/[0-9]/',trim($str)) === 1;
-    $containsSpecChar = preg_match('/[\'^£$%&*()}{@#~?><>,|=_+¬-]/',trim($str)) === 1;
+    $containsSpecChar = preg_match('/[\'^£$%&*()!}{@#~?><>,|=_+¬-]/',trim($str)) === 1;
     return !($containsNumber || $containsSpecChar);
 }
 function validateClassroom($floor,$room,$capacity){
@@ -109,109 +110,39 @@ function validateDepartment($fullname,$shortname){
 
 
 try {
-    switch ($formtype) {
-        case 'getMinimalJson':
-            $generatedJSON = [
-                "timeslots"  => [],
-                "classrooms" => [],
-                "departments" => []
-            ];
-            $timeslot = "SELECT slot_id, Start_time, End_time, Slot_type FROM TIMESLOT;";
-            $classroom = "SELECT Classroom_id, floor_number, room_number, capacity FROM CLASSROOM;";
-            $department = "SELECT Department_id, Long_name FROM DEPARTMENT;";
-            $teacher = "SELECT teacher_id, Department_id, first_name, last_name FROM TEACHER;";
-            $programme = "SELECT programme_id, Department_id, long_name, short_name FROM PROGRAMME;";
-            $division = "SELECT division_id, programme_id, NAME FROM DIVISION;";
-            $course = "SELECT course_id, programme_id, long_name, short_name, isPractical FROM COURSE;";
-
-            $result = mysqli_query($conn, $timeslot);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $generatedJSON["timeslots"][] = $row;
-            }
-            // Classrooms
-            $result = mysqli_query($conn, $classroom);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $generatedJSON["classrooms"][] = $row;
-            }
-            // Departments
-            $deptIndex = [];
-            $result = mysqli_query($conn, $department);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $row["teachers"] = [];
-                $row["programmes"] = [];
-                $generatedJSON["departments"][] = $row;
-                $deptIndex[$row["Department_id"]] =
-                    count($generatedJSON["departments"]) - 1;
-            }
-            // Teachers
-            $result = mysqli_query($conn, $teacher);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $deptId = $row["Department_id"];
-                if (isset($deptIndex[$deptId])) {
-                    $generatedJSON["departments"]
-                        [$deptIndex[$deptId]]
-                        ["teachers"][] = $row;
-                }
-            }
-            // Programmes
-            $programmeIndex = [];
-            $result = mysqli_query($conn, $programme);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $deptId = $row["Department_id"];
-                $row["divisions"] = [];
-                $row["courses"] = [];
-                if (isset($deptIndex[$deptId])) {
-                    $generatedJSON["departments"]
-                        [$deptIndex[$deptId]]
-                        ["programmes"][] = $row;
-                    $progPosition = count(
-                        $generatedJSON["departments"]
-                        [$deptIndex[$deptId]]
-                        ["programmes"]
-                    ) - 1;
-                    $programmeIndex[$row["programme_id"]] = [
-                        "dept" => $deptIndex[$deptId],
-                        "prog" => $progPosition
-                    ];
-                }
-            }
-            // Divisions
-            $result = mysqli_query($conn, $division);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $progId = $row["programme_id"];
-                if (isset($programmeIndex[$progId])) {
-                    $loc = $programmeIndex[$progId];
-                    $generatedJSON["departments"]
-                        [$loc["dept"]]
-                        ["programmes"]
-                        [$loc["prog"]]
-                        ["divisions"][] = $row;
-                }
-            }
-            // Courses
-            $result = mysqli_query($conn, $course);
-            while ($row = mysqli_fetch_assoc($result)) {
-                $progId = $row["programme_id"];
-                if (isset($programmeIndex[$progId])) {
-                    $loc = $programmeIndex[$progId];
-                    $generatedJSON["departments"]
-                        [$loc["dept"]]
-                        ["programmes"]
-                        [$loc["prog"]]
-                        ["courses"][] = $row;
-                }
-            }
+    if($formCategory == 'getMinimalData'){
+        global $conn;
+        $response = [];
+        if($formtype == 'department'){
+            $sql = "SELECT DEPARTMENT_ID, LONG_NAME, SHORT_NAME FROM DEPARTMENT ORDER BY LONG_NAME";
+            $result = mysqli_query($conn, $sql);
+            $response['departments'] = [];
+            while($row = mysqli_fetch_assoc($result)) {$response['departments'][] = $row;}
+        }
+        elseif($formtype == 'programme'){
+            $sql = "SELECT PROGRAMME_ID, LONG_NAME, SHORT_NAME FROM PROGRAMME ORDER BY LONG_NAME";
+            $result = mysqli_query($conn, $sql);
+            $response['programmes'] = [];
+            while($row = mysqli_fetch_assoc($result)) {$response['programmes'][] = $row;}
+        }
+        elseif($formtype == 'classroom'){
+            $sql = "SELECT CLASSROOM_ID, ROOM_NUMBER FROM CLASSROOM ORDER BY ROOM_NUMBER";
+            $result = mysqli_query($conn, $sql);
+            $response['classrooms'] = [];
+            while($row = mysqli_fetch_assoc($result)) {$response['classrooms'][] = $row;}
+        }    
             header('Content-Type: application/json');
-            sendJsonResponse(200, "The Minimal JSON generated", $generatedJSON);
-            break;
-        case 'load_existing':
-            $tablename = $_POST['tablename'];
-            $query = "SELECT * FROM ". $tablename;
-            $result = $conn->execute_query($query);
-            $parsedResult = $result->fetch_all();
-            sendJsonResponse(200,'Existing Data of '.$tablename.' table',$parsedResult);
-            break;
-        case 'add_timeslot':
+            sendJsonResponse(200, "The Minimal JSON generated", $response);
+    }
+    elseif($formCategory == 'load_existing'){
+        $tablename = $_POST['tablename'];
+        $query = "SELECT * FROM ". $tablename;
+        $result = $conn->execute_query($query);
+        $parsedResult = $result->fetch_all();
+        sendJsonResponse(200,'Existing Data of '.$tablename.' table',$parsedResult);
+    }
+    elseif($formCategory == 'timeslot'){
+        if($formtype == 'add_timeslot'){
             $startTime = $_POST['startTime'] ?? '';
             $endTime = $_POST['endTime'] ?? '';
             $slotType = $_POST['slotType'] ?? "lecture";
@@ -219,11 +150,9 @@ try {
             $isValid = validateTimeslot($startTime, $endTime, $slotType);
 
             if ($isValid === 1) {
-                $query = "INSERT INTO TIMESLOT(START_TIME, END_TIME, WEEK_DAY, SLOT_TYPE) VALUES(?,?,?,?)";
-                for($i=1; $i < 7; $i++){
-                    $result = $conn->execute_query($query, [$startTime, $endTime, $i, $slotType]);
-                }
-                if (mysqli_affected_rows($conn) == 6) {
+                $query = "INSERT INTO TIMESLOT(START_TIME, END_TIME, SLOT_TYPE) VALUES(?,?,?)";
+                $result = $conn->execute_query($query, [$startTime, $endTime, $slotType]);
+                if (mysqli_affected_rows($conn) == 1) {
                     sendJsonResponse(201, 'Created', 'Timeslot created successfully');
                 } else {
                     sendJsonResponse(400, 'Try again', "Couldn't create timeslot");
@@ -239,9 +168,8 @@ try {
             } else {
                 sendJsonResponse(400, 'Invalid Input', 'Start Time or End Time is invalid.');
             }
-            break;
-        
-        case 'get_one_timeslot': 
+        }
+        elseif($formtype == 'get_one_timeslot'){ 
             $slotId = $_POST['slotId'];
             $query = "SELECT * FROM timeslot WHERE slot_id = ?;";
             $result = $conn->execute_query($query,[$slotId]);
@@ -250,8 +178,8 @@ try {
                 exit;
             }
             sendJsonResponse(400,"Timeslot NOT found.");
-            break;
-        case 'update_timeslot':
+        }
+        elseif($formtype == 'update_timeslot'){
             $slotId = $_POST['slotId'] ?? null;
             $startTime = $_POST['startTime'] ?? '';
             $endTime = $_POST['endTime'] ?? '';
@@ -274,8 +202,8 @@ try {
             } else {
                 sendJsonResponse(400, 'Invalid Input', 'Entered values are not valid.');
             }
-            break;
-        case 'delete_timeslot':
+        }
+        elseif($formtype == 'delete_timeslot'){
             $slotId = $_POST['slotId'];
             
             $query = "SELECT * FROM TIMESLOT WHERE SLOT_ID = ?";
@@ -290,14 +218,10 @@ try {
             }else{
                 sendJsonResponse(400,'Try again',"Couldn't update timeslot");
             }
-            break;
-        
-
-        
-        
-        
-        
-        case 'add_classroom':
+        }
+    }
+    elseif($formCategory == 'classroom'){
+        if($formtype == 'add_classroom'){
             $floor = $_POST['floor'] ?? '';
             $room = $_POST['room'] ?? '';
             $capacity = $_POST['capacity'] ?? '';
@@ -320,18 +244,18 @@ try {
             }else {
                 sendJsonResponse(429, 'Invalid Classroom', 'Entered values are not valid');
             }
-            break;
-        case 'get_one_classroom': 
-            $classroomId = $_POST['classroomId'];
-            $query = "SELECT * FROM CLASSROOM WHERE classroom_id = ?;";
-            $result = $conn->execute_query($query,[$classroomId]);
-            if($result->num_rows>0){
-                sendJsonResponse(200,"Classroom found.",$result->fetch_assoc());
-                exit;
-            }
-            sendJsonResponse(404,"Classroom not found.");
-            break;
-        case 'update_classroom':
+        }
+        elseif($formtype == 'get_one_classroom'){ 
+                $classroomId = $_POST['classroomId'];
+                $query = "SELECT * FROM CLASSROOM WHERE classroom_id = ?;";
+                $result = $conn->execute_query($query,[$classroomId]);
+                if($result->num_rows>0){
+                    sendJsonResponse(200,"Classroom found.",$result->fetch_assoc());
+                    exit;
+                }
+                sendJsonResponse(404,"Classroom not found.");
+        }
+        elseif($formtype ==  'update_classroom'){
             $classroomId = $_POST['classroomId'] ?? '';
             $floor = $_POST['floor'] ?? '';
             $room = $_POST['room'] ?? '';
@@ -356,24 +280,20 @@ try {
             } else {
                 sendJsonResponse(429, 'Invalid Classroom', 'Entered values are not valid');
             }
-            break;
-        case 'delete_classroom':
-            $classroomId = $_POST['classroomId'];
-            $query = "DELETE FROM CLASSROOM WHERE CLASSROOM_ID = ?";
-            $result = $conn->execute_query($query,[$classroomId]);
-            if (mysqli_affected_rows($conn)>0 ){
-                sendJsonResponse(200,'Deleted','Classroom deleted succesfully');
-            }else{
-                sendJsonResponse(400,'Try again',"Couldn't delete classroom");
-            }
-            break;
-        
-
-        
-        
-        
-        
-        case 'add_department':
+        }
+        elseif($formtype == 'delete_classroom'){
+                $classroomId = $_POST['classroomId'];
+                $query = "DELETE FROM CLASSROOM WHERE CLASSROOM_ID = ?";
+                $result = $conn->execute_query($query,[$classroomId]);
+                if (mysqli_affected_rows($conn)>0 ){
+                    sendJsonResponse(200,'Deleted','Classroom deleted succesfully');
+                }else{
+                    sendJsonResponse(400,'Try again',"Couldn't delete classroom");
+                }
+        }
+    }
+    elseif($formCategory == 'department'){
+        if($formtype == 'add_department'){
             $fullname = strtoupper($_POST['fullname'] ?? '');
             $shortname = strtoupper($_POST['shortname'] ?? '');
 
@@ -391,38 +311,38 @@ try {
             }else {
                 sendJsonResponse(429, 'Invalid Department', 'Entered values are not valid');
             }
-            break;
-        case 'get_one_department': 
-            $departmentId = $_POST['departmentId'];
-            $query = "SELECT * FROM DEPARTMENT WHERE DEPARTMENT_ID = ?;";
-            $result = $conn->execute_query($query,[$departmentId]);
-            if($result->num_rows>0){
-                sendJsonResponse(200,"Classroom found.",$result->fetch_assoc());
-                exit;
-            }
-            sendJsonResponse(404,"Classroom not found.");
-            break;
-        case 'update_department':
-            $departmentId = $_POST['departmentId'] ?? '';
-            $fullname = strtoupper($_POST['fullname'] ?? '');
-            $shortname = strtoupper($_POST['shortname'] ?? '');
-
-            $isValid = validateDepartment($fullname, $shortname);
-            if ($isValid === 1) {
-                $query = "UPDATE DEPARTMENT SET LONG_NAME = ?, SHORT_NAME = ? WHERE DEPARTMENT_ID = ?";
-                $result = $conn->execute_query($query, [$fullname, $shortname, $departmentId]);
-                if (mysqli_affected_rows($conn) > 0) {
-                    sendJsonResponse(201, 'Created', 'Department updated successfully');
-                } else {
-                    sendJsonResponse(400, 'Try again', "Couldn't update Department");
+        }
+        elseif($formtype ==  'get_one_department'){ 
+                $departmentId = $_POST['departmentId'];
+                $query = "SELECT * FROM DEPARTMENT WHERE DEPARTMENT_ID = ?;";
+                $result = $conn->execute_query($query,[$departmentId]);
+                if($result->num_rows>0){
+                    sendJsonResponse(200,"Department found.",$result->fetch_assoc());
+                    exit;
                 }
-            }elseif($isValid === 2){
-                sendJsonResponse(422,'Contains Special Characters','The department name contains invalid character.');
-            }else {
-                sendJsonResponse(429, 'Invalid Department', 'Entered values are not valid');
-            }
-            break;
-        case 'delete_department':
+                sendJsonResponse(404,"Department not found.");
+        }
+        elseif($formtype == 'update_department'){
+                $departmentId = $_POST['departmentId'] ?? '';
+                $fullname = strtoupper($_POST['fullname'] ?? '');
+                $shortname = strtoupper($_POST['shortname'] ?? '');
+
+                $isValid = validateDepartment($fullname, $shortname);
+                if ($isValid === 1) {
+                    $query = "UPDATE DEPARTMENT SET LONG_NAME = ?, SHORT_NAME = ? WHERE DEPARTMENT_ID = ?";
+                    $result = $conn->execute_query($query, [$fullname, $shortname, $departmentId]);
+                    if (mysqli_affected_rows($conn) > 0) {
+                        sendJsonResponse(201, 'Created', 'Department updated successfully');
+                    } else {
+                        sendJsonResponse(400, 'Try again', "Couldn't update Department");
+                    }
+                }elseif($isValid === 2){
+                    sendJsonResponse(422,'Contains Special Characters','The department name contains invalid character.');
+                }else {
+                    sendJsonResponse(429, 'Invalid Department', 'Entered values are not valid');
+                }
+        }
+        elseif($formtype == 'delete_department'){
             $departmentId = $_POST['departmentId'];
             $query = "DELETE FROM DEPARTMENT WHERE DEPARTMENT_ID = ?";
             $result = $conn->execute_query($query,[$departmentId]);
@@ -431,80 +351,231 @@ try {
             }else{
                 sendJsonResponse(400,'Try again',"Couldn't update timeslot");
             }
-            break;
-
-
-
-
-
-        case 'add_teacher':
-    
-            //$_POST['teacherId'] ?? '';
+        }        
+    }
+    elseif($formCategory == 'teacher'){
+        if ($formtype == 'add_teacher_old') {
             $deptId = $_POST['departmentDropdown'] ?? '';
-            $isPartTime = $_POST['isPartTime'] ?? '';
-            $availabilityArray = [];
-            $monOn = $_POST['monday'] ?? '';
-            if($isPartTime){
-                if($monOn){
-                    $monIn = $_POST['punchIn_monday'] ?? '';
-                    $monOut = $_POST['punchOut_monday'] ?? '';
-                    $availabilityArray[] = [$monIn,$monOut];
-                }
-                $tueOn = $_POST['tuesday'] ?? '';
-                if($tueOn){
-                    $tueIn = $_POST['punchIn_tuesday'] ?? '';
-                    $tueOut = $_POST['punchOut_tuesday'] ?? '';
-                    $availabilityArray[] = [$tueIn,$tueOut];
-                }
-                $wedOn = $_POST['wednesday'] ?? '';
-                if($wedOn){
-                    $wedIn = $_POST['punchIn_wednesday'] ?? '';
-                    $wedOut = $_POST['punchOut_wednesday'] ?? '';
-                    $availabilityArray[] = [$wedIn,$wedOut];
-                }
-                $thuOn = $_POST['thursday'] ?? '';
-                if($thuOn){
-                    $thuIn = $_POST['punchIn_thursday'] ?? '';
-                    $thuOut = $_POST['punchOut_thursday'] ?? '';
-                    $availabilityArray[] = [$thuIn,$thuOut];
-                    }
-                    $friOn = $_POST['friday'] ?? '';
-                if($friOn){
-                    $friIn = $_POST['punchIn_friday'] ?? '';
-                    $friOut = $_POST['punchOut_friday'] ?? '';
-                    $availabilityArray[] = [$friIn,$friOut];
-                }
-                $satOn = $_POST['saturday'] ?? '';
-                if($satOn){
-                    $satIn = $_POST['punchIn_saturday'] ?? '';
-                    $satOut = $_POST['punchOut_saturday'] ?? '';
-                }
-            }
-            print_r ($availabilityArray);
+            $fname = trim($_POST['fname'] ?? '');
+            $lname = trim($_POST['lname'] ?? '');
+            $isPartTime = isset($_POST['isPartTime']) ? 1 : 0;
 
-            if($isPartTime){
-                var_dump($_POST);
-                print_r($_POST);
+            if (!isValidName($fname) || !isValidName($lname)) {
+                sendJsonResponse(400, "Bad Request", "Invalid teacher name.");
+                exit;
             }
-            /*
-            $isValid = validateDepartment($fullname, $shortname);
-            if ($isValid === 1) {
-                $query = "INSERT INTO DEPARTMENT(LONG_NAME, SHORT_NAME) VALUES(?, ?)";
-                $result = $conn->execute_query($query, [$fullname, $shortname]);
-                if (mysqli_affected_rows($conn) > 0) {
-                    sendJsonResponse(201, 'Created', 'Department created successfully');
-                } else {
-                    sendJsonResponse(400, 'Try again', "Couldn't create Department");
+            $days = [
+                'monday' => 'MONDAY',
+                'tuesday' => 'TUESDAY',
+                'wednesday' => 'WEDNESDAY',
+                'thursday' => 'THURSDAY',
+                'friday' => 'FRIDAY',
+                'saturday' => 'SATURDAY'
+            ];
+            mysqli_begin_transaction($conn);
+        
+            $query = "INSERT INTO TEACHER (DEPARTMENT_ID,FIRST_NAME,LAST_NAME,ISPARTTIME) VALUES (?, ?, ?, ?)";
+
+            $conn->execute_query($query, [$deptId,$fname,$lname,$isPartTime]);
+            $teacherId = mysqli_insert_id($conn);
+            if ($isPartTime) {
+                foreach ($days as $dayKey => $weekday) {
+                    if (!isset($_POST[$dayKey]))
+                        continue;
+                    $startSlot = (int)$_POST["punchIn_$dayKey"];
+                    $endSlot   = (int)$_POST["punchOut_$dayKey"];
+                    if ($startSlot > $endSlot) {
+                        throw new Exception("$weekday: Punch In cannot be after Punch Out.");
+                    }
+                    for ($slot = $startSlot; $slot <= $endSlot; $slot++) {
+                        $conn->execute_query(
+                            "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
+                            [$teacherId,$slot,$weekday]
+                        );
+                    }
                 }
-            }elseif($isValid === 2){
-                sendJsonResponse(422,'Contains Special Characters','The department name contains invalid character.');
-            }else {
-                sendJsonResponse(429, 'Invalid Department', 'Entered values are not valid');
-            }*/
-            break;
-        case 'get_one_teacher':break;
-        case 'update_teacher':break;
-        case 'delete_teacher':
+            }
+            else {
+                $slotResult = $conn->execute_query(
+                    "SELECT SLOT_ID FROM TIMESLOT ORDER BY SLOT_ID"
+                );
+                $slots = [];
+                while ($row = mysqli_fetch_assoc($slotResult)) {
+                    $slots[] = $row['SLOT_ID'];
+                }
+                foreach ($days as $weekday) {
+                    foreach ($slots as $slotId) {
+                        $conn->execute_query(
+                            "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
+                            [$teacherId,$slotId,$weekday]
+                        );
+                    }
+                }
+            }
+            mysqli_commit($conn);
+            sendJsonResponse(201,"Created","Teacher created successfully.");         
+        }
+        elseif ($formtype == 'add_teacher') {
+
+    $deptId     = $_POST['departmentDropdown'] ?? '';
+    $fname      = trim($_POST['fname'] ?? '');
+    $lname      = trim($_POST['lname'] ?? '');
+    $isPartTime = isset($_POST['isPartTime']) ? 1 : 0;
+
+    if (empty($deptId) || empty($fname) || empty($lname)) {
+        sendJsonResponse(400, "Bad Request", "All required fields are mandatory.");
+    }
+
+    if (!isValidName($fname) || !isValidName($lname)) {
+        sendJsonResponse(400, "Bad Request", "Invalid teacher name.");
+    }
+
+    $days = [
+        'monday'    => 'MONDAY',
+        'tuesday'   => 'TUESDAY',
+        'wednesday' => 'WEDNESDAY',
+        'thursday'  => 'THURSDAY',
+        'friday'    => 'FRIDAY',
+        'saturday'  => 'SATURDAY'
+    ];
+
+    mysqli_begin_transaction($conn);
+
+    try {
+
+        // Insert Teacher
+        $query = "INSERT INTO TEACHER
+                  (DEPARTMENT_ID, FIRST_NAME, LAST_NAME, ISPARTTIME)
+                  VALUES (?, ?, ?, ?)";
+
+        $conn->execute_query($query, [
+            $deptId,
+            $fname,
+            $lname,
+            $isPartTime
+        ]);
+
+        $teacherId = mysqli_insert_id($conn);
+
+        if (!$teacherId) {
+            throw new Exception("Unable to create teacher.");
+        }
+
+        // ============================
+        // PART TIME TEACHER
+        // ============================
+        if ($isPartTime) {
+
+            foreach ($days as $dayKey => $weekday) {
+
+                if (!isset($_POST[$dayKey])) {
+                    continue;
+                }
+
+                $startSlot = (int)$_POST["punchIn_$dayKey"];
+                $endSlot   = (int)$_POST["punchOut_$dayKey"];
+
+                if ($startSlot > $endSlot) {
+                    throw new Exception("$weekday : Punch In must be before Punch Out.");
+                }
+
+                // Fetch actual slot ids
+                $slotResult = $conn->execute_query(
+                    "SELECT SLOT_ID
+                     FROM TIMESLOT
+                     WHERE SLOT_ID BETWEEN ? AND ?
+                     ORDER BY SLOT_ID",
+                    [$startSlot, $endSlot]
+                );
+
+                while ($slot = $slotResult->fetch_assoc()) {
+
+                    $conn->execute_query(
+                        "INSERT INTO AVAILABILITY
+                        (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS)
+                        VALUES (?,?,?,'AVAILABLE')",
+                        [
+                            $teacherId,
+                            $slot['SLOT_ID'],
+                            $weekday
+                        ]
+                    );
+                }
+            }
+
+        }
+
+        // ============================
+        // FULL TIME TEACHER
+        // ============================
+        else {
+
+            $slotResult = $conn->execute_query(
+                "SELECT SLOT_ID
+                 FROM TIMESLOT
+                 ORDER BY SLOT_ID"
+            );
+
+            $slots = [];
+
+            while ($row = $slotResult->fetch_assoc()) {
+                $slots[] = $row['SLOT_ID'];
+            }
+
+            foreach ($days as $weekday) {
+
+                foreach ($slots as $slotId) {
+
+                    $conn->execute_query(
+                        "INSERT INTO AVAILABILITY
+                        (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS)
+                        VALUES (?,?,?,'AVAILABLE')",
+                        [
+                            $teacherId,
+                            $slotId,
+                            $weekday
+                        ]
+                    );
+
+                }
+
+            }
+
+        }
+
+        mysqli_commit($conn);
+
+        sendJsonResponse(
+            201,
+            "Created",
+            "Teacher created successfully."
+        );
+
+    } catch (Exception $e) {
+
+        mysqli_rollback($conn);
+
+        sendJsonResponse(
+            500,
+            "Server Error",
+            $e->getMessage()
+        );
+
+    }
+
+}
+        elseif($formtype == 'get_one_teacher'){ 
+            $teacherId = $_POST['teacherId'];
+            $query = "SELECT * FROM TEACHER WHERE TEACHER_ID = ?;";
+            $result = $conn->execute_query($query,[$teacherId]);
+            if($result->num_rows>0){
+                sendJsonResponse(200,"Teacher found.",$result->fetch_assoc());
+                exit;
+            }
+            sendJsonResponse(404,"Teacher not found.");
+        }
+        elseif($formtype == 'update_teacher'){}
+        elseif($formtype == 'delete_teacher'){
             $teacherId = $_POST['teacherId'];
             $query = "DELETE FROM TEACHER WHERE TEACHER_ID = ?";
             $result = $conn->execute_query($query,[$teacherId]);
@@ -513,9 +584,11 @@ try {
             }else{
                 sendJsonResponse(400,'Try again',"Couldn't update timeslot");
             }
-            break;
-        
-    }
+        }
+    }      
+    
+
+    
 
 } catch (Throwable $e) {
     // Catch ALL exceptions/errors and return them as valid JSON

@@ -5,7 +5,7 @@
         <fieldset>
             <div>
                 <select class="dropdown myInput" name="department" id="department">
-                    <option value="" disabled selected>Select Department</option>
+                    <option value=""disabled selected>Select Department</option>
                     <option value="">Dept. of I.T</option>
                     <option value="">Dept. of A & F</option>
                     <option value="">Dept. of Science</option>
@@ -25,13 +25,12 @@
         </fieldset>
         <fieldset>
             <div>
+                <label for="duration">Duration of programme</label>
                 <select class="dropdown myInput" name="duration" id="duration">
                     <option value="" disabled selected>Select Duration</option>
                     <option value="1">One Year</option>
                     <option value="2">Two Years</option>
                     <option value="3" selected>Three Years</option>
-                    <option value="4">Four Years</option>
-                    <option value="5">Five Years</option>
                 </select>
             </div>
         </fieldset>
@@ -74,7 +73,7 @@ async function add_programme() {
     };
     const formData = new FormData(form);
     formData.append('formType', 'add_programme');
-
+    console.log(formData);
     $.ajax({
         url: 'api.php',
         type: 'POST',

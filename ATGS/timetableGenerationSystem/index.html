@@ -45,7 +45,7 @@
 <script>
        
     $(document).ready(function(){
-        $("#MainContents").load('sections/programme.html');
+        $("#MainContents").load('sections/TEACHER.html');
         $(".navigator").change(
             function () {
                 var currentlyViewing = $(".navigator>option:selected").attr("data-loc");
@@ -57,7 +57,7 @@
     
     async function load_existing(tablename){
         const formData = new FormData();
-        formData.append('formType', 'load_existing');
+        formData.append('formCategory', 'load_existing');
         formData.append('tablename', tablename);
         const result = await $.ajax({
             url: 'api.php',
@@ -119,9 +119,10 @@
         setTimeout(()=>{info.remove();},2500);
     }   
 
-    async function getPrerequisits(){
+    async function getPrerequisits(tablename){
         const formData = new FormData();
-            formData.append('formType', 'getMinimalJson');
+            formData.append('formCategory', 'getMinimalData');
+            formData.append('formType', tablename);
             const result = await $.ajax({
                 url: 'api.php',
                 type: 'POST',

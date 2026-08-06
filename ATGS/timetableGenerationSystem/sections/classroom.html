@@ -57,10 +57,11 @@ async function prefillUpdateform(recordId){
     var oldData = await get_one_classroom(recordId);
     var parsedOldData = await oldData.responseBody;
     turnOn();
-    $('#classroomId').attr('value', parsedOldData.CLASSROOM_ID);
-    $('#floor').attr('value', parsedOldData.FLOOR_NUMBER);
-    $('#room').attr('value',parsedOldData.ROOM_NUMBER);
-    $('#capacity').prop('checked',parsedOldData.CAPACITY);
+    debugger;
+    $('#classroomId').val( parsedOldData.CLASSROOM_ID);
+    $('#floor').val( parsedOldData.FLOOR_NUMBER);
+    $('#room').val(parsedOldData.ROOM_NUMBER);
+    $('#capacity').val(parsedOldData.CAPACITY);
     $('#capacity').focus();
     $('#prmyBtn').text('Update');
     $('#prmyBtn').attr('data-recordId',parsedOldData.CLASSROOM_ID);
@@ -70,12 +71,12 @@ async function prefillUpdateform(recordId){
 }
 
 function cancelPrefilledUpdateform(){
-    form.reset();    
+    form.reset();
+    turnOff();    
     $('#classroomId').val("");
     $('#floor').val("");
     $('#room').val("");
     $('#capacity').val("");
-    $('#lecture').prop("checked",true);
     $('#sndyBtn').attr('onclick','form.reset()');
 }
 
@@ -101,6 +102,7 @@ async function update_classroom(recordId){
     .fail(function(xhr, status, error) {   
         // When status code is 429 or 400, responseJSON is available        
         cancelPrefilledUpdateform();
+        turnOff();
         if (xhr.responseJSON && xhr.responseJSON.responseBody) {
             showInfoInline(xhr.responseJSON.responseBody);
         } else {
