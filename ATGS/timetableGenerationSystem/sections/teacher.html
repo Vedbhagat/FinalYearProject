@@ -2,7 +2,7 @@
 <div class="addnew-block" id="newTeacher">
     <p class="blockHeading">Add New Teacher</p>
     <form id="form" onsubmit="" method="POST">
-        <fieldset>
+        <fieldset hidden>
             <div>
                 <label for="teacherId">Teacher Id</label>
                 <input type="text" name="teacherId" id="teacherId" placeholder="Auto Generated (Disabled)" readonly>
@@ -18,16 +18,16 @@
         <fieldset>
             <div>
                 <label for="fname">*Teacher FirstName</label>
-                <input id="fname" type="text" name="fname" placeholder="John" required>
+                <input id="fname" type="text" name="fname" placeholder="John" required pattern="^[A-Za-z]+$"  title="Only Characters are allowed">
             </div>
             <div>
                 <label for="lname">*Techer LastName</label>
-                <input id="lname" type="text" name="lname" placeholder="Doe" required>
+                <input id="lname" type="text" name="lname" placeholder="Doe" required pattern="^[A-Za-z]+$"  title="Only Characters are allowed">
             </div>
         </fieldset>
         <fieldset>
             <div>
-                <input name="isPartTime" id="isPartTime" type="checkbox" onchange="togglePartTimeSection()" required="false">
+                <input name="isPartTime" id="isPartTime" type="checkbox" onchange="togglePartTimeSection()">
                 <span><label for="isPartTime">Part Time</label></span>
             </div>
             <div id="partTimeSection"></div> 
@@ -78,8 +78,7 @@ function togglePartTimeDay(event){
     timepicker.style.display = event.target.checked ? "flex" : "none";
 }
 async function makePartTimeDay() {
-    console.log("In the maker function");
-    const result = await load_existing("timeslot");
+    const result = await getPrerequisits("timeslot");
     const days = [
         "Monday",
         "Tuesday",
@@ -89,18 +88,19 @@ async function makePartTimeDay() {
         "Saturday"
     ];
     
-    const data = result.responseBody;
-    const punchInOptions = data.map(item =>
-        `<option value="${item[0]}">${item[1]}</option>`
-    ).join("");
-    const punchOutOptions = data.map(item =>
-        `<option value="${item[0]}">${item[2]}</option>`
-    ).join("");
-    // console.log(punchInOptions);
-    // console.log(punchOutOptions);
+    const data = await result.responseBody.timeslots;
+    // const data = result.responseBody.slots;
+    // console.log(data)
+    const punchInOptions = await data
+        .map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`)
+        .join("");
+
+    const punchOutOptions = await data
+        .map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`)
+        .join("");
+
     const container = $("#partTimeSection");
     container.html("");
-    // console.log("creatind day wise item");
     days.forEach(day => {
         
         const id = day.toLowerCase();
@@ -118,7 +118,7 @@ async function makePartTimeDay() {
                 <div class="timePicker" style="display:none">
                     <p>
                         <label>Punch In</label>
-                        <select name="punchIn_${id}" id="punchIn_${id}" class="dropdown myInput" required>
+                        <select name="punchIn_${id}" id="punchIn_${id}" class="dropdown myInput" onchange="makePunchOutTime(this)">
                             <option value="" selected disabled>00:00:00</option>
                             ${punchInOptions}
                         </select>
@@ -128,7 +128,7 @@ async function makePartTimeDay() {
 
                     <p>
                         <label>Punch Out</label>
-                        <select name="punchOut_${id}" id="punchOut_${id}" class="dropdown myInput" required>
+                        <select name="punchOut_${id}" id="punchOut_${id}" class="dropdown myInput">
                             <option value="" selected disabled>00:00:00</option>
                             ${punchOutOptions}
                         </select>
@@ -138,19 +138,37 @@ async function makePartTimeDay() {
         `);
     });
 }
+
+function makePunchOutTime(select) {
+    const startSlot = parseInt($(select).val());
+    const day = $(select).attr("id").replace("punchIn_", "");
+    const punchOut = $(`#punchOut_${day}`);
+
+    punchOut.val("");
+
+    punchOut.find("option").each(function () {
+        const endSlot = parseInt($(this).val());
+
+        if (!isNaN(endSlot)) {
+            $(this).prop("disabled", endSlot < startSlot);
+        }
+    });
+}
+
 async function extractDepartment() {
     const minimalData = await getPrerequisits('department');
     const depts = await minimalData.responseBody.departments;
     const departmentSelect = $('#departmentDropdown');
     await depts.forEach(dept => {
         departmentSelect.append(`
-            <option value="${dept.DEPARTMENT_ID}">
+            <option value=${dept.DEPARTMENT_ID}>
                 ${dept.LONG_NAME}
             </option>
         `);
     });
     await departmentSelect.prop('disabled', false);
 }
+
 
 makePartTimeDay();
 extractDepartment();
@@ -161,8 +179,8 @@ var form = document.getElementById('form');
 async function add_teacher() {
     console.log("Adding new Teacher");
     if(!form.checkValidity()){
-        // form.reportValidity();
-        // return;
+        form.reportValidity();
+        return;
     };
     const formData = new FormData(form);
     formData.append('formCategory', 'teacher');
@@ -179,7 +197,7 @@ async function add_teacher() {
     .done(function(result) {
         showInfoInline(result.responseBody);
         form.reset();
-        createTimeslotTable();
+        createTeacherTable();
     })
     .fail(function(xhr, status, error) {   
         if (xhr.responseJSON && xhr.responseJSON.responseBody) {
@@ -210,6 +228,7 @@ async function prefillUpdateform(recordId){
     var parsedOldData = await oldData.responseBody;
     turnOn();
     $('#teacherId').val(parsedOldData.TEACHER_ID);
+    $('#departmentDropdown').val(parsedOldData.DEPARTMENT_ID);
     $('#fname').val(parsedOldData.FIRST_NAME);
     $('#lname').val(parsedOldData.LAST_NAME);
     $('#isPartTime').prop('checked', parsedOldData.ISPARTTIME == 1);
@@ -271,20 +290,24 @@ async function delete_teacher(recordId){
 
 async function createTeacherTable(){
     const slots = await load_existing('teacher');
+    const depts = await getPrerequisits('department');
+    const deptsParsed = await depts.responseBody.departments;
     var count = 1;
     $('.recordTable').html('');
     (slots.responseBody).forEach(element => {
-        console.log("Createing Teacher")
+        const currDept = deptsParsed.find(
+            department => department.DEPARTMENT_ID == element[1]
+        )?.SHORT_NAME ?? '';
         var template =
             `<tr>
                 <td>${count++}</td>
                 <td>${element[0]}</td>
-                <td>${element[1]}</td>
+                <td>${currDept}</td>
                 <td>${element[2] + " " + element[3]}</td>
-                <td>${element[4]}</td>
+                <td>${(element[4])?"Yes" : "No"}</td>
                 <td>
                     <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
-                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_department);">Delete</button>
+                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_teacher);">Delete</button>
                 </td>
             </tr>`;
         $('.recordTable').append('<tr>'+template+'</tr>');

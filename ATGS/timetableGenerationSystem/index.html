@@ -16,14 +16,15 @@
             <div class="header-tag">
                 <select id="navigator" class="navigator dropdown" on name="" id="">
                     <option id="dashboard" value="" data-loc="sections/dashboard.html" selected>Dashboard</option>
-                    <option id="classroom" value="" data-loc="sections/classroom.html">Classrooms</option>
-                    <option id="course" disabled value="" data-loc="sections/course.html">Courses</option>
-                    <option id="department" value="" data-loc="sections/department.html">Departments</option>
-                    <option id="division" disabled value="" data-loc="sections/division.html">Divisions</option>
-                    <option id="programme" value="" data-loc="sections/programme.html">Programmes</option>
-                    <option id="teacher" value="" data-loc="sections/teacher.html">Teachers</option>
-                    <option id="teacherWorkload" disabled value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
                     <option id="timeslot" value="" data-loc="sections/timeslot.html">Timeslot</option>
+                    <option id="classroom" value="" data-loc="sections/classroom.html">Classrooms</option>
+                    <option id="department" value="" data-loc="sections/department.html">Departments</option>
+                    <option id="teacher" value="" data-loc="sections/teacher.html">Teachers</option>
+                    <option id="programme" value="" data-loc="sections/programme.html">Programmes</option>
+                    <option id="course"  value="" data-loc="sections/course.html">Courses</option>
+                    <option id="optionalCourse"  value="" data-loc="sections/optionalCourses.html">Optional Courses</option>
+                    <option id="division" disabled value="" data-loc="sections/division.html">Divisions</option>
+                    <option id="teacherWorkload" disabled value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
                     <option id="timetable" disabled value="" data-loc="sections/timetable.html">Timetable</option>
                 </select>
             </div>
@@ -45,7 +46,7 @@
 <script>
        
     $(document).ready(function(){
-        $("#MainContents").load('sections/TEACHER.html');
+        $("#MainContents").load('sections/optionalCourses.html');
         $(".navigator").change(
             function () {
                 var currentlyViewing = $(".navigator>option:selected").attr("data-loc");
@@ -133,6 +134,6 @@
             // console.log(result);
             return result;
     }
-    
+
 </script>
 </html>

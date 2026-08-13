@@ -2,7 +2,7 @@
 <div class="addnew-block" id="newTimeslot">
     <p class="blockHeading">Add New Timeslot</p>
     <form id="form" onsubmit="" method="POST">
-        <fieldset>
+        <fieldset hidden>
             <div>
                 <label for="slotId">Slot Id</label>
                 <input type="text" name="slotId" id="slotId" placeholder="Auto Generated (Disabled)" readonly>
@@ -15,7 +15,7 @@
                     <span><label for="lecture">Lecture(1 Hour)</label></span>
                 </div>
                 <div style="color:gray">
-                    <input name="slotType" id="practical" type="radio" value='practical' disabled>
+                    <input name="slotType" id="practical" type="radio" value='practical'>
                     <span><label for="practical">Practical(2 Hour)</label></span>
                 </div>
                 <div>
@@ -125,6 +125,10 @@ function cancelPrefilledUpdateform(){
 }
 
 async function update_timeslot(recordId){
+    if(!form.checkValidity()){
+        form.reportValidity();
+        return;
+    };
     const formData = new FormData(form);
     formData.append('formCategory', 'timeslot');
     formData.append('formType','update_timeslot');

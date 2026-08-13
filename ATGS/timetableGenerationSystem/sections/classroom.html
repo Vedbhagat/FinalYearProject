@@ -2,7 +2,7 @@
 <div class="addnew-block" id="newClassroom">
     <p class="blockHeading">Add Classroom Capacity</p>
     <form onsubmit="" method="POST" id="form">
-        <fieldset>
+        <fieldset hidden>
             <div>
                 <label for="classroomId">Classroom Id</label>
                 <input type="text" name="classroomId" id="classroomId" placeholder="Auto Generated (Disabled)" readonly>
@@ -19,8 +19,22 @@
             </div>
             <div>
                 <label for="capacity">*Capacity</label>
-                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc" required autofocus>
+                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc" required autofocus inputmode="numeric" min="20" max="200">
             </div>
+        </fieldset>
+        <fieldset>
+            <p>Classroom Availability</p>
+            <div class="timePicker">
+                <p>
+                    <label>From:</label>
+                    <input type="time" class="time-input" name="startTime" id="startTime" value="00:00" min="07:00" max="20:00" step="900" required>
+                </p>
+                <span class="separator">-</span>
+                <p>
+                    <label>To:</label>
+                    <input type="time" class="time-input" name="endTime" id="endTime" value="00:00" min="07:00" max="20:00" step="900" required>
+                </p>
+            </div>        
         </fieldset>
         <div class="btn-grp">
             <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
@@ -41,6 +55,7 @@
                 <td>Floor</td>
                 <td>Room</td>
                 <td>Capacity</td>
+                <td>Availability</td>
                 <td>Status</td>
                 <td>Actions</td>
             </tr>
@@ -57,7 +72,6 @@ async function prefillUpdateform(recordId){
     var oldData = await get_one_classroom(recordId);
     var parsedOldData = await oldData.responseBody;
     turnOn();
-    debugger;
     $('#classroomId').val( parsedOldData.CLASSROOM_ID);
     $('#floor').val( parsedOldData.FLOOR_NUMBER);
     $('#room').val(parsedOldData.ROOM_NUMBER);
@@ -81,9 +95,13 @@ function cancelPrefilledUpdateform(){
 }
 
 async function update_classroom(recordId){
-    debugger;
+    if(!form.checkValidity()){
+        form.reportValidity();
+        return;
+    };
     const formData = new FormData(form);
     console.log(formData);
+    formData.append('formCategory','classroom');
     formData.append('formType','update_classroom');
     $.ajax({
         url: 'api.php',
@@ -113,6 +131,7 @@ async function update_classroom(recordId){
 
 async function get_one_classroom(classroomId) {
     const formData = new FormData();
+    formData.append('formCategory','classroom');
     formData.append('formType', 'get_one_classroom');
     formData.append('classroomId', classroomId);
     const result = await $.ajax({
@@ -137,10 +156,11 @@ async function createClassroomTable(){
                 <td>${element[0]}</td>
                 <td>${element[1]}</td>
                 <td>${element[2]}</td>
-                <td>${element[3]}</td>
+                <td>${(element[3]==null)?`N.A`:element[3]}</td>
+                <td>${(element[4] ?? 'N.A') + ' - ' + (element[5] ?? 'N.A')}</td>
                 <td>
-                    ${element[3] == null ? 
-                    `<span class="chip chip-red">capacity required</span>`:
+                    ${(element[3] == null || element[4] == null || element[5] == null) ? 
+                    `<span class="chip chip-red">Details required</span>`:
                     `<span class="chip chip-green">Ready</span>`}
                 </td>
                 <td>

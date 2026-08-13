@@ -14,7 +14,7 @@ function runquery($connection, $query, $tablename){
 }
 function AddClassrooms($connection,$classroom){
   foreach($classroom as $room){
-    $query = "INSERT INTO CLASSROOM (FLOOR_NUMBER,ROOM_NUMBER) VALUES('{$room[0]}',{$room[1]})";
+    $query = "INSERT INTO CLASSROOM (FLOOR_NUMBER,ROOM_NUMBER,CATEGORY) VALUES('{$room[0]}',{$room[1]},'{$room[2]}')";
     $result = $connection -> query($query);
     if($connection->affected_rows==1){
       echo "Added classroom as ". $room[0] .' - ' .$room[1] .'<br>';
@@ -37,8 +37,9 @@ function AddWeekdays($connection,$weekdays){
   }
 }
 function AddYears($connection,$years){
+  $counter = 1;
   foreach($years as $year){
-    $query = "INSERT INTO YEAR (NAME) VALUES('{$year}')";
+    $query = "INSERT INTO YEAR (YEAR_NUMBER, YEAR_NAME) VALUES({$counter},'{$year}')";
     $result = $connection -> query($query);
     if($connection->affected_rows==1){
       echo "Added Year as ". $year .'<br>';
@@ -46,6 +47,7 @@ function AddYears($connection,$years){
     else{
       echo "Couldn't add Year as ". $year .'<br>';
     }
+    $counter+=1;
   }
 }
 
@@ -54,13 +56,19 @@ runquery($conn, "
         CLASSROOM_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         FLOOR_NUMBER VARCHAR(15) NOT NULL,
         ROOM_NUMBER VARCHAR(15) NOT NULL UNIQUE,
-        CAPACITY INT
+        CAPACITY INT,
+        START_TIME TIME,
+        END_TIME TIME,
+        CATEGORY ENUM('LECTURE_HALL', 'LAB') DEFAULT 'LECTURE_HALL',
+
+        CHECK(CAPACITY >= 20 AND CAPACITY <= 200),
+        CHECK(START_TIME < END_TIME)
       );
     ", "Classroom");
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS WEEKDAY(
-        WEEKDAY ENUM('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY') PRIMARY KEY
+        WEEKDAY ENUM('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY') PRIMARY KEY NOT NULL UNIQUE
       );
     ", "Weekday");
 
@@ -69,7 +77,9 @@ runquery($conn, "
         SLOT_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         START_TIME TIME NOT NULL,
         END_TIME TIME NOT NULL,
-        SLOT_TYPE ENUM('BREAK', 'LECTURE', 'PRACTICAL') NOT NULL DEFAULT 'LECTURE'
+        SLOT_TYPE ENUM('BREAK', 'LECTURE', 'PRACTICAL') NOT NULL DEFAULT 'LECTURE',
+        
+        CHECK(START_TIME < END_TIME)
       );
     ", "Timeslot");
 
@@ -100,7 +110,7 @@ runquery($conn, "
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS TEACHER(
         TEACHER_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-        DEPARTMENT_ID INT  NOT NULL,
+        DEPARTMENT_ID INT NOT NULL,
         FIRST_NAME VARCHAR(15) NOT NULL,
         LAST_NAME VARCHAR(15) NOT NULL,
         ISPARTTIME BOOLEAN NOT NULL DEFAULT(0),
@@ -120,7 +130,8 @@ runquery($conn, "
         WEEKDAY ENUM('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY') NOT NULL,
         STATUS ENUM('AVAILABLE','ALLOTED') DEFAULT 'AVAILABLE',
 
-        PRIMARY KEY(TEACHER_ID, SLOT_ID),
+        PRIMARY KEY(TEACHER_ID, SLOT_ID, WEEKDAY),
+        UNIQUE(TEACHER_ID, SLOT_ID, WEEKDAY),
 
         CONSTRAINT fk_tchrId_avlbtTbl
         FOREIGN KEY (TEACHER_ID) 
@@ -148,7 +159,9 @@ runquery($conn, "
         DEPARTMENT_ID INT,
         LONG_NAME VARCHAR(63) NOT NULL,
         SHORT_NAME VARCHAR(15) NOT NULL,
-        DIVISION_COUNT INT NOT NULL DEFAULT(0),
+        DIVISION_COUNT INT DEFAULT 1,
+
+        CHECK (DIVISION_COUNT BETWEEN 1 AND 15),
 
         CONSTRAINT fk_deptId_pgrmTbl 
         FOREIGN KEY (DEPARTMENT_ID) 
@@ -160,28 +173,53 @@ runquery($conn, "
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS YEAR(
-        YEAR_ID INT PRIMARY KEY AUTO_INCREMENT,
-        PROGRAMME_ID INT,
-        NAME ENUM('FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR'),
+        YEAR_NUMBER INT PRIMARY KEY UNIQUE,
+        YEAR_NAME ENUM('FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR')
+      );
+    ", "Year");
 
-        CONSTRAINT fk_pgrmId_yrTbl 
+runquery($conn, "
+      CREATE TABLE IF NOT EXISTS CONSISTS(
+        YEAR_NUMBER INT,
+        PROGRAMME_ID INT,
+
+        PRIMARY KEY(YEAR_NUMBER, PROGRAMME_ID),
+
+        CONSTRAINT fk_yearId_cnstTbl 
+        FOREIGN KEY (YEAR_NUMBER) 
+        REFERENCES YEAR(YEAR_NUMBER)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_pgrmId_cnstTbl 
         FOREIGN KEY (PROGRAMME_ID) 
         REFERENCES PROGRAMME(PROGRAMME_ID)
         ON DELETE CASCADE
         ON UPDATE CASCADE
       );
-    ", "Year");
+    ", "Consists");
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS DIVISION(
         DIVISION_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-        YEAR_ID INT,
+        YEAR_NUMBER INT,        
+        PROGRAMME_ID INT,
         NAME CHAR NOT NULL,
-        STUDENT_COUNT INT NOT NULL DEFAULT(0),
+        STUDENT_COUNT INT,
+
+        CHECK(STUDENT_COUNT > 0),
+
+        UNIQUE(NAME, YEAR_NUMBER, PROGRAMME_ID),
 
         CONSTRAINT fk_yrId_dvsnTbl 
-        FOREIGN KEY (YEAR_ID) 
-        REFERENCES YEAR(YEAR_ID)
+        FOREIGN KEY (YEAR_NUMBER) 
+        REFERENCES YEAR(YEAR_NUMBER)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_pgrmId_dvsnTbl 
+        FOREIGN KEY (PROGRAMME_ID) 
+        REFERENCES PROGRAMME(PROGRAMME_ID)
         ON DELETE CASCADE
         ON UPDATE CASCADE
       );
@@ -190,34 +228,50 @@ runquery($conn, "
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS COURSE(
         COURSE_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+        OPTIONAL_ID INT,
+        YEAR_NUMBER INT,
         PROGRAMME_ID INT,
+        SEMESTER ENUM('EVEN','ODD') NOT NULL,
         LONG_NAME VARCHAR(63) NOT NULL,
         SHORT_NAME VARCHAR(15) NOT NULL,
-        WEEKLY_LECTURES INT NOT NULL,
-        ISPRACTICAL BOOLEAN DEFAULT 0,
+        WEEKLY_LECTURES INT NOT NULL DEFAULT 0,
+        ISPRACTICAL BOOLEAN DEFAULT FALSE,
+        ISOPTIONAL BOOLEAN DEFAULT FALSE,
 
         CONSTRAINT fk_pgrmId_crseTbl 
         FOREIGN KEY (PROGRAMME_ID) 
         REFERENCES PROGRAMME(PROGRAMME_ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_yearId_crseTbl 
+        FOREIGN KEY (YEAR_NUMBER) 
+        REFERENCES YEAR(YEAR_NUMBER)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_opnlId_crseTbl 
+        FOREIGN KEY (OPTIONAL_ID) 
+        REFERENCES COURSE(COURSE_ID)
         ON DELETE CASCADE
         ON UPDATE CASCADE
       );
     ", "Course");
 
 runquery($conn, "
-      CREATE TABLE IF NOT EXISTS TAUGHT_TO(
+      CREATE TABLE IF NOT EXISTS OPTED_BY(
         COURSE_ID INT,
         DIVISION_ID INT,
 
         PRIMARY KEY(COURSE_ID, DIVISION_ID),
 
-        CONSTRAINT fk_crseId_tghtToTbl 
+        CONSTRAINT fk_crseId_optdByTbl 
         FOREIGN KEY (COURSE_ID) 
         REFERENCES COURSE(COURSE_ID)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
         
-        CONSTRAINT fk_dvsnId_tghtToTbl 
+        CONSTRAINT fk_dvsnId_optdByTbl
         FOREIGN KEY (DIVISION_ID) 
         REFERENCES DIVISION(DIVISION_ID)
         ON DELETE CASCADE
@@ -225,7 +279,7 @@ runquery($conn, "
       );
     ", "Taught_To");
 
-runquery($conn, "
+/*runquery($conn, "
       CREATE TABLE IF NOT EXISTS GIVEN(
         SLOT_ID INT,
         WEEKDAY ENUM('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'),
@@ -258,7 +312,7 @@ runquery($conn, "
         ON DELETE CASCADE
         ON UPDATE CASCADE
       );
-    ", "Given");
+    ", "Given");*/
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS TEACHES(
@@ -299,7 +353,7 @@ runquery($conn, "
         WEEKDAY ENUM('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'),
         TEACHER_ID INT,
         ACADEMIC_YEAR VARCHAR(7) NOT NULL,
-        SEMESTER VARCHAR(4) NOT NULL,
+        SEMESTER ENUM('EVEN','ODD') NOT NULL,
 
         PRIMARY KEY(COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, TEACHER_ID, ACADEMIC_YEAR, SEMESTER),
 
@@ -345,12 +399,12 @@ runquery($conn, "
 
 
 $rooms = [
-  ['Ground Floor',001],
-  ['Ground Floor',002],
-  ['First Floor',101],
-  ['First Floor',102],
-  ['Second Floor',201],
-  ['Second Floor',202]
+  ['Ground Floor',  001,  'LECTURE_HALL'],
+  ['Ground Floor',  002,  'LECTURE_HALL'],
+  ['First Floor',   101,  'LECTURE_HALL'],
+  ['First Floor',   102,  'LAB'],
+  ['Second Floor',  201,  'LAB'],
+  ['Second Floor',  202,  'LAB']
 ];
 $weekdays = [
   'MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'
