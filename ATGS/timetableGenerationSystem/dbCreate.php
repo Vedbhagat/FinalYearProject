@@ -161,7 +161,7 @@ runquery($conn, "
         SHORT_NAME VARCHAR(15) NOT NULL,
         DIVISION_COUNT INT DEFAULT 1,
 
-        CHECK (DIVISION_COUNT BETWEEN 1 AND 15),
+        CHECK (DIVISION_COUNT BETWEEN 1 AND 25),
 
         CONSTRAINT fk_deptId_pgrmTbl 
         FOREIGN KEY (DEPARTMENT_ID) 
@@ -174,7 +174,7 @@ runquery($conn, "
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS YEAR(
         YEAR_NUMBER INT PRIMARY KEY UNIQUE,
-        YEAR_NAME ENUM('FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR')
+        YEAR_NAME ENUM('FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR', 'FOURTH YEAR', 'FIFTH YEAR') NOT NULL
       );
     ", "Year");
 
@@ -204,8 +204,11 @@ runquery($conn, "
         DIVISION_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         YEAR_NUMBER INT,        
         PROGRAMME_ID INT,
-        NAME CHAR NOT NULL,
+        NAME CHAR(1) NOT NULL,
         STUDENT_COUNT INT,
+        START_TIME_ID INT,
+        END_TIME_ID INT,
+        CLASSROOM_ID INT,
 
         CHECK(STUDENT_COUNT > 0),
 
@@ -221,10 +224,29 @@ runquery($conn, "
         FOREIGN KEY (PROGRAMME_ID) 
         REFERENCES PROGRAMME(PROGRAMME_ID)
         ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_clsrmId_dvsnTbl 
+        FOREIGN KEY (CLASSROOM_ID) 
+        REFERENCES CLASSROOM(CLASSROOM_ID)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_sTmeId_dvsnTbl 
+        FOREIGN KEY (START_TIME_ID) 
+        REFERENCES TIMESLOT(SLOT_ID)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+        CONSTRAINT fk_eTmeId_dvsnTbl 
+        FOREIGN KEY (END_TIME_ID) 
+        REFERENCES TIMESLOT(SLOT_ID)
+        ON DELETE SET NULL
         ON UPDATE CASCADE
       );
     ", "Division");
 
+    
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS COURSE(
         COURSE_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
@@ -253,7 +275,7 @@ runquery($conn, "
         CONSTRAINT fk_opnlId_crseTbl 
         FOREIGN KEY (OPTIONAL_ID) 
         REFERENCES COURSE(COURSE_ID)
-        ON DELETE CASCADE
+        ON DELETE SET NULL
         ON UPDATE CASCADE
       );
     ", "Course");
@@ -410,7 +432,7 @@ $weekdays = [
   'MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'
 ];
 $years = [
-  'FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR'
+  'FIRST YEAR', 'SECOND YEAR', 'THIRD YEAR', 'FOURTH YEAR', 'FIFTH YEAR'
 ];
 
 AddClassrooms($conn,$rooms);

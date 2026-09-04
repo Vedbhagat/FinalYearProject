@@ -27,6 +27,19 @@
                     <option value="" disabled selected>Select Year</option>
                 </select>
             </div>
+            <div>
+                <label>Semester</label>
+                <div class="radiobuttonGroup">
+                    <div>
+                        <input type="radio" name="isEven" id="odd" value="false" checked>
+                        <label for="odd">Odd</label>
+                    </div>
+                    <div>
+                        <input type="radio" name="isEven" id="even" value="true">
+                        <label for="even">Even</label>
+                    </div>
+                </div>
+            </div>
         </fieldset>
         <fieldset>
             <div>
@@ -71,7 +84,7 @@
         </fieldset>
         <div class="btn-grp">
             <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="add_course();" type="button">Create</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="add_course();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -88,6 +101,7 @@
                 <td >Department</td>
                 <td >Programme</td>
                 <td >Year</td>
+                <td >Semester</td>
                 <td >Course</td>
                 <td >Course (full form)</td>
                 <td >Lectures in Week</td>
@@ -103,6 +117,7 @@
 
 <script>
 
+applyValidityChecker();
 async function populateDepartment() {
     // debugger;
     const minimalData = await getPrerequisits('department');
@@ -192,7 +207,6 @@ populateDepartment()
 var form = document.getElementById('form');
 
 async function add_course() {
-    console.log("Adding new Course");
     if(!form.checkValidity()){
         form.reportValidity();
         return;
@@ -352,7 +366,7 @@ async function delete_course(recordId) {
     return result;
 }
 
-async function createCourseTable(departmentId = false, programmeId = false, ...kwargs) {
+async function createCourseTable(departmentId = false, programmeId = false, semester = false, ...kwargs) {
     
         const result = await getPrerequisits('course');
         let courses = result.responseBody.courses;
@@ -365,6 +379,11 @@ async function createCourseTable(departmentId = false, programmeId = false, ...k
         if (programmeId) {
             courses = courses.filter(course =>
                 String(course.PROGRAMME_ID) === String(programmeId)
+            );
+        }
+        if (semester) {
+            courses = courses.filter(course =>
+                String(course.SEMESTER) === String(semester)
             );
         }
         const tbody = $('.recordTable');
@@ -386,6 +405,9 @@ async function createCourseTable(departmentId = false, programmeId = false, ...k
                         ${course.PROGRAMME_NAME ?? ''}
                     </td>
                     <td>${course.YEAR_NUMBER==1 ? "FIRST YEAR" : course.YEAR_NUMBER==2 ? "SECOND YEAR" : "THIRD YEAR"}</td>
+                    <td onclick="createCourseTable(false, false, '${course.SEMESTER}');">
+                        ${course.SEMESTER}
+                    </td>
                     <td>${course.SHORT_NAME ?? ''}</td>
                     <td>${course.LONG_NAME ?? ''}</td>
                     <td>${course.WEEKLY_LECTURES ?? ''}</td>

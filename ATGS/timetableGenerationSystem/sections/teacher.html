@@ -34,7 +34,7 @@
         </fieldset>
         <div class="btn-grp">
             <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="add_teacher();" type="button">Create</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="add_teacher();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -60,6 +60,7 @@
 </div>
 <script>
 
+applyValidityChecker();
 function togglePartTimeSection(){
     if($('#isPartTime').is(':checked')){
         $('#partTimeSection').attr('disabled', false);

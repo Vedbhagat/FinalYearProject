@@ -19,7 +19,7 @@
             </div>
             <div>
                 <label for="capacity">*Capacity</label>
-                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc" required autofocus inputmode="numeric" min="20" max="200">
+                <input id="capacity" name="capacity" type="number" placeholder="60/100/120/200/etc" required autofocus inputmode="numeric" min="20" max="200" title="The capacity must be between 20 and 200">
             </div>
         </fieldset>
         <fieldset>
@@ -38,7 +38,7 @@
         </fieldset>
         <div class="btn-grp">
             <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="" type="button">Update</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="" type="button">Update</button>
         </div>
     </form>
 </div>
@@ -66,6 +66,7 @@
 </div>
 <script>
 
+applyValidityChecker();
 var form = document.getElementById('form');
 
 async function prefillUpdateform(recordId){

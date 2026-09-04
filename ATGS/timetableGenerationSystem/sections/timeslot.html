@@ -39,7 +39,7 @@
         </fieldset>
         <div class="btn-grp">
             <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="add_timeslot();" type="button">Create</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="add_timeslot();" type="button">Create</button>
         </div>
     </form>
 </div>
@@ -64,7 +64,8 @@
     </table>
 </div>
 <script>
-
+    
+applyValidityChecker();
 var form = document.getElementById('form');
 
 async function add_timeslot() {
@@ -102,10 +103,13 @@ async function prefillUpdateform(recordId){
     var oldData = await get_one_timeslot(recordId);
     var parsedOldData = await oldData.responseBody;
     turnOn();
+    debugger;
     $('#slotId').attr('value', parsedOldData.SLOT_ID);
     $('#startTime').attr('value', parsedOldData.START_TIME);
     $('#endTime').attr('value',parsedOldData.END_TIME);
-    $('#isbreak').prop('checked',parsedOldData.ISBREAK ? 'true':'false');
+    $('#break').prop('checked',parsedOldData.SLOT_TYPE=='BREAK');
+    $('#lecture').prop('checked',parsedOldData.SLOT_TYPE=='LECTURE');
+    $('#practical').prop('checked',parsedOldData.SLOT_TYPE=='PRACTICAL');
     $('#prmyBtn').text('Update');
     $('#prmyBtn').attr('data-recordId',parsedOldData.SLOT_ID);
     $('#prmyBtn').attr('onclick','update_timeslot('+recordId+')');

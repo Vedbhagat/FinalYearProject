@@ -156,7 +156,7 @@ try {
             }
         }
         elseif($formtype == 'classroom'){
-            $sql = "SELECT CLASSROOM_ID, ROOM_NUMBER, CAPACITY FROM CLASSROOM ORDER BY ROOM_NUMBER";
+            $sql = "SELECT CLASSROOM_ID, ROOM_NUMBER FROM CLASSROOM ORDER BY ROOM_NUMBER";
             $result = mysqli_query($conn, $sql);
             $response['classrooms'] = [];
             while($row = mysqli_fetch_assoc($result)) {$response['classrooms'][] = $row;}
@@ -202,152 +202,39 @@ try {
                     ON c.PROGRAMME_ID = p.PROGRAMME_ID
                 LEFT JOIN DEPARTMENT d
                     ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-                ORDER BY p.DEPARTMENT_ID, PROGRAMME_NAME, c.YEAR_NUMBER, c.SEMESTER
+                ORDER BY c.LONG_NAME
             ";
             $result = mysqli_query($conn, $sql);
             $response['courses'] = [];
             while($row = mysqli_fetch_assoc($result)) {$response['courses'][] = $row;}
         }
         elseif($formtype == 'optionalcourse'){
-            $sql = "SELECT
-                d.DEPARTMENT_ID,
-                d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
-                p.PROGRAMME_ID,
-                p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
-                y.YEAR_NUMBER,
-                y.YEAR_NAME,
-                c.COURSE_ID,
-                c.SEMESTER,
-                c.LONG_NAME AS COURSE_FULL_NAME,
-                c.SHORT_NAME AS COURSE_SHORT_NAME,
-                c.ISOPTIONAL,
-                c.OPTIONAL_ID,
-                op.SHORT_NAME AS OPTIONAL_COURSE_NAME,
-                c.ISPRACTICAL,
-                c.WEEKLY_LECTURES
-
-            FROM COURSE c
-
-            LEFT JOIN COURSE op
-                ON op.COURSE_ID = c.OPTIONAL_ID
-
-            JOIN PROGRAMME p
-                ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-            JOIN DEPARTMENT d
-                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-            JOIN YEAR y
-                ON c.YEAR_NUMBER = y.YEAR_NUMBER
-
-            WHERE c.ISOPTIONAL = TRUE
-            AND (
-                c.OPTIONAL_ID IS NULL
-                OR c.COURSE_ID < c.OPTIONAL_ID
-            )
-
-            ORDER BY
-                d.DEPARTMENT_ID,
-                p.PROGRAMME_ID,
-                y.YEAR_NUMBER,
-                c.SEMESTER;";
-            $result = mysqli_query($conn, $sql);
-            $response['optionalcourses'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['optionalcourses'][] = $row;}
-        }
-        elseif($formtype == 'division'){
-            $sql = '
-                SELECT 
+            $sql = 
+            "
+                SELECT
                     d.DEPARTMENT_ID,
-                    d.SHORT_NAME AS DEPARTMENT_NAME,
-
+                    d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
                     p.PROGRAMME_ID,
-                    p.SHORT_NAME AS PROGRAMME_NAME,
-
+                    p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
                     y.YEAR_NUMBER,
                     y.YEAR_NAME,
-
-                    dv.DIVISION_ID,
-                    dv.NAME AS DIVISION_NAME,
-                    dv.STUDENT_COUNT,
-                    dv.CLASSROOM_ID,
-                    dv.START_TIME_ID,
-                    dv.END_TIME_ID
-
-                FROM DEPARTMENT AS d
-
-                JOIN PROGRAMME AS p
-                    ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-                JOIN CONSISTS AS c
-                    ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-                JOIN YEAR AS y
-                    ON y.YEAR_NUMBER = c.YEAR_NUMBER
-
-                LEFT JOIN DIVISION AS dv
-                    ON dv.PROGRAMME_ID = c.PROGRAMME_ID
-                    AND dv.YEAR_NUMBER = c.YEAR_NUMBER
-
-                ORDER BY
-                    dv.STUDENT_COUNT,
-                    d.SHORT_NAME,
-                    p.SHORT_NAME,
-                    y.YEAR_NUMBER,
-                    dv.NAME;
-            ';
-            $result = mysqli_query($conn, $sql);
-            $response['divisions'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['divisions'][] = $row;}
-        }
-        elseif($formtype == 'optionalcoursemapper'){
-            $sql = "SELECT
-                d.DEPARTMENT_ID,
-                d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
-                p.PROGRAMME_ID,
-                p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
-                y.YEAR_NUMBER,
-                y.YEAR_NAME,
-                c.COURSE_ID,
-                c.SEMESTER,
-                c.LONG_NAME AS COURSE_FULL_NAME,
-                c.SHORT_NAME AS COURSE_SHORT_NAME,
-                c.ISOPTIONAL,
-                c.OPTIONAL_ID,
-                op.SHORT_NAME AS OPTIONAL_COURSE_NAME,
-                c.ISPRACTICAL,
-                c.WEEKLY_LECTURES
-
-            FROM COURSE c
-
-            LEFT JOIN COURSE op
-                ON op.COURSE_ID = c.OPTIONAL_ID
-
-            JOIN PROGRAMME p
-                ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-            JOIN DEPARTMENT d
-                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-            JOIN YEAR y
-                ON c.YEAR_NUMBER = y.YEAR_NUMBER
-
-            WHERE c.ISOPTIONAL = TRUE
-            AND (
-                c.OPTIONAL_ID IS NOT NULL
-                OR c.COURSE_ID < c.OPTIONAL_ID
-            )
-
-            ORDER BY
-                d.DEPARTMENT_ID,
-                p.PROGRAMME_ID,
-                y.YEAR_NUMBER,
-                c.SEMESTER;";
+                    c.COURSE_ID,
+                    c.LONG_NAME AS COURSE_NAME,
+                    c.OPTIONAL_ID,
+                    c.ISOPTIONAL,
+                    oc.LONG_NAME AS OPTIONAL_COURSE_NAME
+                FROM COURSE c
+                JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                LEFT JOIN COURSE oc ON c.OPTIONAL_ID = oc.COURSE_ID
+                WHERE c.ISOPTIONAL = TRUE
+                ORDER BY c.COURSE_ID;
+            ";
             $result = mysqli_query($conn, $sql);
             $response['optionalcourses'] = [];
             while($row = mysqli_fetch_assoc($result)) {$response['optionalcourses'][] = $row;}
         }
-        
         header('Content-Type: application/json');
         sendJsonResponse(200, "The Minimal JSON generated", $response);
     }
@@ -751,202 +638,174 @@ try {
             }
         }
     }      
-    elseif ($formCategory == 'programme') {
-        if ($formtype == 'add_programme') {
+    elseif($formCategory == 'programme'){
+        if($formtype == 'add_programme'){
             $departmentId = $_POST['departmentId'] ?? '';
-            $fullname     = strtoupper(trim($_POST['fullname'] ?? ''));
-            $shortname    = strtoupper(trim($_POST['shortname'] ?? ''));
-            $duration     = (int)($_POST['duration'] ?? 0);
-            $divisionCounts = [
-                1 => (int)($_POST['division1'] ?? 0),
-                2 => (int)($_POST['division2'] ?? 0),
-                3 => (int)($_POST['division3'] ?? 0),
-                4 => (int)($_POST['division4'] ?? 0),
-                5 => (int)($_POST['division5'] ?? 0)
-            ];
-            $divisionCodes = ['A', 'B', 'C', 'D', 'E'];
+            $fullname = strtoupper($_POST['fullname'] ?? '');
+            $shortname = strtoupper($_POST['shortname'] ?? '');
+            $duration = $_POST['duration'] ?? '';
+            $division1 = $_POST['division1'] ?? 0;
+            $division2 = $_POST['division2'] ?? 0;
+            $division3 = $_POST['division3'] ?? 0;
+            $division4 = $_POST['division4'] ?? 0;
+            $division5 = $_POST['division5'] ?? 0;
+
+            $divisionCounts = [1=>$division1, 2=>$division2, 3=>$division3, 4=>$division4, 5=>$division5];
+            $divisionCodes = ['A','B','C','D','E'];
+
             $isValid = validateProgramme($fullname, $shortname);
-            if ($isValid === 2) {
-                sendJsonResponse( 422, 'Contains Special Characters', 'The programme name contains invalid character.' );
-            }
-            if ($isValid !== 1) {
-                sendJsonResponse( 429, 'Invalid Programme', 'Entered values are not valid' );
-            }
-            if ($duration < 1 || $duration > 5) {
-                sendJsonResponse( 422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.'  );
-            }
-            for ($i = 1; $i <= $duration; $i++) {
-                if ($divisionCounts[$i] < 1 || $divisionCounts[$i] > 5) {
-                    sendJsonResponse( 422, 'Invalid Division Count', "Invalid division count for year $i." );
-                }
-            }
-            $totalDivisionCount = array_sum(
-                array_slice($divisionCounts, 0, $duration, true)
-            );
-            mysqli_begin_transaction($conn);
-            $query = "INSERT INTO PROGRAMME (DEPARTMENT_ID, LONG_NAME, SHORT_NAME, DIVISION_COUNT) VALUES (?, ?, ?, ?)";
-            $result = $conn->execute_query(
-                $query,[ $departmentId, $fullname, $shortname, $totalDivisionCount ]
-            );
-            if (!$result || mysqli_affected_rows($conn) != 1) {
-                mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
-            }
-            $programmeId = mysqli_insert_id($conn);
-            for ($year = 1; $year <= $duration; $year++) {
-                $result = $conn->execute_query(
-                    "INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)",
-                    [ $year, $programmeId ]
-                );
-                if (!$result || mysqli_affected_rows($conn) != 1) {
-                    mysqli_rollback($conn);
-                    sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
-                }
-                for ($j = 0; $j < $divisionCounts[$year]; $j++) {
-                    $result = $conn->execute_query(
-                        "INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)",
-                        [ $year, $divisionCodes[$j], $programmeId ]
-                    );
-                    if (!$result || mysqli_affected_rows($conn) != 1) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
-                    }
-                }
-            }
-            mysqli_commit($conn);
-            sendJsonResponse( 201, 'Created', 'Programme created successfully');
-        }
-        elseif ($formtype == 'get_one_programme') {
-            $programmeId = $_POST['programmeId'] ?? '';
-            $result = $conn->execute_query(
-                "SELECT PROGRAMME_ID, DEPARTMENT_ID, LONG_NAME, SHORT_NAME FROM PROGRAMME WHERE PROGRAMME_ID = ?",
-                [$programmeId]
-            );
-            if ($result->num_rows == 0) {
-                sendJsonResponse( 404, 'Programme not found.' );
-            }
-            $data = $result->fetch_assoc();
-            $result = $conn->execute_query(
-                "SELECT COUNT(*) AS DURATION FROM CONSISTS WHERE PROGRAMME_ID = ?",
-                [$programmeId]
-            );
-            $data['DURATION'] = (int)$result->fetch_assoc()['DURATION'];
-            $result = $conn->execute_query(
-                "SELECT YEAR_NUMBER, COUNT(*) AS DIVISION_COUNT FROM DIVISION WHERE PROGRAMME_ID = ? GROUP BY YEAR_NUMBER ORDER BY YEAR_NUMBER",
-                [$programmeId]
-            );
-            $data['DIVISIONS'] = [];
-            while ($row = $result->fetch_assoc()) {
-                $data['DIVISIONS'][(int)$row['YEAR_NUMBER']] = (int)$row['DIVISION_COUNT'];
-            }
-            sendJsonResponse(200,'Programme found.',$data);
-        }
-        elseif ($formtype == 'update_programme') {
-            $programmeId = $_POST['programmeId'] ?? '';
-            $departmentId = $_POST['departmentId'] ?? '';
-            $fullname = strtoupper( trim($_POST['fullname'] ?? '') );
-            $shortname = strtoupper( trim($_POST['shortname'] ?? '') );
-            $duration = (int)( $_POST['duration'] ?? 0 );
-            $divisionCounts = [
-                1 => (int)($_POST['division1'] ?? 0),
-                2 => (int)($_POST['division2'] ?? 0),
-                3 => (int)($_POST['division3'] ?? 0),
-                4 => (int)($_POST['division4'] ?? 0),
-                5 => (int)($_POST['division5'] ?? 0)
-            ];
-            $divisionCodes = [ 'A', 'B', 'C', 'D', 'E' ];
-            $isValid = validateProgramme( $fullname, $shortname );
-            if ($isValid === 2) {
-                sendJsonResponse( 422, 'Contains Special Characters', 'The programme name contains invalid character.');
-            }
-            if ($isValid !== 1) {
-                sendJsonResponse( 429, 'Invalid Programme', 'Entered values are not valid');
-            }
-            if ($duration < 1 || $duration > 5) {
-                sendJsonResponse( 422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.');
-            }
-            for ($i = 1; $i <= $duration; $i++) {
-                if (
-                    $divisionCounts[$i] < 1 ||
-                    $divisionCounts[$i] > 5
-                ) {
-                    sendJsonResponse(422,'Invalid Division Count',"Invalid division count for year $i."
-                    );
-                }
-            }
-            $result = $conn->execute_query(
-                "SELECT PROGRAMME_ID FROM PROGRAMME WHERE PROGRAMME_ID = ?",
-                [$programmeId]
-            );
-            if ($result->num_rows == 0) {
-                sendJsonResponse(404,'Programme not found.');
-            }
-            $totalDivisionCount = array_sum(
-                array_slice($divisionCounts, 0, $duration, true)
-            );
-            mysqli_begin_transaction($conn);
-            $result = $conn->execute_query(
-                "UPDATE PROGRAMME SET DEPARTMENT_ID = ?, LONG_NAME = ?, SHORT_NAME = ?, DIVISION_COUNT = ? WHERE PROGRAMME_ID = ?", 
-                [ $departmentId, $fullname, $shortname, $totalDivisionCount, $programmeId ]
-            );
-            if (!$result) {
-                mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
-            }
-            for ($year = 1; $year <= $duration; $year++) {
-                $result = $conn->execute_query( "SELECT YEAR_NUMBER FROM CONSISTS WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ?", [ $year, $programmeId ] );
-                if ($result->num_rows == 0) {
-                    $result = $conn->execute_query( "INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)", [ $year, $programmeId ] );
-                    if (!$result) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
-                    }
-                }
-                for ( $j = 0; $j < $divisionCounts[$year]; $j++ ) {
-                    $code = $divisionCodes[$j];
-                    $result = $conn->execute_query("SELECT DIVISION_ID FROM DIVISION WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ? AND NAME = ?", [ $year, $programmeId, $code ]);
-                    if ($result->num_rows == 0) {
-                        $result = $conn->execute_query( "INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)", [ $year, $code, $programmeId ] );
-                        if (!$result) {
+            if ($isValid === 1) {
+                mysqli_begin_transaction($conn);
+                $query = "INSERT INTO PROGRAMME(DEPARTMENT_ID, LONG_NAME, SHORT_NAME) VALUES(?, ?, ?)";
+                $result = $conn->execute_query($query, [$departmentId, $fullname, $shortname]);
+                $programmeId = mysqli_insert_id($conn);
+                if (mysqli_affected_rows($conn) == 1) {
+                    $programmeId = mysqli_insert_id($conn);
+                    for ($i=1; $i<=$duration; $i++){
+                        $query = "INSERT INTO CONSISTS(YEAR_NUMBER, PROGRAMME_ID) VALUES(?, ?)";
+                        $result = $conn->execute_query($query, [$i, $programmeId]);
+                        if(mysqli_affected_rows($conn) == 1){
+                            for($j=0; $j<($divisionCounts[$i]); $j++){
+                                $query = "INSERT INTO DIVISION(YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES(?, ?, ?)";
+                                $result = $conn->execute_query($query, [$i, $divisionCodes[$j], $programmeId]);
+                                if(mysqli_affected_rows($conn) != 1){
+                                    mysqli_rollback($conn);
+                                    sendJsonResponse(400, 'Try again', "Couldn't create Programme");
+                                }
+                            }
+                        }else{
                             mysqli_rollback($conn);
-                            sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
+                            sendJsonResponse(400, 'Try again', "Couldn't create Programme");
                         }
                     }
+                }else{
+                    mysqli_rollback($conn);
+                    sendJsonResponse(400, 'Try again', "Couldn't create Programme");
                 }
-                if ($divisionCounts[$year] < 5) {
-                    $deleteFrom = $divisionCodes[$divisionCounts[$year]];
-                    $result = $conn->execute_query("DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER = ? AND NAME >= ?", [ $programmeId, $year, $deleteFrom ]);
-                    if (!$result) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
+                if (mysqli_affected_rows($conn) > 0) {
+                    mysqli_commit($conn);
+                    sendJsonResponse(201, 'Created', 'Programme created successfully');
+                } else {
+                    sendJsonResponse(400, 'Try again', "Couldn't create Programme");
+                }
+            }elseif($isValid === 2){
+                sendJsonResponse(422,'Contains Special Characters','The programme name contains invalid character.');
+            }else {
+                sendJsonResponse(429, 'Invalid Programme', 'Entered values are not valid');
+            }
+
+        }
+        elseif ($formtype == 'get_one_programme') {
+            $programmeId = $_POST['programmeId'];
+
+            $query = "SELECT * FROM PROGRAMME WHERE PROGRAMME_ID = ?";
+            $result = $conn->execute_query($query, [$programmeId]);
+
+            if ($result->num_rows > 0) {
+                $data = $result->fetch_assoc();
+
+                $query = "SELECT COUNT(*) AS DURATION FROM CONSISTS WHERE PROGRAMME_ID = ?";
+                $result = $conn->execute_query($query, [$programmeId]);
+                $data['DURATION'] = (int)$result->fetch_assoc()['DURATION'];
+
+                $query = "SELECT YEAR_NUMBER, COUNT(*) AS DIVISION_COUNT FROM DIVISION WHERE PROGRAMME_ID = ? GROUP BY YEAR_NUMBER";
+                $result = $conn->execute_query($query, [$programmeId]);
+                $data['DIVISIONS'] = [];
+                while ($row = $result->fetch_assoc()) {
+                    $data['DIVISIONS'][$row['YEAR_NUMBER']] = (int)$row['DIVISION_COUNT'];
+                }
+
+                $query = "SELECT YEAR_NUMBER, COUNT(*) AS DIVISION_COUNT FROM DIVISION WHERE PROGRAMME_ID = ? GROUP BY YEAR_NUMBER";
+                $result = $conn->execute_query($query, [$programmeId]);
+
+                $data['DIVISIONS'] = [];
+                while ($row = $result->fetch_assoc()) {
+                    $data['DIVISIONS'][$row['YEAR_NUMBER']] = (int)$row['DIVISION_COUNT'];
+                }
+                sendJsonResponse(200, "Programme found.", $data);
+            }
+
+            sendJsonResponse(404, "Programme not found.");
+        }
+        elseif($formtype=='update_programme'){
+            $programmeId=$_POST['programmeId']??'';
+            $departmentId=$_POST['departmentId']??'';
+            $fullname=strtoupper(trim($_POST['fullname']??''));
+            $shortname=strtoupper(trim($_POST['shortname']??''));
+            $duration=(int)($_POST['duration']??0);
+
+            $divisionCounts=[
+                1=>(int)($_POST['division1']??0),
+                2=>(int)($_POST['division2']??0),
+                3=>(int)($_POST['division3']??0)
+            ];
+
+            $divisionCodes=['A','B','C','D','E'];
+
+            $isValid=validateProgramme($fullname,$shortname);
+
+            if($isValid===1){
+                for($i=1;$i<=$duration;$i++)
+                    if($divisionCounts[$i]<1||$divisionCounts[$i]>5)
+                        sendJsonResponse(422,'Invalid Division Count',"Invalid division count for year $i.");
+
+                $totalDivisionCount=array_sum(array_slice($divisionCounts,0,$duration,true));
+
+                mysqli_begin_transaction($conn);
+                $conn->execute_query(
+                    "UPDATE PROGRAMME SET DEPARTMENT_ID=?,LONG_NAME=?,SHORT_NAME=?,DIVISION_COUNT=? WHERE PROGRAMME_ID=?",
+                    [$departmentId,$fullname,$shortname,$totalDivisionCount,$programmeId]
+                );
+                for($i=1;$i<=$duration;$i++){
+                    $conn->execute_query(
+                        "INSERT IGNORE INTO CONSISTS(YEAR_NUMBER,PROGRAMME_ID) VALUES(?,?)",
+                        [$i,$programmeId]
+                    );
+                    for($j=0;$j<$divisionCounts[$i];$j++){
+                        $code=$divisionCodes[$j];
+                        $result=$conn->execute_query(
+                            "SELECT DIVISION_ID FROM DIVISION WHERE YEAR_NUMBER=? AND PROGRAMME_ID=? AND NAME=?",
+                            [$i,$programmeId,$code]
+                        );
+                        if($result->num_rows===0)
+                            $conn->execute_query(
+                                "INSERT INTO DIVISION(YEAR_NUMBER,NAME,PROGRAMME_ID) VALUES(?,?,?)",
+                                [$i,$code,$programmeId]
+                            );
                     }
+                    if($divisionCounts[$i]<5)
+                        $conn->execute_query(
+                            "DELETE FROM DIVISION WHERE YEAR_NUMBER=? AND PROGRAMME_ID=? AND NAME>=?",
+                            [$i,$programmeId,$divisionCodes[$divisionCounts[$i]]]
+                        );
                 }
-            }
-            $result = $conn->execute_query( "DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?", [ $programmeId, $duration ] );
-            if (!$result) {
-                mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
-            }
-            $result = $conn->execute_query(
-                "DELETE FROM CONSISTS WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?",
-                [ $programmeId, $duration ]
-            );
-            if (!$result) {
-                mysqli_rollback($conn);
-                sendJsonResponse(400,'Try again',"Couldn't update Programme");
-            }
-            mysqli_commit($conn);
-            sendJsonResponse( 200, 'Updated', 'Programme updated successfully');
-        }
-        elseif ($formtype == 'delete_programme') {
-            $programmeId = $_POST['programmeId'] ?? '';
-            $result = $conn->execute_query( "DELETE FROM PROGRAMME WHERE PROGRAMME_ID = ?", [$programmeId]);
-            if ($result && mysqli_affected_rows($conn) > 0) {
-                sendJsonResponse( 200, 'Deleted', 'Programme deleted successfully');
-            } else {
-                sendJsonResponse( 400, 'Try again', "Couldn't delete Programme");
+                $conn->execute_query(
+                    "DELETE FROM DIVISION WHERE PROGRAMME_ID=? AND YEAR_NUMBER>?",
+                    [$programmeId,$duration]
+                );
+                $conn->execute_query(
+                    "DELETE FROM CONSISTS WHERE PROGRAMME_ID=? AND YEAR_NUMBER>?",
+                    [$programmeId,$duration]
+                );
+
+                mysqli_commit($conn);
+                sendJsonResponse(200,'Updated','Programme updated successfully');
+            }elseif($isValid === 2){
+                sendJsonResponse(422,'Contains Special Characters','The programme name contains invalid character.');
+            }else {
+                sendJsonResponse(429, 'Invalid Programme', 'Entered values are not valid');
             }
         }
+        elseif($formtype == 'delete_programme'){
+            $programmeId = $_POST['programmeId'];
+            $query = "DELETE FROM PROGRAMME WHERE PROGRAMME_ID = ?";
+            $result = $conn->execute_query($query,[$programmeId]);
+            if (mysqli_affected_rows($conn)>0 ){
+                sendJsonResponse(200,'Deleted','Programme deleted succesfully');
+            }else{
+                sendJsonResponse(400,'Try again',"Couldn't update timeslot");
+            }
+        }        
     }
     elseif($formCategory == 'course'){
         if($formtype == 'add_course'){
@@ -956,14 +815,13 @@ try {
             $fullname = strtoupper($_POST['fullname'] ?? '');
             $shortname = strtoupper($_POST['shortname'] ?? '');
             $weeklyLectures = strtoupper($_POST['lectureCount'] ?? 0);
-            $semester = ($_POST['isEven'] =='true')? "EVEN" : "ODD";
             $isPractical = ($_POST['courseType'] =='false')? true : false;
             $isOptional = ($_POST['isOptional'] ?? '' =='true')? true : false;
             $optionalCourseId = $_POST['optionalCourseId'] ?? null;
             $isValid = validateCourse($fullname, $shortname);
             if ($isValid === 1) {
-                $query = "INSERT INTO COURSE(PROGRAMME_ID, YEAR_NUMBER, LONG_NAME, SHORT_NAME, SEMESTER, WEEKLY_LECTURES, ISPRACTICAL, ISOPTIONAL) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
-                $result = $conn->execute_query($query, [$programmeId, $yearId, $fullname, $shortname, $semester, $weeklyLectures, $isPractical, $isOptional]);
+                $query = "INSERT INTO COURSE(PROGRAMME_ID, YEAR_NUMBER, LONG_NAME, SHORT_NAME, WEEKLY_LECTURES, ISPRACTICAL, ISOPTIONAL) VALUES(?, ?, ?, ?, ?, ?, ?)";
+                $result = $conn->execute_query($query, [$programmeId, $yearId, $fullname, $shortname, $weeklyLectures, $isPractical, $isOptional]);
                 if (mysqli_affected_rows($conn) > 0) {
                     sendJsonResponse(201, 'Created', 'Course created successfully');
                 } else {
@@ -1011,7 +869,6 @@ try {
             $yearId = $_POST['yearId'] ?? '';
             $fullname = strtoupper($_POST['fullname'] ?? '');
             $shortname = strtoupper($_POST['shortname'] ?? '');
-            $semester = ($_POST['isEven'] =='true')? "EVEN" : "ODD";
             $weeklyLectures = strtoupper($_POST['lectureCount'] ?? 0);
             $isPractical = ($_POST['courseType'] =='false')? true : false;
             $isOptional = ($_POST['isOptional'] =='true')? true : false;
@@ -1019,8 +876,8 @@ try {
             $isValid = validateCourse($fullname, $shortname);
             
             if ($isValid === 1) {
-                $query = "UPDATE COURSE SET PROGRAMME_ID = ?, YEAR_NUMBER = ?, LONG_NAME = ?, SHORT_NAME = ?, SEMESTER = ?, WEEKLY_LECTURES = ?, ISPRACTICAL = ?, ISOPTIONAL = ? WHERE COURSE_ID = ?";
-                $result = $conn->execute_query($query, [ $programmeId, $yearId, $fullname, $shortname, $semester, $weeklyLectures, $isPractical, $isOptional, $courseId]);
+                $query = "UPDATE COURSE SET PROGRAMME_ID = ?, YEAR_NUMBER = ?, LONG_NAME = ?, SHORT_NAME = ?, WEEKLY_LECTURES = ?, ISPRACTICAL = ?, ISOPTIONAL = ? WHERE COURSE_ID = ?";
+                $result = $conn->execute_query($query, [ $programmeId, $yearId, $fullname, $shortname, $weeklyLectures, $isPractical, $isOptional, $courseId]);
                 if ($result) {sendJsonResponse(200, 'Updated', 'Course updated successfully');
                 }else {sendJsonResponse(400, 'Try again', "Couldn't update course");}
 
@@ -1042,22 +899,14 @@ try {
         }        
     }
     elseif($formCategory == 'optionalcourse') {
-        if ($formtype == 'map_course') {
+        if($formtype == 'map_course') {
+
             $course1 = (int) $_POST['course1'];
             $course2 = (int) $_POST['course2'];
-            $query = "
-                UPDATE COURSE
-                SET OPTIONAL_ID = ?
-                WHERE COURSE_ID = ?
-            ";
-            $conn->execute_query($query, [$course2, $course1]);
-            $query = "
-                UPDATE COURSE
-                SET OPTIONAL_ID = ?
-                WHERE COURSE_ID = ?
-            ";
-            $conn->execute_query($query, [$course1, $course2]);
-            sendJsonResponse(200, 'Mapped', 'Courses mapped successfully');
+
+            $query = "UPDATE COURSE SET OPTIONAL_ID = ? WHERE COURSE_ID = ?";
+            $result = $conn->execute_query($query, [$course2, $course1]);
+
         } elseif($formtype == 'unmap_course') {
             $mainCourse = (int) $_POST['mainCourse'];
             // Find the course that is mapped to this course
@@ -1075,91 +924,103 @@ try {
         }
     }
     elseif($formCategory == 'division'){
-        if($formtype == 'add_divisionDetails'){
-            $divisionId = $_POST['divisionId'] ?? '';
-            $studCount = $_POST['studentCount'] ?? '';
-            $classroomId = $_POST['classroomId'] ?? null;
-            $hasPrefTime = $_POST['prefTime'] ?? false;
-            $isStartPref = $_POST['isStartPref'] ?? false;
-            $timeBound = $_POST['timeBound'] ?? null;
-            $query = "";
-            if($hasPrefTime){
-                if($isStartPref){
-                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = ? WHERE DIVISION_ID = ?";
-                    $result = $conn->execute_query($query,[$studCount,$classroomId,$timeBound,$divisionId]);
+        if($formtype == 'add_division'){
+            $departmentId = $_POST['departmentId'] ?? '';
+            $programmeId = $_POST['programmeId'] ?? '';
+            $yearId = $_POST['yearId'] ?? '';
+            $fullname = strtoupper($_POST['fullname'] ?? '');
+            $shortname = strtoupper($_POST['shortname'] ?? '');
+            $weeklyLectures = $_POST['lectureCount'] ?? '';
+            $isPractical = $_POST['isPractical'] ?? false;
+            $isOptional = $_POST['isOptional'] ?? '';
+            $optionalCourseId = $_POST['optionalCourseId'] ?? null;
+            var_dump($_POST);
+            $isValid = validateCourse($fullname, $shortname);
+            if ($isValid === 1) {
+                $query = "INSERT INTO COURSE(OPTIONAL_ID, LONG_NAME, SHORT_NAME, WEEKLY_LECTURES, ISPRACTICAL, ISOPTIONAL) VALUES(?, ?, ?, ?, ?, ?)";
+                $result = $conn->execute_query($query, [$optionalCourseId, $fullname,  $shortname,  $weeklyLectures, $isPractical,  $isOptional]);
+                if (mysqli_affected_rows($conn) > 0) {
+                    sendJsonResponse(201, 'Created', 'Course created successfully');
+                } else {
+                    sendJsonResponse(400, 'Try again', "Couldn't create course");
                 }
-                else{
-                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, END_TIME_ID = ? WHERE DIVISION_ID = ?";
-                    $result = $conn->execute_query($query,[$studCount,$classroomId,$timeBound,$divisionId]);
-                }
-            }
-            else{
-                $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ? WHERE DIVISION_ID = ?";
-                $result = $conn->execute_query($query,[$studCount,$classroomId,$divisionId]);
-            }
-            if($result){
-                sendJsonResponse(200,'Details saved',"The division details were saved successfully");
-            }
-            else{
-                sendJsonResponse(500,'Details were not saved',"Error in saving division details");
+            }elseif($isValid === 2){
+                sendJsonResponse(422,'Contains Special Characters','The course name contains invalid character.');
+            }else {
+                sendJsonResponse(429, 'Invalid course', 'Entered values are not valid');
             }
         }
-        elseif($formtype == 'delete_divisionDetails'){
-            $divisionId = $_POST['divisionId'];
-            $query = "UPDATE DIVISION SET STUDENT_COUNT = NULL, CLASSROOM_ID = NULL, START_TIME_ID = NULL, END_TIME_ID = NULL WHERE DIVISION_ID = ?";
-            $result = $conn->execute_query($query,[$divisionId]);
-            if($result){
-                sendJsonResponse(200,"Details Deleted","The Details were deleted successfully.","");
-            }
-            else{
-                sendJsonResponse(400,'Delete failed', "The delete details operation was unsuccesfull.");
-            }
+        elseif($formtype ==  'get_one_programme'){ 
+                $programmeId = $_POST['programmeId'];
+                $query = "SELECT * FROM PROGRAMME WHERE PROGRAMME_ID = ?;";
+                $result = $conn->execute_query($query,[$programmeId]);
+                // var_dump($result);
+                if($result->num_rows>0){
+                    $parsedResult = $result->fetch_assoc();
+                    $newquery = "SELECT * FROM CONSISTS WHERE PROGRAMME_ID = ?;";
+                    $newresult = $conn->execute_query($newquery,[$programmeId]);
+                    $parsedResult['DURATION'] = $newresult->num_rows;
+                    sendJsonResponse(200,"Programme found.",$parsedResult);
+                    exit;
+                }
+                sendJsonResponse(404,"Programme not found.");
         }
-            
-    }
-    elseif($formCategory == 'optionalcoursemapper') {
-        if ($formtype == 'map_course2division') {
-            $course1 = (int) $_POST['course1'];
-            $course2 = (int) $_POST['course2'];
-            $division1 = (int) $_POST['division1'];
-            $division2 = (int) $_POST['division2'];
+        elseif ($formtype == 'update_programme') {
+            $programmeId = $_POST['programmeId'] ?? '';
+            $departmentId = $_POST['departmentId'] ?? '';
+            $fullname = strtoupper($_POST['fullname'] ?? '');
+            $shortname = strtoupper($_POST['shortname'] ?? '');
+            $duration = (int)($_POST['duration'] ?? 0);
 
-            $query = "
-                INSERT INTO OPTED_BY (COURSE_ID,DIVISION_ID) VALUES(?,?);
-            ";
-            $conn->begin_transaction();
-            $result = $conn->execute_query($query, [$course1, $division1]);
-            if($result){
-                $result = $conn->execute_query($query, [$course2, $division2]);
-                if($result){
-                    $conn->commit();
-                    sendJsonResponse(200,"Course Mapped to Division","Courses were succesfully mapped to divisions");
-                }else{
-                    $conn->rollback();
-                    sendJsonResponse(400,"Error in mapping", "Mapping was unsuccesfull");
+            $isValid = validateProgramme($fullname, $shortname);
+            if ($isValid === 1) {
+                mysqli_begin_transaction($conn);
+                $query = " UPDATE PROGRAMME SET DEPARTMENT_ID = ?, LONG_NAME = ?, SHORT_NAME = ? WHERE PROGRAMME_ID = ?";
+
+                $conn->execute_query($query, [$departmentId, $fullname, $shortname, $programmeId]);
+
+                // Check/update CONSISTS according to duration
+                $query = "SELECT COUNT(*) AS total FROM CONSISTS WHERE PROGRAMME_ID = ?";
+                $result = $conn->execute_query($query, [$programmeId]);
+                $currentDuration = (int)$result->fetch_assoc()['total'];
+
+                if ($duration > $currentDuration) {
+                    // Add missing years
+                    for ($i = $currentDuration + 1; $i <= $duration; $i++) {
+                        $query = "INSERT INTO CONSISTS(YEAR_NUMBER, PROGRAMME_ID) VALUES(?, ?)";
+                        $conn->execute_query($query, [$i, $programmeId]);
+                    }
+                } elseif ($duration < $currentDuration) {
+                    // Remove extra years
+                    $query = "
+                        DELETE FROM CONSISTS WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?
+                    ";
+                    $conn->execute_query($query, [
+                        $programmeId,
+                        $duration
+                    ]);
                 }
+                mysqli_commit($conn);
+                sendJsonResponse(200, 'Updated', 'Programme updated successfully');
+
+            } elseif ($isValid === 2) {
+                sendJsonResponse(422, 'Contains Special Characters', 'The programme name contains invalid character.');
+
+            } else {
+                sendJsonResponse(400,'Try again', "Couldn't update Programme");
+            }
+        }
+        elseif($formtype == 'delete_programme'){
+            $programmeId = $_POST['programmeId'];
+            $query = "DELETE FROM PROGRAMME WHERE PROGRAMME_ID = ?";
+            $result = $conn->execute_query($query,[$programmeId]);
+            if (mysqli_affected_rows($conn)>0 ){
+                sendJsonResponse(200,'Deleted','Programme deleted succesfully');
             }else{
-                $conn->rollback();
-                sendJsonResponse(400,"Error in mapping", "Mapping was unsuccesfull");
+                sendJsonResponse(400,'Try again',"Couldn't update timeslot");
             }
-            
-        } elseif($formtype == 'unmap_course') {
-            $mainCourse = (int) $_POST['mainCourse'];
-            // Find the course that is mapped to this course
-            $query = "SELECT COURSE_ID FROM COURSE WHERE OPTIONAL_ID = ?";
-            $result = $conn->execute_query($query, [$mainCourse]);
-
-            $row = $result->fetch_assoc();
-            if ($row) {
-                $sideCourse = (int) $row['COURSE_ID'];
-                $query = "UPDATE COURSE SET OPTIONAL_ID = NULL WHERE COURSE_ID = ?";
-                $conn->execute_query($query, [$sideCourse]);
-                $conn->execute_query($query, [$mainCourse]);
-                sendJsonResponse(200,'Unmapped','Course unmapped succesfully');
-            }
-        }
+        }        
     }
-    
     
 
 } catch (Throwable $e) {

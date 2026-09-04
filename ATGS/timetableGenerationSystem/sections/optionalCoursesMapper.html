@@ -1,0 +1,269 @@
+<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
+<div class="addnew-block">
+    <p class="blockHeading">Map Optional Courses To Division</p>
+    <form id="form" onsubmit="" method="POST">
+        <fieldset>
+            <div>
+                <label for="optionGroup">Course Group</label>
+                <select class="dropdown" name="optionGroup" id="optionGroup" required>
+                    <option value="" disabled selected>Select Course Group</option>
+                </select>
+            </div>
+            <fieldset id="divisionMappingSection">
+                <!-- Dynamically populated division fields appear here -->
+            </fieldset>
+        </fieldset>
+        <div class="btn-grp">
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm(); populateOptionalCourseGroup();" type="button">
+                Clear
+            </button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="map_course();" type="button" disabled="false">
+                Map
+            </button>
+        </div>
+    </form>
+</div>
+<hr>
+<div class="view-table">
+    <table>
+        <caption>
+            Optional Courses Division Mapping
+        </caption>
+        <thead>
+            <tr>
+                <td>Sr No</td>
+                <td>Department</td>
+                <td>Programme</td>
+                <td>Year</td>
+                <td>Semester</td>
+                <td>Course One (Division)</td>
+                <td>Course Two (Division)</td>
+                <td>Status</td>
+                <td>Action</td>
+            </tr>
+        </thead>
+        <tbody class="recordTable">
+            <!-- Dynamically populated records -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+applyValidityChecker();
+
+var form = document.getElementById('form');
+
+async function populateOptionalCourseGroup() {
+    const result = await getPrerequisits('optionalcoursemapper');
+    const courses = result.responseBody.optionalcourses || [];
+    
+    // Filter out valid optional pairs where ISOPTIONAL is true and has an associated pair
+    const optionalCourses = courses.filter(c => c.ISOPTIONAL == true && c.OPTIONAL_ID != null);
+    
+    $('#optionGroup').data('optionalCourses', optionalCourses);
+
+    const options = optionalCourses
+        .filter(course => Number(course.COURSE_ID) < Number(course.OPTIONAL_ID))
+        .map(course => {
+            const optionalCourse = courses.find(c => String(c.COURSE_ID) === String(course.OPTIONAL_ID));
+            if (!optionalCourse) return '';
+            
+            return `
+                <option
+                    value="${course.COURSE_ID}"
+                    data-course1-name="${course.COURSE_FULL_NAME}"
+                    data-course1-id="${course.COURSE_ID}"
+                    data-course2-name="${optionalCourse.COURSE_FULL_NAME}"
+                    data-course2-id="${optionalCourse.COURSE_ID}"
+                    data-programme-id="${course.PROGRAMME_ID}"
+                    data-year-number="${course.YEAR_NUMBER}"
+                >
+                    ${course.DEPARTMENT_SHORT_NAME} -:- 
+                    ${course.PROGRAMME_SHORT_NAME} -:- 
+                    Year ${course.YEAR_NUMBER} -:- 
+                    ${course.SEMESTER} -:- 
+                    {${course.COURSE_FULL_NAME} | ${optionalCourse.COURSE_FULL_NAME}}
+                </option>
+            `;
+        })
+        .join('');
+
+    $('#optionGroup')
+        .html('<option value="" disabled selected>Select Course Group</option>' + options)
+        .prop('disabled', false);
+        
+    $('#divisionMappingSection').empty();
+}
+
+$('#optionGroup').on('change', function () {
+    const option = $(this).find('option:selected');
+    createDivisionMappingSection(option);
+});
+
+async function createDivisionMappingSection(option) {
+    const course1Name = option.data('course1-name');
+    const course1Id = option.data('course1-id');
+    const course2Name = option.data('course2-name');
+    const course2Id = option.data('course2-id');
+    const programmeId = option.data('programme-id');
+    const yearNumber = option.data('year-number');
+
+    const result = await getPrerequisits('division');
+    const allDivisions = result.responseBody.divisions || [];
+    
+    const divisions = allDivisions.filter(div =>
+        String(div.PROGRAMME_ID) === String(programmeId) &&
+        String(div.YEAR_NUMBER) === String(yearNumber)
+    );
+
+    const divisionOptions = divisions
+        .map(div => `<option value="${div.DIVISION_ID}">${div.DIVISION_NAME}</option>`)
+        .join('');
+
+    const noDivisionOption = divisions.length === 0
+        ? `<option value="" disabled>No divisions available</option>`
+        : '';
+
+    $('#divisionMappingSection').html(`
+        <div>
+            <label for="course1Division">Course: ${course1Name}</label>
+            <input type="hidden" name="course1" id="course1" value="${course1Id}">
+            <select class="dropdown" name="division1" id="course1Division" required>
+                <option value="" disabled selected>Select Division</option>
+                ${divisionOptions}
+                ${noDivisionOption}
+            </select>
+        </div>
+        <div>
+            <label for="course2Division">Course: ${course2Name}</label>
+            <input type="hidden" name="course2" id="course2" value="${course2Id}">
+            <select class="dropdown" name="division2" id="course2Division" required>
+                <option value="" disabled selected>Select Division</option>
+                ${divisionOptions}
+                ${noDivisionOption}
+            </select>
+        </div>
+    `);
+}
+
+async function map_course() {
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData(form);
+    formData.append('formCategory', 'optionalcoursemapper');
+    formData.append('formType', 'map_course2division');
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        $('#divisionMappingSection').empty();
+        createOptionalCourseTable();
+        populateOptionalCourseGroup();
+    })
+    .fail(function(xhr) {
+        showInfoInline(xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.');
+    });
+}
+
+async function unmap_course(recordId) {
+    const formData = new FormData();
+    formData.append('formCategory', 'optionalcoursemapper');
+    formData.append('formType', 'unmap_course');
+    formData.append('mainCourse', recordId);
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        createOptionalCourseTable();
+        populateOptionalCourseGroup();
+    })
+    .fail(function(xhr) {
+        showInfoInline(xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.');
+    });
+}
+
+async function createOptionalCourseTable() {
+    // Change 'optionalcourse' to 'optionalcoursemapper' so it includes division data
+    const result = await getPrerequisits('optionalcoursemapper');
+    const courses = result.responseBody.optionalcourses || [];
+    const tbody = $('.recordTable');
+
+    tbody.empty();
+
+    if (!courses || courses.length === 0) {
+        tbody.append(`<tr><td colspan="9">No courses found.</td></tr>`);
+        return;
+    }
+
+    // Filter unique option groups to avoid duplicate row entries in the view table
+    const uniquePairs = courses.filter(course => course.COURSE_ID && course.OPTIONAL_ID && Number(course.COURSE_ID) < Number(course.OPTIONAL_ID));
+
+    if (uniquePairs.length === 0) {
+        tbody.append(`<tr><td colspan="9">No optional course pairs found.</td></tr>`);
+        return;
+    }
+
+    uniquePairs.forEach((course, index) => {
+        const course1Division = course.COURSE1_DIVISION_NAME ?? course.DIVISION1_NAME ?? course.DIVISION_NAME_1 ?? null;
+        const course2Division = course.COURSE2_DIVISION_NAME ?? course.DIVISION2_NAME ?? course.DIVISION_NAME_2 ?? null;
+
+        const course1Display = `<div><strong>${course.COURSE_SHORT_NAME ?? course.COURSE_FULL_NAME ?? ''}</strong><br><small>Division: ${course1Division ?? 'N.A'}</small></div>`;
+        
+        const optionalCourse = courses.find(c => String(c.COURSE_ID) === String(course.OPTIONAL_ID));
+        const course2Name = optionalCourse?.COURSE_SHORT_NAME ?? optionalCourse?.COURSE_FULL_NAME ?? 'N.A.';
+        const course2Display = `<div><strong>${course2Name}</strong><br><small>Division: ${course2Division ?? 'N.A'}</small></div>`;
+
+        const isAllocated = course1Division !== null && course1Division !== '' &&
+            course2Division !== null && course2Division !== '';
+
+        const status = isAllocated
+            ? `<span class="chip chip-green">Allotted</span>`
+            : `<span class="chip chip-red">Pending</span>`;
+
+        const action = isAllocated
+            ? `<button class="btn primary" onclick="confirmDeleteDialog('Unmap?', 'Confirm the Unmap operation', ${course.COURSE_ID}, unmap_course);">Unmap</button>`
+            : `<button class="btn primary" onclick="$('#optionGroup').val(${course.COURSE_ID}).trigger('change'); turnOn();">Map</button>`;
+
+        const year = course.YEAR_NUMBER == 1 ? "FIRST YEAR"
+            : course.YEAR_NUMBER == 2 ? "SECOND YEAR"
+            : course.YEAR_NUMBER == 3 ? "THIRD YEAR"
+            : course.YEAR_NUMBER ?? '';
+
+        tbody.append(`<tr>
+            <td>${index + 1}</td>
+            <td>${course.DEPARTMENT_SHORT_NAME ?? ''}</td>
+            <td>${course.PROGRAMME_SHORT_NAME ?? ''}</td>
+            <td>${year}</td>
+            <td>${course.SEMESTER ?? ''}</td>
+            <td>${course1Display}</td>
+            <td>${course2Display}</td>
+            <td>${status}</td>
+            <td>${action}</td>
+        </tr>`);
+    });
+}
+
+// Initializations on load
+populateOptionalCourseGroup();
+createOptionalCourseTable();
+</script>
+<script>turnOn()</script>

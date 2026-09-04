@@ -1,0 +1,1714 @@
+```html
+<button class="ghost" id="toggleform" onclick="toggleView();">
+    Toggle Form
+</button>
+
+<div class="addnew-block">
+
+    <p class="blockHeading">Add New Division</p>
+
+    <form id="divisionForm" method="POST" onsubmit="return false;">
+
+        <!-- Hidden ID used during update -->
+        <input type="hidden" name="divisionId" id="divisionId">
+
+        <!-- =========================================================
+             BASIC DIVISION INFORMATION
+        ========================================================== -->
+        <fieldset class="grid col-span-2 dropdown-grp">
+
+            <!-- Department / Programme / Year -->
+            <fieldset>
+
+                <div>
+                    <label for="departmentId">Department</label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="departmentId"
+                        id="departmentId"
+                        required
+                        onchange="populateProgramme(this.value)"
+                    >
+                        <option value="" disabled selected>
+                            Select Department
+                        </option>
+                    </select>
+                </div>
+
+
+                <div>
+                    <label for="programmeId">Programme</label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="programmeId"
+                        id="programmeId"
+                        required
+                        disabled
+                        onchange="populateYear(this.value)"
+                    >
+                        <option value="" disabled selected>
+                            Select Programme
+                        </option>
+                    </select>
+                </div>
+
+
+                <div>
+                    <label for="yearId">Year</label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="yearId"
+                        id="yearId"
+                        required
+                        disabled
+                        onchange="refreshDivisionPreview()"
+                    >
+                        <option value="" disabled selected>
+                            Select Year
+                        </option>
+                    </select>
+                </div>
+
+            </fieldset>
+
+
+            <!-- Division -->
+            <fieldset>
+
+                <legend>Division</legend>
+
+                <div>
+                    <label for="divisionName">
+                        Division Code
+                    </label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="divisionName"
+                        id="divisionName"
+                        required
+                    >
+                        <option value="" disabled selected>
+                            Select Division
+                        </option>
+
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                        <option value="E">E</option>
+                    </select>
+                </div>
+
+
+                <div>
+                    <label for="studentCount">
+                        Student Count
+                    </label>
+
+                    <input
+                        class="myInput"
+                        id="studentCount"
+                        name="studentCount"
+                        type="number"
+                        min="1"
+                        max="200"
+                        step="1"
+                        placeholder="e.g. 60"
+                        required
+                        oninput="filterClassroomsByCapacity()"
+                    >
+                </div>
+
+            </fieldset>
+
+        </fieldset>
+
+
+        <!-- =========================================================
+             DIVISION PREFERENCES
+        ========================================================== -->
+        <fieldset>
+
+            <legend>Division Preferences</legend>
+
+            <div class="grid col-span-2 dropdown-grp">
+
+                <!-- Preferred Start Time -->
+                <div>
+
+                    <label for="startTimeId">
+                        Preferred Start Time
+                    </label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="startTimeId"
+                        id="startTimeId"
+                        required
+                        onchange="validateTimePreference()"
+                    >
+                        <option value="" disabled selected>
+                            Select Start Time
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <!-- Preferred End Time -->
+                <div>
+
+                    <label for="endTimeId">
+                        Preferred End Time
+                    </label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="endTimeId"
+                        id="endTimeId"
+                        required
+                        onchange="validateTimePreference()"
+                    >
+                        <option value="" disabled selected>
+                            Select End Time
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <!-- Preferred Classroom -->
+                <div>
+
+                    <label for="classroomId">
+                        Preferred Classroom
+                    </label>
+
+                    <select
+                        class="dropdown myInput"
+                        name="classroomId"
+                        id="classroomId"
+                        required
+                        disabled
+                    >
+                        <option value="" disabled selected>
+                            Select Classroom
+                        </option>
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- Preference preview -->
+            <div id="preferencePreview"
+                 style="margin-top: 10px;">
+            </div>
+
+        </fieldset>
+
+
+        <!-- =========================================================
+             FORM BUTTONS
+        ========================================================== -->
+        <div class="btn-grp">
+
+            <button
+                class="secondary btn"
+                id="sndyBtn"
+                onclick="cancelDivisionEdit();"
+                type="button"
+            >
+                Clear
+            </button>
+
+            <button
+                class="primary btn"
+                id="prmyBtn"
+                onclick="saveDivision();"
+                type="button"
+            >
+                Create
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<hr>
+
+
+<!-- =============================================================
+     EXISTING DIVISIONS
+============================================================== -->
+<div class="view-table">
+
+    <table>
+
+        <caption>Existing Divisions</caption>
+
+        <thead>
+
+            <tr>
+                <td>Sr No</td>
+                <td>UID</td>
+                <td>Department</td>
+                <td>Programme</td>
+                <td>Year</td>
+                <td>Division</td>
+                <td>Students</td>
+                <td>Start Time</td>
+                <td>End Time</td>
+                <td>Classroom</td>
+                <td>Actions</td>
+            </tr>
+
+        </thead>
+
+        <tbody class="recordTable"></tbody>
+
+    </table>
+
+</div>
+
+
+<script>
+
+applyValidityChecker();
+
+
+/* ================================================================
+   GLOBALS
+================================================================ */
+
+const divisionForm = document.getElementById('divisionForm');
+
+const divisionCodes = ['A', 'B', 'C', 'D', 'E'];
+
+let allTimeslots = [];
+let allClassrooms = [];
+
+
+/* ================================================================
+   GENERIC SELECT RESET
+================================================================ */
+
+function resetDivisionSelect(select, placeholder) {
+
+    $(select)
+        .empty()
+        .append(
+            `<option value="" disabled selected>
+                ${placeholder}
+             </option>`
+        );
+
+}
+
+
+/* ================================================================
+   DEPARTMENT
+================================================================ */
+
+async function populateDepartment(selectedId = '') {
+
+    try {
+
+        const result = await getPrerequisits('department');
+
+        const departments =
+            result?.responseBody?.departments ?? [];
+
+        const select = $('#departmentId');
+
+        resetDivisionSelect(
+            select,
+            'Select Department'
+        );
+
+
+        departments.forEach(dept => {
+
+            select.append(`
+                <option value="${dept.DEPARTMENT_ID}">
+                    ${dept.LONG_NAME}
+                </option>
+            `);
+
+        });
+
+
+        select.prop('disabled', false);
+
+
+        if (selectedId !== '') {
+
+            select.val(String(selectedId));
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            'populateDepartment error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load departments.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   PROGRAMME
+================================================================ */
+
+async function populateProgramme(
+    departmentId,
+    selectedId = ''
+) {
+
+    const programmeSelect = $('#programmeId');
+    const yearSelect = $('#yearId');
+
+
+    resetDivisionSelect(
+        programmeSelect,
+        'Select Programme'
+    );
+
+    resetDivisionSelect(
+        yearSelect,
+        'Select Year'
+    );
+
+
+    programmeSelect.prop('disabled', true);
+    yearSelect.prop('disabled', true);
+
+
+    if (!departmentId) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const result =
+            await getPrerequisits('programme');
+
+        const programmes =
+            result?.responseBody?.programmes ?? [];
+
+
+        programmes
+            .filter(
+                p =>
+                    String(p.DEPARTMENT_ID) ===
+                    String(departmentId)
+            )
+            .forEach(p => {
+
+                programmeSelect.append(`
+                    <option value="${p.PROGRAMME_ID}">
+                        ${p.LONG_NAME}
+                    </option>
+                `);
+
+            });
+
+
+        programmeSelect.prop(
+            'disabled',
+            false
+        );
+
+
+        if (selectedId !== '') {
+
+            programmeSelect.val(
+                String(selectedId)
+            );
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            'populateProgramme error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load programmes.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   YEAR
+================================================================ */
+
+async function populateYear(
+    programmeId,
+    selectedYear = ''
+) {
+
+    const yearSelect = $('#yearId');
+
+
+    resetDivisionSelect(
+        yearSelect,
+        'Select Year'
+    );
+
+    yearSelect.prop(
+        'disabled',
+        true
+    );
+
+
+    if (!programmeId) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const [
+            consistsResult,
+            yearsResult
+        ] = await Promise.all([
+
+            getPrerequisits('consists'),
+            getPrerequisits('year')
+
+        ]);
+
+
+        const consists =
+            consistsResult?.responseBody?.consists ?? [];
+
+        const years =
+            yearsResult?.responseBody?.years ?? [];
+
+
+        consists
+
+            .filter(
+                c =>
+                    String(c.PROGRAMME_ID) ===
+                    String(programmeId)
+            )
+
+            .sort(
+                (a, b) =>
+                    Number(a.YEAR_NUMBER) -
+                    Number(b.YEAR_NUMBER)
+            )
+
+            .forEach(c => {
+
+                const year = years.find(
+                    y =>
+                        String(y.YEAR_NUMBER) ===
+                        String(c.YEAR_NUMBER)
+                );
+
+
+                if (year) {
+
+                    yearSelect.append(`
+                        <option value="${year.YEAR_NUMBER}">
+                            ${year.YEAR_NAME}
+                        </option>
+                    `);
+
+                }
+
+            });
+
+
+        yearSelect.prop(
+            'disabled',
+            false
+        );
+
+
+        if (selectedYear !== '') {
+
+            yearSelect.val(
+                String(selectedYear)
+            );
+
+        }
+
+
+        await refreshDivisionPreview();
+
+    }
+    catch (error) {
+
+        console.error(
+            'populateYear error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load years.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   LOAD TIMESLOTS
+================================================================ */
+
+async function loadTimeslots(
+    selectedStartId = '',
+    selectedEndId = ''
+) {
+
+    try {
+
+        const result =
+            await getPrerequisits('timeslot');
+
+        const timeslots =
+            result?.responseBody?.timeslots ?? [];
+
+
+        allTimeslots = timeslots.map(slot => ({
+
+            SLOT_ID: String(slot.SLOT_ID),
+
+            START_TIME:
+                slot.START_TIME,
+
+            END_TIME:
+                slot.END_TIME,
+
+            SLOT_TYPE:
+                String(slot.SLOT_TYPE || '')
+                    .toUpperCase()
+
+        }));
+
+
+        const startSelect =
+            $('#startTimeId');
+
+        const endSelect =
+            $('#endTimeId');
+
+
+        resetDivisionSelect(
+            startSelect,
+            'Select Start Time'
+        );
+
+        resetDivisionSelect(
+            endSelect,
+            'Select End Time'
+        );
+
+
+        /*
+         * Your current API returns lecture timeslots
+         * for getPrerequisits('timeslot'), which is exactly
+         * what we want for the division preference.
+         */
+        allTimeslots.forEach(slot => {
+
+            const text =
+                formatTime(slot.START_TIME) +
+                ' - ' +
+                formatTime(slot.END_TIME);
+
+
+            startSelect.append(`
+                <option
+                    value="${slot.SLOT_ID}"
+                    data-start="${slot.START_TIME}"
+                    data-end="${slot.END_TIME}"
+                >
+                    ${text}
+                </option>
+            `);
+
+
+            endSelect.append(`
+                <option
+                    value="${slot.SLOT_ID}"
+                    data-start="${slot.START_TIME}"
+                    data-end="${slot.END_TIME}"
+                >
+                    ${text}
+                </option>
+            `);
+
+        });
+
+
+        if (selectedStartId !== '') {
+
+            startSelect.val(
+                String(selectedStartId)
+            );
+
+        }
+
+
+        if (selectedEndId !== '') {
+
+            endSelect.val(
+                String(selectedEndId)
+            );
+
+        }
+
+
+        validateTimePreference();
+
+    }
+    catch (error) {
+
+        console.error(
+            'loadTimeslots error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load timeslots.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   LOAD CLASSROOMS
+================================================================ */
+
+async function loadClassrooms(
+    selectedClassroomId = ''
+) {
+
+    try {
+
+        const result =
+            await getPrerequisits('classroom');
+
+        const classrooms =
+            result?.responseBody?.classrooms ?? [];
+
+
+        allClassrooms = classrooms;
+
+
+        $('#classroomId').data(
+            'selectedClassroom',
+            selectedClassroomId
+        );
+
+
+        filterClassroomsByCapacity();
+
+    }
+    catch (error) {
+
+        console.error(
+            'loadClassrooms error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load classrooms.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   CLASSROOM CAPACITY FILTER
+================================================================ */
+
+function filterClassroomsByCapacity() {
+
+    const select =
+        $('#classroomId');
+
+    const studentCount =
+        Number($('#studentCount').val() || 0);
+
+    const selectedClassroom =
+        String(
+            select.data('selectedClassroom') || ''
+        );
+
+
+    resetDivisionSelect(
+        select,
+        studentCount > 0
+            ? 'Select Classroom'
+            : 'Enter Student Count First'
+    );
+
+
+    /*
+     * The current minimal classroom API only returns:
+     *
+     * CLASSROOM_ID
+     * ROOM_NUMBER
+     *
+     * Therefore we cannot reliably filter by CAPACITY
+     * until api.php includes CAPACITY.
+     *
+     * We still load every classroom here.
+     */
+    allClassrooms.forEach(room => {
+
+        select.append(`
+            <option value="${room.CLASSROOM_ID}">
+                ${room.ROOM_NUMBER}
+            </option>
+        `);
+
+    });
+
+
+    select.prop(
+        'disabled',
+        allClassrooms.length === 0
+    );
+
+
+    if (selectedClassroom !== '') {
+
+        select.val(
+            selectedClassroom
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   TIME VALIDATION
+================================================================ */
+
+function validateTimePreference() {
+
+    const startId =
+        $('#startTimeId').val();
+
+    const endId =
+        $('#endTimeId').val();
+
+
+    if (!startId || !endId) {
+
+        $('#preferencePreview').empty();
+
+        return true;
+
+    }
+
+
+    const startSlot =
+        allTimeslots.find(
+            slot =>
+                String(slot.SLOT_ID) ===
+                String(startId)
+        );
+
+    const endSlot =
+        allTimeslots.find(
+            slot =>
+                String(slot.SLOT_ID) ===
+                String(endId)
+        );
+
+
+    if (!startSlot || !endSlot) {
+
+        return false;
+
+    }
+
+
+    const start =
+        timeToMinutes(
+            startSlot.START_TIME
+        );
+
+    const end =
+        timeToMinutes(
+            endSlot.END_TIME
+        );
+
+
+    if (start >= end) {
+
+        $('#preferencePreview').html(`
+            <span style="color:red;">
+                End time must be later than start time.
+            </span>
+        `);
+
+        return false;
+
+    }
+
+
+    $('#preferencePreview').html(`
+        <span>
+            Preferred classroom period:
+            <strong>
+                ${formatTime(startSlot.START_TIME)}
+                -
+                ${formatTime(endSlot.END_TIME)}
+            </strong>
+        </span>
+    `);
+
+
+    return true;
+
+}
+
+
+/* ================================================================
+   TIME HELPERS
+================================================================ */
+
+function timeToMinutes(time) {
+
+    if (!time) {
+
+        return 0;
+
+    }
+
+
+    const parts =
+        String(time).split(':');
+
+
+    return (
+        Number(parts[0]) * 60 +
+        Number(parts[1])
+    );
+
+}
+
+
+function formatTime(time) {
+
+    if (!time) {
+
+        return '';
+
+    }
+
+
+    const parts =
+        String(time).split(':');
+
+    let hour =
+        Number(parts[0]);
+
+    const minute =
+        parts[1];
+
+
+    const suffix =
+        hour >= 12
+            ? 'PM'
+            : 'AM';
+
+
+    hour =
+        hour % 12 || 12;
+
+
+    return `${String(hour).padStart(2, '0')}:${minute} ${suffix}`;
+
+}
+
+
+/* ================================================================
+   CHECK DUPLICATE DIVISION
+================================================================ */
+
+async function refreshDivisionPreview() {
+
+    const programmeId =
+        $('#programmeId').val();
+
+    const yearId =
+        $('#yearId').val();
+
+
+    if (!programmeId || !yearId) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const result =
+            await getPrerequisits('division');
+
+        const divisions =
+            result?.responseBody?.divisions ?? [];
+
+
+        const existing =
+            divisions.filter(
+                d =>
+                    String(d.PROGRAMME_ID) ===
+                    String(programmeId) &&
+
+                    String(d.YEAR_NUMBER) ===
+                    String(yearId)
+            );
+
+
+        const used =
+            existing
+
+                .map(
+                    d =>
+                        String(
+                            d.DIVISION_NAME || ''
+                        ).toUpperCase()
+                )
+
+                .filter(
+                    code =>
+                        divisionCodes.includes(code)
+                );
+
+
+        $('#divisionName option')
+            .each(function () {
+
+                const code =
+                    $(this).val();
+
+
+                if (!code) {
+
+                    return;
+
+                }
+
+
+                const currentId =
+                    $('#divisionId').val();
+
+
+                const current =
+                    existing.find(
+                        d =>
+                            String(
+                                d.DIVISION_ID
+                            ) ===
+                            String(currentId)
+                    );
+
+
+                const isCurrent =
+                    current &&
+                    String(
+                        current.DIVISION_NAME
+                    ).toUpperCase() === code;
+
+
+                $(this).prop(
+                    'disabled',
+                    used.includes(code) &&
+                    !isCurrent
+                );
+
+            });
+
+    }
+    catch (error) {
+
+        console.error(
+            'refreshDivisionPreview error:',
+            error
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   SAVE DIVISION
+================================================================ */
+
+async function saveDivision() {
+
+    if (!divisionForm.checkValidity()) {
+
+        divisionForm.reportValidity();
+
+        return;
+
+    }
+
+
+    if (!validateTimePreference()) {
+
+        showInfoInline(
+            'Please select a valid start and end time.'
+        );
+
+        return;
+
+    }
+
+
+    const formData =
+        new FormData(divisionForm);
+
+    const divisionId =
+        $('#divisionId').val();
+
+
+    formData.append(
+        'formCategory',
+        'division'
+    );
+
+
+    formData.append(
+        'formType',
+        divisionId
+            ? 'update_division'
+            : 'add_division'
+    );
+
+
+    $.ajax({
+
+        url: 'api.php',
+
+        type: 'POST',
+
+        data: formData,
+
+        processData: false,
+
+        contentType: false,
+
+        dataType: 'json'
+
+    })
+
+    .done(function (result) {
+
+        showInfoInline(
+            result.responseBody ||
+            'Division saved successfully.'
+        );
+
+
+        cancelDivisionEdit();
+
+        createDivisionTable();
+
+    })
+
+    .fail(function (xhr) {
+
+        const message =
+            xhr.responseJSON?.responseBody ||
+            'An unexpected error occurred while saving the division.';
+
+
+        showInfoInline(message);
+
+    });
+
+}
+
+
+/* ================================================================
+   EDIT DIVISION
+================================================================ */
+
+async function prefillUpdateform(
+    recordId
+) {
+
+    try {
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            'formCategory',
+            'division'
+        );
+
+
+        formData.append(
+            'formType',
+            'get_one_division'
+        );
+
+
+        formData.append(
+            'divisionId',
+            recordId
+        );
+
+
+        const result =
+            await $.ajax({
+
+                url: 'api.php',
+
+                type: 'POST',
+
+                data: formData,
+
+                processData: false,
+
+                contentType: false,
+
+                dataType: 'json'
+
+            });
+
+
+        const data =
+            result.responseBody;
+
+
+        turnOn();
+
+
+        $('#divisionId').val(
+            data.DIVISION_ID
+        );
+
+
+        $('#departmentId').val(
+            String(data.DEPARTMENT_ID)
+        );
+
+
+        await populateProgramme(
+            data.DEPARTMENT_ID,
+            data.PROGRAMME_ID
+        );
+
+
+        await populateYear(
+            data.PROGRAMME_ID,
+            data.YEAR_NUMBER
+        );
+
+
+        $('#divisionName').val(
+            data.DIVISION_NAME
+        );
+
+
+        $('#studentCount').val(
+            data.STUDENT_COUNT
+        );
+
+
+        /*
+         * Load preferences returned by api.php.
+         */
+        await loadTimeslots(
+            data.START_TIME_ID,
+            data.END_TIME_ID
+        );
+
+
+        await loadClassrooms(
+            data.CLASSROOM_ID
+        );
+
+
+        $('#startTimeId').val(
+            String(data.START_TIME_ID || '')
+        );
+
+
+        $('#endTimeId').val(
+            String(data.END_TIME_ID || '')
+        );
+
+
+        $('#classroomId').val(
+            String(data.CLASSROOM_ID || '')
+        );
+
+
+        validateTimePreference();
+
+
+        $('#prmyBtn')
+            .text('Update')
+            .attr(
+                'onclick',
+                'saveDivision()'
+            );
+
+
+        $('#sndyBtn')
+            .text('Cancel')
+            .attr(
+                'onclick',
+                'cancelDivisionEdit()'
+            );
+
+
+        refreshDivisionPreview();
+
+
+        showInfoInline(
+            'Update Form Ready'
+        );
+
+
+        $('#studentCount').focus();
+
+    }
+    catch (error) {
+
+        console.error(
+            'prefillUpdateform error:',
+            error
+        );
+
+        showInfoInline(
+            'Could not load the division.'
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   CLEAR / CANCEL
+================================================================ */
+
+function cancelDivisionEdit() {
+
+    divisionForm.reset();
+
+
+    $('#divisionId').val('');
+
+
+    resetDivisionSelect(
+        '#programmeId',
+        'Select Programme'
+    );
+
+
+    resetDivisionSelect(
+        '#yearId',
+        'Select Year'
+    );
+
+
+    resetDivisionSelect(
+        '#startTimeId',
+        'Select Start Time'
+    );
+
+
+    resetDivisionSelect(
+        '#endTimeId',
+        'Select End Time'
+    );
+
+
+    resetDivisionSelect(
+        '#classroomId',
+        'Select Classroom'
+    );
+
+
+    $('#programmeId')
+        .prop('disabled', true);
+
+
+    $('#yearId')
+        .prop('disabled', true);
+
+
+    $('#classroomId')
+        .prop('disabled', true);
+
+
+    $('#divisionName option')
+        .prop('disabled', false);
+
+
+    $('#preferencePreview')
+        .empty();
+
+
+    $('#prmyBtn')
+        .text('Create')
+        .attr(
+            'onclick',
+            'saveDivision()'
+        );
+
+
+    $('#sndyBtn')
+        .text('Clear')
+        .attr(
+            'onclick',
+            'cancelDivisionEdit()'
+        );
+
+}
+
+
+/* ================================================================
+   DELETE DIVISION
+================================================================ */
+
+async function delete_division(
+    recordId
+) {
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        'formCategory',
+        'division'
+    );
+
+
+    formData.append(
+        'formType',
+        'delete_division'
+    );
+
+
+    formData.append(
+        'divisionId',
+        recordId
+    );
+
+
+    try {
+
+        const result =
+            await $.ajax({
+
+                url: 'api.php',
+
+                type: 'POST',
+
+                data: formData,
+
+                processData: false,
+
+                contentType: false,
+
+                dataType: 'json'
+
+            });
+
+
+        showInfoInline(
+            result.responseBody ||
+            'Division deleted successfully.'
+        );
+
+
+        await createDivisionTable();
+
+
+        return result;
+
+    }
+    catch (xhr) {
+
+        showInfoInline(
+
+            xhr.responseJSON?.responseBody ||
+
+            'Could not delete the division.'
+
+        );
+
+    }
+
+}
+
+
+/* ================================================================
+   CREATE DIVISION TABLE
+================================================================ */
+
+async function createDivisionTable(
+    departmentId = false,
+    programmeId = false,
+    year = false
+) {
+
+    try {
+
+        const result =
+            await getPrerequisits('division');
+
+
+        let divisions =
+            result?.responseBody?.divisions ?? [];
+
+
+        if (departmentId) {
+
+            divisions =
+                divisions.filter(
+                    d =>
+                        String(
+                            d.DEPARTMENT_ID
+                        ) ===
+                        String(departmentId)
+                );
+
+        }
+
+
+        if (programmeId) {
+
+            divisions =
+                divisions.filter(
+                    d =>
+                        String(
+                            d.PROGRAMME_ID
+                        ) ===
+                        String(programmeId)
+                );
+
+        }
+
+
+        if (year) {
+
+            divisions =
+                divisions.filter(
+                    d =>
+                        String(
+                            d.YEAR_NUMBER
+                        ) ===
+                        String(year)
+                );
+
+        }
+
+
+        const tbody =
+            $('.recordTable');
+
+
+        tbody.empty();
+
+
+        if (divisions.length === 0) {
+
+            tbody.append(`
+                <tr>
+                    <td colspan="11">
+                        No divisions found.
+                    </td>
+                </tr>
+            `);
+
+            return;
+
+        }
+
+
+        divisions.forEach(
+            (division, index) => {
+
+                const yearName =
+                    division.YEAR_NAME ||
+
+                    ({
+                        1: 'FIRST YEAR',
+                        2: 'SECOND YEAR',
+                        3: 'THIRD YEAR',
+                        4: 'FOURTH YEAR',
+                        5: 'FIFTH YEAR'
+                    }[
+                        division.YEAR_NUMBER
+                    ] || '');
+
+
+                tbody.append(`
+
+                    <tr>
+
+                        <td>
+                            ${index + 1}
+                        </td>
+
+                        <td>
+                            ${division.DIVISION_ID ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.DEPARTMENT_NAME ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.PROGRAMME_NAME ?? ''}
+                        </td>
+
+                        <td>
+                            ${yearName}
+                        </td>
+
+                        <td>
+                            ${division.DIVISION_NAME ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.STUDENT_COUNT ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.START_TIME ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.END_TIME ?? ''}
+                        </td>
+
+                        <td>
+                            ${division.ROOM_NUMBER ?? ''}
+                        </td>
+
+                        <td>
+
+                            <button
+                                class="btn primary"
+                                data-recordId="${division.DIVISION_ID}"
+                                onclick="prefillUpdateform(
+                                    ${division.DIVISION_ID}
+                                );"
+                            >
+                                Update
+                            </button>
+
+
+                            <button
+                                class="btn secondary"
+                                data-recordId="${division.DIVISION_ID}"
+                                onclick="confirmDeleteDialog(
+                                    'Delete Division?',
+                                    'This will permanently delete the selected division.',
+                                    ${division.DIVISION_ID},
+                                    delete_division
+                                );"
+                            >
+                                Delete
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `);
+
+            }
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            'createDivisionTable error:',
+            error
+        );
+
+
+        $('.recordTable').html(`
+            <tr>
+                <td colspan="11">
+                    Could not load divisions.
+                </td>
+            </tr>
+        `);
+
+    }
+
+}
+
+async function initializeDivisionPage() {
+
+    await Promise.all([
+
+        populateDepartment(),
+
+        loadTimeslots(),
+
+        loadClassrooms()
+
+    ]);
+
+
+    await createDivisionTable();
+
+}
+
+
+initializeDivisionPage();
+
+</script>
+

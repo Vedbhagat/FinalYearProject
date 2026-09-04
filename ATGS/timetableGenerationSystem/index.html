@@ -21,9 +21,10 @@
                     <option id="department" value="" data-loc="sections/department.html">Departments</option>
                     <option id="teacher" value="" data-loc="sections/teacher.html">Teachers</option>
                     <option id="programme" value="" data-loc="sections/programme.html">Programmes</option>
-                    <option id="course"  value="" data-loc="sections/course.html">Courses</option>
-                    <option id="optionalCourse"  value="" data-loc="sections/optionalCourses.html">Optional Courses</option>
-                    <option id="division" disabled value="" data-loc="sections/division.html">Divisions</option>
+                    <option id="course" value="" data-loc="sections/course.html">Courses</option>
+                    <option id="optionalCourse" value="" data-loc="sections/optionalCourses.html">Optional Courses</option>
+                    <option id="division" value="" data-loc="sections/division.html">Divisions</option>
+                    <option id="optionalCoursesMapper" value="" data-loc="sections/optionalCoursesMapper.html">Optional Courses Mapper</option>
                     <option id="teacherWorkload" disabled value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
                     <option id="timetable" disabled value="" data-loc="sections/timetable.html">Timetable</option>
                 </select>
@@ -46,7 +47,7 @@
 <script>
        
     $(document).ready(function(){
-        $("#MainContents").load('sections/optionalCourses.html');
+        $("#MainContents").load('sections/optionalCoursesMapper.html');
         $(".navigator").change(
             function () {
                 var currentlyViewing = $(".navigator>option:selected").attr("data-loc");
@@ -135,5 +136,81 @@
             return result;
     }
 
+function applyValidityCheckerDEPRECIATED() {
+    const form = document.querySelector('form');
+    const submitButton = document.querySelector('.formSubmit');
+    function updateSubmitButton() {
+        submitButton.disabled = !form.checkValidity();
+    }
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('blur', (e) => {
+            if (!e.target.checkValidity()) {
+                e.target.reportValidity();
+            }
+            updateSubmitButton();
+        });
+        input.addEventListener('input', updateSubmitButton);
+        input.addEventListener('change', updateSubmitButton);
+    });
+    updateSubmitButton();
+}
+
+function applyValidityCheckerV2() {
+    const form = document.querySelector('form');
+    if (!form) {
+        console.warn('Form not found');
+        return;
+    }
+    const submitButton = form.querySelector('.formSubmit');
+    if (!submitButton) {
+        console.warn('Submit button .formSubmit not found');
+        return;
+    }
+    function updateSubmitButton() {
+        submitButton.disabled = !form.checkValidity();
+    }
+    form.querySelectorAll('input, select, textarea').forEach(input => {
+        input.addEventListener('blur', (e) => {
+            if (!e.target.checkValidity()) {
+                e.target.reportValidity();
+            }
+            updateSubmitButton();
+        });
+        input.addEventListener('input', updateSubmitButton);
+        input.addEventListener('change', updateSubmitButton);
+    });
+    updateSubmitButton();
+}
+function applyValidityChecker() {
+    const form = document.querySelector('form');
+    if (!form) {
+        console.warn('Form not found');
+        return;
+    }
+    const submitButton = form.querySelector('.formSubmit');
+    if (!submitButton) {
+        console.warn('Submit button .formSubmit not found');
+        return;
+    }
+
+    function updateSubmitButton() {
+        submitButton.disabled = !form.checkValidity();
+    }
+
+    // Use jQuery event delegation on the form to handle dynamically added fields automatically
+    $(form)
+        .off('.validityChecker')
+        .on('input.validityChecker change.validityChecker', 'input, select, textarea', function() {
+            updateSubmitButton();
+        })
+        .on('blur.validityChecker', 'input, select, textarea', function(e) {
+            if (!this.checkValidity()) {
+                this.reportValidity();
+            }
+            updateSubmitButton();
+        });
+
+    updateSubmitButton();
+}
 </script>
 </html>

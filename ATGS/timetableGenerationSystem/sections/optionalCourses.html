@@ -11,7 +11,7 @@
         <fieldset>
             <div>
                 <label>Course One</label>
-                <select class="dropdown inp-w-base" name="course1" id="course1" disabled required onchange="disableThisCourse(this)">
+                <select class="dropdown inp-w-base" name="course1" id="course1" disabled required>
                     <option value="" disabled selected>Select Year</option>
                 </select>
             </div>
@@ -23,8 +23,8 @@
             </div>
         </fieldset>
         <div class="btn-grp">
-            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
-            <button class="primary btn" id="prmyBtn" onclick="map_course();" type="button">Map</button>
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();populateOptionalCourse()" type="button">Clear</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="map_course();populateOptionalCourse();" type="button">Map</button>
         </div>
     </form>
 </div>
@@ -40,6 +40,7 @@
                 <td >Department</td>
                 <td >Programme</td>
                 <td >Year</td>
+                <td >Semester</td>
                 <td >Course One</td>
                 <td >Course Two</td>
                 <td >Status</td>
@@ -54,28 +55,105 @@
 
 <script>
 
+
+applyValidityChecker();
 async function populateOptionalCourse() {
+
     const minimalData = await getPrerequisits('optionalcourse');
     const crses = minimalData.responseBody.optionalcourses;
-    
-    console.log(crses)
-    const optionalCourses = crses.filter(crse =>
-        ((crse.ISOPTIONAL == 1 && crse.OPTIONAL_ID == null)
-    )
+
+    console.log('All courses:', crses);
+
+    // Only optional courses that are not mapped yet
+    const optionalCourses = crses.filter(
+        crse => crse.ISOPTIONAL == true && crse.OPTIONAL_ID == null
     );
-    console.log(optionalCourses)
-    const options = optionalCourses.map(crse => `
-        <option value="${crse.COURSE_ID}">
-            ${crse.LONG_NAME}
-        </option>
-    `).join('');
+
+    console.log('Unmapped optional courses:', optionalCourses);
+
+    // Store the courses so the change event can use them
+    $('#course1').data('optionalCourses', optionalCourses);
+
+    const options = optionalCourses
+        .map(crse => `
+            <option value="${crse.COURSE_ID}">
+                ${crse.DEPARTMENT_SHORT_NAME} -
+                ${crse.PROGRAMME_SHORT_NAME} -
+                Year ${crse.YEAR_NUMBER} -
+                ${crse.SEMESTER} -
+                ${crse.COURSE_FULL_NAME}
+            </option>
+        `)
+        .join('');
+
     $('#course1')
-        .html('<option value="" disabled selected>Select Course</option>' + options)
+        .html(
+            '<option value="" disabled selected>Select Course</option>' +
+            options
+        )
         .prop('disabled', false);
+
+    // Initially course2 has no courses until course1 is selected
     $('#course2')
-        .html('<option value="" disabled selected>Select Course</option>' + options)
-        .prop('disabled', false);
+        .html('<option value="" disabled selected>Select Course</option>')
+        .prop('disabled', true);
 }
+
+
+// When course1 changes
+$('#course1').on('change', function () {
+
+    const selectedCourseId = $(this).val();
+
+    const optionalCourses = $(this).data('optionalCourses') || [];
+
+    // Find the selected course
+    const selectedCourse = optionalCourses.find(
+        crse => String(crse.COURSE_ID) === String(selectedCourseId)
+    );
+
+    if (!selectedCourse) {
+        $('#course2')
+            .html('<option value="" disabled selected>Select Course</option>')
+            .prop('disabled', true);
+
+        return;
+    }
+
+    console.log('Selected course:', selectedCourse);
+
+    // Only courses from the same department, programme and year
+    // and exclude the course selected in course1
+    const matchingCourses = optionalCourses.filter(crse =>
+        String(crse.DEPARTMENT_ID) === String(selectedCourse.DEPARTMENT_ID) &&
+        String(crse.PROGRAMME_ID) === String(selectedCourse.PROGRAMME_ID) &&
+        String(crse.YEAR_NUMBER) === String(selectedCourse.YEAR_NUMBER) &&
+        String(crse.SEMESTER) === String(selectedCourse.SEMESTER) &&
+        String(crse.COURSE_ID) !== String(selectedCourse.COURSE_ID)
+    );
+
+    console.log('Matching courses:', matchingCourses);
+
+    const options = matchingCourses
+        .map(crse => `
+            <option value="${crse.COURSE_ID}">
+                ${crse.DEPARTMENT_SHORT_NAME} -
+                ${crse.PROGRAMME_SHORT_NAME} -
+                Year ${crse.YEAR_NUMBER} -
+                ${crse.SEMESTER} -
+                ${crse.COURSE_FULL_NAME}
+            </option>
+        `)
+        .join('');
+
+    $('#course2')
+        .html(
+            '<option value="" disabled selected>Select Course</option>' +
+            options
+        )
+        .prop('disabled', matchingCourses.length === 0);
+});
+
 populateOptionalCourse()
 
 var form = document.getElementById('form');
@@ -85,12 +163,10 @@ async function prefillMapForm(recordId) {
         const oldData = await load_existing('course');
         const parsedOldData = await oldData.responseBody;
         turnOn();
-        $('#course1')
+        await $('#course1')
             .prop('disabled', false)
             .val(parsedOldData.COURSE_NAME);
-        $('#course2')
-            .prop('disabled', false)
-            .val(parsedOldData.COURSE_NAME);
+        // $('#course2')
         $('#prmyBtn')
             .text('Update')
             .attr('data-recordId', recordId)
@@ -122,6 +198,7 @@ async function map_course() {
         showInfoInline(result.responseBody);
         form.reset();
         createOptionalCourseTable();
+        populateOptionalCourse()
     })
     .fail(function(xhr) {
         showInfoInline(
@@ -149,59 +226,53 @@ async function unmap_course(recordId) {
         showInfoInline(result.responseBody);
         form.reset();
         createOptionalCourseTable();
+        populateOptionalCourse()
     })
     .fail(function(xhr) {
         showInfoInline(
             xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.'
         );
-    });
+    })
 }
 
-async function createOptionalCourseTable(departmentId = false, programmeId = false, ...kwargs) {
+async function createOptionalCourseTable() {
+    const result = await getPrerequisits('optionalcourse');
+    let courses = result.responseBody.optionalcourses;
     
-        const result = await getPrerequisits('optionalcourse');
-        let courses = result.responseBody.optionalcourses;
-        
-        const tbody = $('.recordTable');
-        tbody.empty();
-        if (!courses || courses.length === 0) {
-            tbody.append(`<tr><td colspan="10">No courses found.</td></tr>`);
-            return;
-        }
+    const tbody = $('.recordTable');
+    tbody.empty();
+    if (!courses || courses.length === 0) {
+        tbody.append(`<tr><td colspan="10">No courses found.</td></tr>`);
+        return;
+    }
 
-        courses.forEach((course, index) => {
-            tbody.append(`
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${course.DEPARTMENT_SHORT_NAME ?? ''}</td>
-                    <td>${course.PROGRAMME_SHORT_NAME ?? ''}</td>
-                    <td>${course.YEAR_NUMBER==1 ? "FIRST YEAR" : course.YEAR_NUMBER==2 ? "SECOND YEAR" : "THIRD YEAR"}</td>
-                    <td>${course.COURSE_NAME ?? ''}</td>
-                    <td>${course.OPTIONAL_COURSE_NAME ?? 'N.A.'}</td>
-                    <td>${(course.OPTIONAL_COURSE_NAME ==null)?
-                        `<span class="chip chip-red">Pending To Map</span>`:
-                        `<span class="chip chip-green">Mapped</span>`
-                    }</td>
-                    <td>
-                        ${(course.OPTIONAL_COURSE_NAME ==null)?
-                        `<button
-                            class="btn primary"
-                            data-recordId="${course.COURSE_ID}"
-                            onclick="prefillMapForm(${course.COURSE_ID})">
-                            Map
-                        </button>`
-                        :
-                        `<button
-                            class="btn primary"
-                            data-recordId="${course.COURSE_ID}"
-                            onclick="confirmDeleteDialog('Unmapp ?','confirm the Unmap operations',${course.COURSE_ID},unmap_course);">
-                            Unmap
-                        </button>`
-                        }
-                    </td>
-                </tr>
-            `);
-        });
+    courses.forEach((course, index) => {
+        tbody.append(`
+            <tr>
+                <td>${index + 1}</td>
+                <td>${course.DEPARTMENT_SHORT_NAME ?? ''}</td>
+                <td>${course.PROGRAMME_SHORT_NAME ?? ''}</td>
+                <td>${course.YEAR_NUMBER==1 ? "FIRST YEAR" : course.YEAR_NUMBER==2 ? "SECOND YEAR" : "THIRD YEAR"}</td>
+                <td>${course.SEMESTER}</td>
+                <td>${course.COURSE_SHORT_NAME ?? ''}</td>
+                <td>${course.OPTIONAL_COURSE_NAME ?? 'N.A.'}</td>
+                <td>${(course.OPTIONAL_COURSE_NAME ==null)?
+                    `<span class="chip chip-red">Pending To Map</span>`:
+                    `<span class="chip chip-green">Mapped</span>`
+                }</td>
+                <td>
+                    <button
+                        class="btn primary"
+                        ${(course.OPTIONAL_COURSE_NAME ==null)?'disabled':''}
+                        data-recordId="${course.COURSE_ID}"
+                        onclick="confirmDeleteDialog('Unmapp ?','confirm the Unmap operations',${course.COURSE_ID},unmap_course);populateOptionalCourse()">
+                        Unmap
+                    </button>
+                    
+                </td>
+            </tr>
+        `);
+    });
 }
 
 createOptionalCourseTable();
