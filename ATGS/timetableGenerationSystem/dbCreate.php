@@ -289,17 +289,13 @@ runquery($conn, "
 
         CONSTRAINT fk_crseId_optdByTbl 
         FOREIGN KEY (COURSE_ID) 
-        REFERENCES COURSE(COURSE_ID)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        REFERENCES COURSE(COURSE_ID),
         
         CONSTRAINT fk_dvsnId_optdByTbl
         FOREIGN KEY (DIVISION_ID) 
         REFERENCES DIVISION(DIVISION_ID)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
       );
-    ", "Taught_To");
+    ", "opted_by");
 
 /*runquery($conn, "
       CREATE TABLE IF NOT EXISTS GIVEN(
@@ -338,12 +334,13 @@ runquery($conn, "
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS TEACHES(
+        WORKLOAD_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         TEACHER_ID INT,
         COURSE_ID INT,
         DIVISION_ID INT,
         LECTURE_COUNT INT NOT NULL DEFAULT(0),
         
-        PRIMARY KEY(TEACHER_ID,COURSE_ID,DIVISION_ID),
+        UNIQUE(TEACHER_ID,COURSE_ID,DIVISION_ID),
 
         CONSTRAINT fk_tchrId_tchsTbl 
         FOREIGN KEY (TEACHER_ID) 

@@ -176,11 +176,11 @@ async function map_course() {
     });
 }
 
-async function unmap_course(recordId) {
+async function unmap_course(courseId1) {
     const formData = new FormData();
     formData.append('formCategory', 'optionalcoursemapper');
     formData.append('formType', 'unmap_course');
-    formData.append('mainCourse', recordId);
+    formData.append('courseId1', courseId1);
 
     $.ajax({
         url: 'api.php',
@@ -202,20 +202,24 @@ async function unmap_course(recordId) {
 }
 
 async function createOptionalCourseTable() {
-    // Change 'optionalcourse' to 'optionalcoursemapper' so it includes division data
     const result = await getPrerequisits('optionalcoursemapper');
     const courses = result.responseBody.optionalcourses || [];
     const tbody = $('.recordTable');
 
     tbody.empty();
 
-    if (!courses || courses.length === 0) {
+    if (courses.length === 0) {
         tbody.append(`<tr><td colspan="9">No courses found.</td></tr>`);
         return;
     }
 
-    // Filter unique option groups to avoid duplicate row entries in the view table
-    const uniquePairs = courses.filter(course => course.COURSE_ID && course.OPTIONAL_ID && Number(course.COURSE_ID) < Number(course.OPTIONAL_ID));
+    // Only use one row for each optional course pair.
+    // COURSE_ID < OPTIONAL_ID prevents A-B and B-A from appearing twice.
+    const uniquePairs = courses.filter(course =>
+        course.COURSE_ID &&
+        course.OPTIONAL_ID &&
+        Number(course.COURSE_ID) < Number(course.OPTIONAL_ID)
+    );
 
     if (uniquePairs.length === 0) {
         tbody.append(`<tr><td colspan="9">No optional course pairs found.</td></tr>`);
@@ -223,44 +227,104 @@ async function createOptionalCourseTable() {
     }
 
     uniquePairs.forEach((course, index) => {
-        const course1Division = course.COURSE1_DIVISION_NAME ?? course.DIVISION1_NAME ?? course.DIVISION_NAME_1 ?? null;
-        const course2Division = course.COURSE2_DIVISION_NAME ?? course.DIVISION2_NAME ?? course.DIVISION_NAME_2 ?? null;
 
-        const course1Display = `<div><strong>${course.COURSE_SHORT_NAME ?? course.COURSE_FULL_NAME ?? ''}</strong><br><small>Division: ${course1Division ?? 'N.A'}</small></div>`;
-        
-        const optionalCourse = courses.find(c => String(c.COURSE_ID) === String(course.OPTIONAL_ID));
-        const course2Name = optionalCourse?.COURSE_SHORT_NAME ?? optionalCourse?.COURSE_FULL_NAME ?? 'N.A.';
-        const course2Display = `<div><strong>${course2Name}</strong><br><small>Division: ${course2Division ?? 'N.A'}</small></div>`;
+        // Course 1 mapping
+        const course1Division =
+            course.MAPPED_DIVISION_NAME ?? null;
 
-        const isAllocated = course1Division !== null && course1Division !== '' &&
-            course2Division !== null && course2Division !== '';
+        // Find the optional course (course 2)
+        const optionalCourse = courses.find(
+            c => String(c.COURSE_ID) === String(course.OPTIONAL_ID)
+        );
+
+        // Course 2 information and mapping
+        const course2Name =
+            optionalCourse?.COURSE_SHORT_NAME ??
+            optionalCourse?.COURSE_FULL_NAME ??
+            'N.A.';
+
+        const course2Division =
+            optionalCourse?.MAPPED_DIVISION_NAME ?? null;
+
+        const course1Display = `
+            <div>
+                <strong>${course.COURSE_SHORT_NAME ?? course.COURSE_FULL_NAME ?? ''}</strong>
+                <br>
+                <small>
+                    Division: ${course1Division ?? 'N.A.'}
+                </small>
+            </div>
+        `;
+
+        const course2Display = `
+            <div>
+                <strong>${course2Name}</strong>
+                <br>
+                <small>
+                    Division: ${course2Division ?? 'N.A.'}
+                </small>
+            </div>
+        `;
+
+        // Both courses must have a division mapping
+        const isAllocated =
+            course1Division !== null &&
+            course1Division !== '' &&
+            course2Division !== null &&
+            course2Division !== '';
 
         const status = isAllocated
             ? `<span class="chip chip-green">Allotted</span>`
             : `<span class="chip chip-red">Pending</span>`;
 
         const action = isAllocated
-            ? `<button class="btn primary" onclick="confirmDeleteDialog('Unmap?', 'Confirm the Unmap operation', ${course.COURSE_ID}, unmap_course);">Unmap</button>`
-            : `<button class="btn primary" onclick="$('#optionGroup').val(${course.COURSE_ID}).trigger('change'); turnOn();">Map</button>`;
+            ? `
+                <button
+                    class="btn primary"
+                    onclick="confirmDeleteDialog(
+                        'Unmap?',
+                        'Confirm the Unmap operation',
+                        ${course.COURSE_ID},
+                        unmap_course
+                    );">
+                    Unmap
+                </button>
+            `
+            : `
+                <button
+                    class="btn primary"
+                    onclick="$('#optionGroup')
+                        .val(${course.COURSE_ID})
+                        .trigger('change');
+                        turnOn();">
+                    Map
+                </button>
+            `;
 
-        const year = course.YEAR_NUMBER == 1 ? "FIRST YEAR"
-            : course.YEAR_NUMBER == 2 ? "SECOND YEAR"
-            : course.YEAR_NUMBER == 3 ? "THIRD YEAR"
-            : course.YEAR_NUMBER ?? '';
+        const year =
+            course.YEAR_NUMBER == 1 ? "FIRST YEAR" :
+            course.YEAR_NUMBER == 2 ? "SECOND YEAR" :
+            course.YEAR_NUMBER == 3 ? "THIRD YEAR" :
+            course.YEAR_NUMBER == 4 ? "FOURTH YEAR" :
+            course.YEAR_NUMBER == 5 ? "FIFTH YEAR" :
+            course.YEAR_NAME ?? '';
 
-        tbody.append(`<tr>
-            <td>${index + 1}</td>
-            <td>${course.DEPARTMENT_SHORT_NAME ?? ''}</td>
-            <td>${course.PROGRAMME_SHORT_NAME ?? ''}</td>
-            <td>${year}</td>
-            <td>${course.SEMESTER ?? ''}</td>
-            <td>${course1Display}</td>
-            <td>${course2Display}</td>
-            <td>${status}</td>
-            <td>${action}</td>
-        </tr>`);
+        tbody.append(`
+            <tr>
+                <td>${index + 1}</td>
+                <td>${course.DEPARTMENT_SHORT_NAME ?? ''}</td>
+                <td>${course.PROGRAMME_SHORT_NAME ?? ''}</td>
+                <td>${year}</td>
+                <td>${course.SEMESTER ?? ''}</td>
+                <td>${course1Display}</td>
+                <td>${course2Display}</td>
+                <td>${status}</td>
+                <td>${action}</td>
+            </tr>
+        `);
     });
 }
+
 
 // Initializations on load
 populateOptionalCourseGroup();

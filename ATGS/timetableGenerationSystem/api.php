@@ -300,28 +300,43 @@ try {
             $response['divisions'] = [];
             while($row = mysqli_fetch_assoc($result)) {$response['divisions'][] = $row;}
         }
-        elseif($formtype == 'optionalcoursemapper'){
+        elseif($formtype == 'optionalcoursemapper') {
+
             $sql = "SELECT
                 d.DEPARTMENT_ID,
                 d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
+
                 p.PROGRAMME_ID,
                 p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
+
                 y.YEAR_NUMBER,
                 y.YEAR_NAME,
+
                 c.COURSE_ID,
                 c.SEMESTER,
                 c.LONG_NAME AS COURSE_FULL_NAME,
                 c.SHORT_NAME AS COURSE_SHORT_NAME,
                 c.ISOPTIONAL,
                 c.OPTIONAL_ID,
+
                 op.SHORT_NAME AS OPTIONAL_COURSE_NAME,
+
                 c.ISPRACTICAL,
-                c.WEEKLY_LECTURES
+                c.WEEKLY_LECTURES,
+
+                ob.DIVISION_ID AS MAPPED_DIVISION_ID,
+                dv.NAME AS MAPPED_DIVISION_NAME
 
             FROM COURSE c
 
             LEFT JOIN COURSE op
                 ON op.COURSE_ID = c.OPTIONAL_ID
+
+            LEFT JOIN OPTED_BY ob
+                ON ob.COURSE_ID = c.COURSE_ID
+
+            LEFT JOIN DIVISION dv
+                ON dv.DIVISION_ID = ob.DIVISION_ID
 
             JOIN PROGRAMME p
                 ON c.PROGRAMME_ID = p.PROGRAMME_ID
@@ -333,19 +348,84 @@ try {
                 ON c.YEAR_NUMBER = y.YEAR_NUMBER
 
             WHERE c.ISOPTIONAL = TRUE
-            AND (
-                c.OPTIONAL_ID IS NOT NULL
-                OR c.COURSE_ID < c.OPTIONAL_ID
-            )
+              AND c.OPTIONAL_ID IS NOT NULL
 
             ORDER BY
                 d.DEPARTMENT_ID,
                 p.PROGRAMME_ID,
                 y.YEAR_NUMBER,
-                c.SEMESTER;";
+                c.SEMESTER,
+                c.COURSE_ID;";
+
             $result = mysqli_query($conn, $sql);
+
             $response['optionalcourses'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['optionalcourses'][] = $row;}
+
+            while($row = mysqli_fetch_assoc($result)) {
+                $response['optionalcourses'][] = $row;
+            }
+        }
+        elseif($formtype == 'workload') {
+            $sql = "SELECT
+                t.WORKLOAD_ID,
+                t.TEACHER_ID,
+                t.COURSE_ID,
+                t.DIVISION_ID,
+
+                d.DEPARTMENT_ID,
+                d.SHORT_NAME AS DEPARTMENT_NAME,
+
+                p.PROGRAMME_ID,
+                p.SHORT_NAME AS PROGRAMME_NAME,
+
+                y.YEAR_NUMBER,
+                y.YEAR_NAME,
+
+                dv.NAME AS DIVISION_NAME,
+
+                c.SEMESTER,
+                c.LONG_NAME AS COURSE_NAME,
+                c.SHORT_NAME AS COURSE_SHORT_NAME,
+
+                t.LECTURE_COUNT,
+
+                CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+
+            FROM TEACHES t
+
+            INNER JOIN TEACHER tr
+                ON t.TEACHER_ID = tr.TEACHER_ID
+
+            INNER JOIN COURSE c
+                ON t.COURSE_ID = c.COURSE_ID
+
+            INNER JOIN DIVISION dv
+                ON t.DIVISION_ID = dv.DIVISION_ID
+
+            INNER JOIN PROGRAMME p
+                ON c.PROGRAMME_ID = p.PROGRAMME_ID
+
+            INNER JOIN DEPARTMENT d
+                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+
+            INNER JOIN YEAR y
+                ON c.YEAR_NUMBER = y.YEAR_NUMBER
+
+            ORDER BY
+                d.LONG_NAME,
+                p.LONG_NAME,
+                y.YEAR_NUMBER,
+                dv.NAME,
+                c.SEMESTER,
+                c.LONG_NAME,
+                TEACHER_NAME;
+            ";
+
+            $result = mysqli_query($conn, $sql);
+            $response['teaches'] = [];
+            while($row = mysqli_fetch_assoc($result)) {
+                $response['teaches'][] = $row;
+            }
         }
         
         header('Content-Type: application/json');
@@ -1144,21 +1224,89 @@ try {
             }
             
         } elseif($formtype == 'unmap_course') {
-            $mainCourse = (int) $_POST['mainCourse'];
-            // Find the course that is mapped to this course
-            $query = "SELECT COURSE_ID FROM COURSE WHERE OPTIONAL_ID = ?";
-            $result = $conn->execute_query($query, [$mainCourse]);
+            $courseId1 = $_POST['courseId1'];
+            $query = "SELECT OPTIONAL_ID FROM COURSE WHERE COURSE_ID = ?";
+            $result = $conn->execute_query($query, [$courseId1]);
+            $courseId2 = ($result->fetch_assoc())['OPTIONAL_ID'];
 
-            $row = $result->fetch_assoc();
-            if ($row) {
-                $sideCourse = (int) $row['COURSE_ID'];
-                $query = "UPDATE COURSE SET OPTIONAL_ID = NULL WHERE COURSE_ID = ?";
-                $conn->execute_query($query, [$sideCourse]);
-                $conn->execute_query($query, [$mainCourse]);
+            $query = "DELETE FROM OPTED_BY WHERE COURSE_ID = ? OR COURSE_ID = ?";
+            $result = $conn->execute_query($query, [$courseId1, $courseId2]);
+            if ($result) {
                 sendJsonResponse(200,'Unmapped','Course unmapped succesfully');
+            }else{
+                sendJsonResponse(400,'Failed','Course unmapped Failed');
             }
         }
     }
+    elseif($formCategory == 'workload'){
+
+        if($formtype == "create_workload"){
+            $teacherId = (int) ($_POST['teacherId'] ?? 0);
+            $courseId = (int) ($_POST['courseId'] ?? 0);
+            $divisionId = $_POST['divisionId'] ?? '';
+            $lectureCount = (int) ($_POST['lectureCount'] ?? 0);
+            if($lectureCount < 0){
+                sendJsonResponse(
+                    400,
+                    'Invalid Lecture Count',
+                    'Lecture count cannot be negative.'
+                );
+                exit;
+            }
+            $divisionIds = json_decode($divisionId, true);
+            if(!is_array($divisionIds)){
+                $divisionIds = [(int)$divisionId];
+            }
+            $query = "
+                INSERT INTO TEACHES
+                    (TEACHER_ID, COURSE_ID, DIVISION_ID, LECTURE_COUNT)
+                VALUES (?, ?, ?, ?)
+            ";
+            $conn->begin_transaction();
+            try {
+                foreach($divisionIds as $divisionId){
+                    $divisionId = (int)$divisionId;
+                    $conn->execute_query(
+                        $query,
+                        [$teacherId, $courseId, $divisionId, $lectureCount]
+                    );
+                }
+                $conn->commit();
+                sendJsonResponse(
+                    200,
+                    'Workload Created',
+                    'Workload created successfully.'
+                );
+            } catch(mysqli_sql_exception $e) {
+
+                $conn->rollback();
+
+                sendJsonResponse(
+                    500,
+                    'Creation Failed',
+                    'Unable to create workload.'
+                );
+            }
+        }
+
+        elseif($formtype == 'delete_workload'){
+            $workloadId = (int) ($_POST['workloadId'] ?? 0);
+            if($workloadId <= 0){
+                sendJsonResponse(400,'Invalid Data','Invalid workload ID.');
+                exit;
+            }
+            $query = "DELETE FROM TEACHES WHERE WORKLOAD_ID = ?";
+            $result = $conn->execute_query($query, [$workloadId]);
+
+            if($result && $conn->affected_rows == 1){
+                sendJsonResponse(200,'Deleted','Workload deleted successfully.');
+            }else{
+                sendJsonResponse(500,'Delete Failed','Unable to delete workload.');
+            }
+        }
+
+}
+
     
     
 
