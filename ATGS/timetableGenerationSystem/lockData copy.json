@@ -1,0 +1,12 @@
+[
+    {
+        "sequence": 0,
+        "dataCount": 0,
+        "label": "Timeslot",
+        "module": "timeslot",
+        "isLocked": true,
+        "isReady": true,
+        "isOngoing": false,
+        "isPending": false
+    }   
+]

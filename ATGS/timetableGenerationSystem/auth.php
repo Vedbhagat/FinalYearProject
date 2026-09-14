@@ -1,83 +1,90 @@
 <?php
 
 require_once 'dbConnect.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 header('Content-Type: application/json');
+error_reporting(0);
+$action = $_REQUEST['action'] ?? 'login';
 
-$action = $_REQUEST['action'] ?? '';
-
-//REGISTRATION
+// REGISTRATION
 if ($action == 'register') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $email    = $_POST['email'] ?? '';
+    $username = strtoupper($_POST['username'] ?? '');
+    $password = strtoupper($_POST['password'] ?? '');
 
-    //Cancel on empty Field
-    if (empty($username) || empty($password) || empty($email)) {
-        echo json_encode(['status' => 'error', 'statusCode' => 412,'message' => 'All fields are required for registration.']);
+    if (empty($username) || empty($password)) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'statusCode' => 400, 'statusDescription' => 'All fields are required for registration.']);
         exit;
     }
 
-    //Check if user exists
-    $query = $conn->prepare("SELECT user_id FROM users WHERE username = ? OR email = ?");
-    $result = $conn->execute_query($query,[$username, $email]);
+    // Check if user exists
+    $result = $conn->execute_query("SELECT USERNAME FROM USER WHERE USERNAME = ?", [$username]);
     if ($result->num_rows > 0) {
         http_response_code(409);
-        echo json_encode(['status' => 'error', 'statusCode' => 409, 'message' => 'Username or Email already taken.']);
+        echo json_encode(['status' => 'error', 'statusCode' => 409, 'statusDescription' => 'Username already taken.']);
         exit;
     }
 
     // Hash password and insert
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $query = $conn->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
     
-    if ($conn->execute_query($query,[$username, $email, $hashed_password])) {
+    if ($conn->execute_query("INSERT INTO USER (USERNAME, PASSWORD) VALUES (?, ?)", [$username, $hashed_password])) {
         if (session_status() == PHP_SESSION_NONE) { session_start(); }
-        $_SESSION['user_id'] = $conn->insert_id;
         $_SESSION['username'] = $username;
         http_response_code(201);
-        echo json_encode(['status' => 'success', 'statusCode' => 201, 'message' => 'Registration successful!']);
+        echo json_encode(['status' => 'success', 'statusCode' => 201, 'responseBody' => 'login.html']);
     } else {
         http_response_code(500);
-        echo json_encode(['status' => 'error', 'statusCode' => 500, 'message' => 'Registration failed.']);
+        echo json_encode(['status' => 'error', 'statusCode' => 500, 'statusDescription' => 'Registration failed.']);
     }
     exit;
 }
 
-//LOGIN 
+// LOGIN 
 if ($action == 'login') {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
+    $username = strtoupper($_POST['username'] ?? '');
+    $password = strtoupper($_POST['password'] ?? '');
 
-    $query = $conn->prepare("SELECT user_id, password_hash FROM users WHERE username = ?");
-    $result = $conn->execute_query($query,[$username]);
+    if (empty($username) || empty($password)) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'statusCode' => 400, 'statusDescription' => 'Username and password are required.']);
+        exit;
+    }
+
+    $result = $conn->execute_query("SELECT USERNAME, PASSWORD FROM USER WHERE USERNAME = ?", [$username]);
     $user = $result->fetch_assoc();
 
-    if ($user && password_verify($password, $user['password_hash'])) {
-        // Start session if config.php didn't (it should)
+    if ($user && password_verify($password, $user['PASSWORD'])) {
         if (session_status() == PHP_SESSION_NONE) { session_start(); }
-        $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['username'] = $username;
-        echo json_encode(['status' => 'success', 'message' => 'Login successful!']);
+        echo json_encode(['status' => 'success', 'responseBody' => 'index.html', 'username' => $_SESSION['username']]);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid credentials.']);
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'statusCode' => 401, 'statusDescription' => 'Invalid credentials.']);
     }
     exit;
 }
 
-//LOGOUT
+// LOGOUT
 if ($action == 'logout') {
     session_unset();
     session_destroy();
-    echo json_encode(['status' => 'success']);
+    echo json_encode([
+        'status' => 'success', 
+        'statusCode' => 200, 
+        'responseBody' => './login.html' 
+    ]);
     exit;
 }
 
-//STATUS CHECK
+// STATUS CHECK
 if ($action == 'status') {
-    if (isset($_SESSION['user_id'])) {
-        echo json_encode(['logged_in' => true, 'username' => $_SESSION['username']]);
-    } else {
-        echo json_encode(['logged_in' => false]);
-    }
+    echo json_encode([
+        'status' => 'success',
+        'loggedIn' => isset($_SESSION['username']),
+        'username' => $_SESSION['username']
+    ]);
     exit;
 }

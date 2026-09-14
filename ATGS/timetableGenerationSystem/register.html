@@ -103,46 +103,60 @@
             font-weight: 600;
         }
     </style>
-    <title>Login</title>
+    <title>Register</title>
 </head>
 <body>
     <main class="lgn-main">
         <div class="lgn-container">
-            <div class="lgn-heading">Login</div>
+            <div class="lgn-heading">Register</div>
             <div class="lgn-form">
-                <form id="loginForm">
+                <form id="registerForm">
                     <div>
                         <label for="username">Username</label>
                         <input type="text" name="username" id="username" autocomplete="username" required>
                     </div>
                     <div>
                         <label for="password">Password</label>
-                        <input type="password" name="password" id="password" autocomplete="current-password" required>
+                        <input type="password" name="password" id="password" autocomplete="new-password" required>
                     </div>
-                    <div id="loginError" class="login-error" hidden></div>
+                    <div>
+                        <label for="cnf_password">Confirm Password</label>
+                        <input type="password" name="cnf_password" id="cnf_password" autocomplete="new-password" required>
+                    </div>
+                    <div id="registerError" class="login-error" hidden></div>
                     <div class="lgn-btn-grp">
-                        <button type="submit" class="lgn-button" id="loginButton">Login</button>
+                        <button type="submit" class="lgn-button" id="registerButton">Register</button>
                     </div>
                 </form>
             </div>
         </div>
     </main>
     <script>
-        const loginForm = document.getElementById('loginForm');
-        const loginButton = document.getElementById('loginButton');
-        const loginError = document.getElementById('loginError');
+        const registerForm = document.getElementById('registerForm');
+        const registerButton = document.getElementById('registerButton');
+        const registerError = document.getElementById('registerError');
 
-        loginForm.addEventListener('submit', async function (event) {
+        registerForm.addEventListener('submit', async function (event) {
             event.preventDefault();
-            loginError.hidden = true;
-            loginError.textContent = '';
-            loginButton.disabled = true;
-            loginButton.textContent = 'Logging in...';
+            registerError.hidden = true;
+            registerError.textContent = '';
+
+            const password = document.getElementById('password').value;
+            const cnfPassword = document.getElementById('cnf_password').value;
+
+            if (password !== cnfPassword) {
+                registerError.textContent = 'Passwords do not match.';
+                registerError.hidden = false;
+                return;
+            }
+
+            registerButton.disabled = true;
+            registerButton.textContent = 'Registering...';
             
-            const formData = new FormData(loginForm);
+            const formData = new FormData(registerForm);
             
             try {
-                const response = await fetch('auth.php', {
+                const response = await fetch('auth.php?action=register', {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
@@ -151,15 +165,15 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.statusDescription || 'Login failed.');
+                    throw new Error(data.statusDescription || 'Registration failed.');
                 }
 
-                window.location.href = data.responseBody || 'index.html';
+                window.location.href = data.responseBody || 'login.html';
             } catch (error) {
-                loginError.textContent = error.message;
-                loginError.hidden = false;
-                loginButton.disabled = false;
-                loginButton.textContent = 'Login';
+                registerError.textContent = error.message;
+                registerError.hidden = false;
+                registerButton.disabled = false;
+                registerButton.textContent = 'Register';
             }
         });
     </script>

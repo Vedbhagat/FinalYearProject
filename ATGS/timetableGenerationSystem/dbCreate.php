@@ -14,7 +14,7 @@ function runquery($connection, $query, $tablename){
 }
 function AddClassrooms($connection,$classroom){
   foreach($classroom as $room){
-    $query = "INSERT INTO CLASSROOM (FLOOR_NUMBER,ROOM_NUMBER,CATEGORY) VALUES('{$room[0]}',{$room[1]},'{$room[2]}')";
+    $query = "INSERT INTO CLASSROOM (FLOOR_NUMBER,ROOM_NUMBER,CATEGORY) VALUES('{$room[0]}','{$room[1]}','{$room[2]}')";
     $result = $connection -> query($query);
     if($connection->affected_rows==1){
       echo "Added classroom as ". $room[0] .' - ' .$room[1] .'<br>';
@@ -86,9 +86,7 @@ runquery($conn, "
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS USER(
         USERNAME VARCHAR(31) NOT NULL PRIMARY KEY,
-        PASSWORD VARCHAR(255) NOT NULL,
-        LOGIN_TIME DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        LOGIN_IP VARCHAR(15)
+        PASSWORD VARCHAR(255) NOT NULL
       );
     ", "User");
 
@@ -365,6 +363,7 @@ runquery($conn, "
 
 runquery($conn, "
       CREATE TABLE IF NOT EXISTS TIMETABLE(
+        ALLOTMENT_ID INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
         COURSE_ID INT,
         DIVISION_ID INT,
         CLASSROOM_ID INT,
@@ -374,7 +373,7 @@ runquery($conn, "
         ACADEMIC_YEAR VARCHAR(7) NOT NULL,
         SEMESTER ENUM('EVEN','ODD') NOT NULL,
 
-        PRIMARY KEY(COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, TEACHER_ID, ACADEMIC_YEAR, SEMESTER),
+        UNIQUE(COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, TEACHER_ID, ACADEMIC_YEAR, SEMESTER),        
 
         CONSTRAINT fk_crseId_tTbl 
         FOREIGN KEY (COURSE_ID) 
@@ -417,13 +416,21 @@ runquery($conn, "
 
 
 
+// $rooms = [
+//   ['Ground Floor',  001,  'LECTURE_HALL'],
+//   ['Ground Floor',  002,  'LECTURE_HALL'],
+//   ['First Floor',   101,  'LECTURE_HALL'],
+//   ['First Floor',   102,  'LAB'],
+//   ['Second Floor',  201,  'LAB'],
+//   ['Second Floor',  202,  'LAB']
+// ];
 $rooms = [
-  ['Ground Floor',  001,  'LECTURE_HALL'],
-  ['Ground Floor',  002,  'LECTURE_HALL'],
-  ['First Floor',   101,  'LECTURE_HALL'],
-  ['First Floor',   102,  'LAB'],
-  ['Second Floor',  201,  'LAB'],
-  ['Second Floor',  202,  'LAB']
+  ['First Floor',   "IT Lab 02",  'LAB'],
+  ['First Floor',   "IT Lab 01",  'LAB'],
+  ['First Floor',   "E-Leaning Lab",  'LAB'],
+  ['First Floor',   "108",  'LECTURE_HALL'],
+  ['Second Floor',  "008",  'LECTURE_HALL'],
+  ['Fourth Floor',  "401",  'LECTURE_HALL'],
 ];
 $weekdays = [
   'MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'

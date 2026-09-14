@@ -54,6 +54,7 @@
                 <td>Room Id</td>
                 <td>Floor</td>
                 <td>Room</td>
+                <td>Type</td>
                 <td>Capacity</td>
                 <td>Availability</td>
                 <td>Status</td>
@@ -157,6 +158,7 @@ async function createClassroomTable(){
                 <td>${element[0]}</td>
                 <td>${element[1]}</td>
                 <td>${element[2]}</td>
+                <td>${(element[6] == "LAB")?"Lab":"Lecture Hall"}</td>
                 <td>${(element[3]==null)?`N.A`:element[3]}</td>
                 <td>${(element[4] ?? 'N.A') + ' - ' + (element[5] ?? 'N.A')}</td>
                 <td>

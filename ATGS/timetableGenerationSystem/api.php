@@ -9,7 +9,12 @@ $formCategory = $_REQUEST['formCategory'] ?? '';
 $formtype = $_REQUEST['formType'] ?? '';
 $user_id = $_SESSION['user_id'] ?? null;
 
-// Response Jsonify
+// if (!isset($_SESSION['username'])) {
+//     header('Location: login.html');
+//     exit;
+// }
+
+
 function sendJsonResponse($httpStatusCode, $httpStatusDescription, $jsonResponseBody = '', $actionToPerform = '') {
     http_response_code($httpStatusCode);
     echo json_encode([
@@ -21,14 +26,6 @@ function sendJsonResponse($httpStatusCode, $httpStatusDescription, $jsonResponse
     exit; // Stops execution right after flushing the output
 }
 
-// Check login
-function verifyLogin($uid) {
-    if (!$uid) {
-        sendJsonResponse(401,'Unauthorized access','The action requires login');
-        header("Location: login.php");
-        exit;
-    }
-}
 function validateTimeslot($startTime, $endTime, $slotType, $slotId = null) {
     /**
      * RETURNS:
@@ -129,6 +126,123 @@ function validateCourse($fullname, $shortname){
     if(isValidName($fullname) && isValidName($shortname)) return 1;
     else return 2; //Numbers not allowed
 }
+function updateCounts($connection) {
+    $query = "
+        SELECT
+            (SELECT COUNT(*) FROM TIMESLOT) AS timeslotCount,
+            (SELECT COUNT(*) FROM CLASSROOM WHERE CAPACITY IS NOT NULL) AS classroomCount,
+            (SELECT COUNT(*) FROM DEPARTMENT) AS departmentCount,
+            (SELECT COUNT(*) FROM TEACHER) AS teacherCount,
+            (SELECT COUNT(*) FROM PROGRAMME) AS programmeCount,
+            (SELECT COUNT(*) FROM COURSE) AS courseCount,
+            (SELECT COUNT(*) FROM COURSE WHERE ISOPTIONAL = TRUE) AS optionalCourseCount,
+            (SELECT COUNT(*) FROM DIVISION) AS divisionCount,
+            (SELECT COUNT(*) FROM OPTED_BY) AS mapOptionalCourseCount,
+            (SELECT COUNT(*) FROM TEACHES) AS workloadCount
+    ";
+    $result = $connection->execute_query($query);
+    $counts = $result->fetch_assoc();
+    $file = "lockData.json";
+    $data = json_decode(file_get_contents($file), true);
+    $countMap = [
+        0  => $counts['timeslotCount'],
+        1  => $counts['classroomCount'],
+        2  => $counts['departmentCount'],
+        3  => $counts['teacherCount'],
+        4  => $counts['programmeCount'],
+        5  => $counts['courseCount'],
+        6  => $counts['optionalCourseCount'],
+        7  => $counts['divisionCount'],
+        8  => $counts['mapOptionalCourseCount'],
+        9  => $counts['workloadCount']
+    ];
+    foreach ($data as &$module) {
+        $sequence = $module['sequence'];
+        if (isset($countMap[$sequence])) {
+            $module['dataCount'] = (int)$countMap[$sequence];
+        }
+    }
+    unset($module);
+    file_put_contents($file,json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),);
+    return $data;
+}
+function isLockable($connection,$sequence){
+    if($sequence == 0){
+        $result = $connection->execute_query("SELECT COUNT(*) AS count FROM TIMESLOT");
+        return ($result->fetch_assoc()['count'] > 0);
+    }
+    elseif($sequence == 1){
+        $result = $connection->execute_query("SELECT COUNT(*) AS count FROM CLASSROOM WHERE CAPACITY IS NULL");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 2){
+        $result = $connection->execute_query("SELECT COUNT(*) AS count FROM DEPARTMENT");
+        return ($result->fetch_assoc()['count'] > 0);
+    }
+    elseif($sequence == 3){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM DEPARTMENT d
+            LEFT JOIN TEACHER t
+                ON d.DEPARTMENT_ID = t.DEPARTMENT_ID
+            WHERE t.TEACHER_ID IS NULL;
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 4){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM DEPARTMENT d
+            LEFT JOIN PROGRAMME p
+                ON d.DEPARTMENT_ID = p.DEPARTMENT_ID
+            WHERE p.PROGRAMME_ID IS NULL;
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 5){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM PROGRAMME p
+            LEFT JOIN COURSE c
+                ON p.PROGRAMME_ID = c.PROGRAMME_ID
+            WHERE c.COURSE_ID IS NULL;
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 6){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM COURSE 
+            WHERE ISOPTIONAL IS TRUE AND OPTIONAL_ID IS NULL;
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 7){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM DIVISION 
+            WHERE STUDENT_COUNT IS NULL;            
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 8){
+        $result = $connection->execute_query("
+            SELECT COUNT(*) AS count
+            FROM COURSE c
+            LEFT JOIN OPTED_BY ob
+                ON c.COURSE_ID = ob.COURSE_ID
+            WHERE c.ISOPTIONAL = TRUE
+            AND ob.COURSE_ID IS NULL;
+      
+        ");
+        return ($result->fetch_assoc()['count'] == 0);
+    }
+    elseif($sequence == 9){
+        return true;
+    }
+    return false;
+}
+
 
 
 try {
@@ -437,6 +551,90 @@ try {
         $result = $conn->execute_query($query);
         $parsedResult = $result->fetch_all();
         sendJsonResponse(200,'Existing Data of '.$tablename.' table',$parsedResult);
+    }
+    elseif($formCategory == 'dashboard'){
+        updateCounts($conn);
+        $file = "lockData.json";
+        $data = json_decode(file_get_contents($file), true);
+        if($formtype == 'get_dashboard'){
+            sendJsonResponse(200,"Dashboard fetched",$data);
+        }
+        elseif($formtype == 'lock_module'){
+            $sequence = $_POST['sequence'];
+            if(isLockable($conn, $sequence)){
+                foreach ($data as $key => $value) {
+                    if ($value['sequence'] == ($sequence)) {
+                        if($data[$key]['isOngoing'] == true && $data[$key]['isLocked'] == false){
+                            $data[$key]['isLocked'] = true;
+                            $data[$key]['isReady'] = true;
+                            $data[$key]['isOngoing'] = false;
+                        }
+                    }
+                    elseif($value['sequence'] == ($sequence+1)){
+                        $data[$key]['isLocked'] = false;
+                        $data[$key]['isOngoing'] = true;
+                        $data[$key]['isReady'] = false;
+                    }
+                }
+                file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));      
+                sendJsonResponse(200,"Module locked","The module was LOCKED successfully"); 
+            }
+            else{
+                if($sequence == 0){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Timeslot. There must exist atleast one Department.");
+                }
+                elseif($sequence == 1){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Classroom. The capcity of all the classrooms must be filled.");
+                }
+                elseif($sequence == 2){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Department. There must exist atleast one Department.");
+                }
+                elseif($sequence == 3){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Teacher. There must exist atleast one Teacher in every department.");
+                }
+                elseif($sequence == 4){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Programme. There must exist atleast one Programme in every department.");
+                }
+                elseif($sequence == 5){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Course. There must exist atleast one Course in every programme.");
+                }
+                elseif($sequence == 6){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Optional Course. All the optional courses must be mapped with respective optional course.");
+                }
+                elseif($sequence == 7){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Division. The student count of all the divisions must be filled.");
+                }
+                elseif($sequence == 8){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Map Optional Course Group. All the optional courses must be mapped to a division(s).");
+                }
+                elseif($sequence == 9){
+                    sendJsonResponse(422, "Cannot Lock","Cannot Lock Workload. UNDEFINDE error.");
+                }
+                else{
+                    sendJsonResponse(400,"?","???");
+                }
+            }
+                
+        }
+        elseif($formtype == 'unlock_module'){
+            $sequence = $_POST['sequence'];
+            $totalData = count($data);
+            foreach ($data as $key => $value) {
+                if ($value['sequence'] == ($sequence)) {
+                    $data[$key]['isLocked'] = false;
+                    $data[$key]['isReady'] = false;
+                    $data[$key]['isOngoing'] = true;
+                }
+                elseif ($value['sequence'] > ($sequence)){
+                    $data[$key]['isLocked'] = true;
+                    $data[$key]['isReady'] = false;
+                    $data[$key]['isOngoing'] = false;
+                    $data[$key]['isPending'] = true;
+                }
+            }
+            file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));           
+            sendJsonResponse(200,"Module unlocked","Module UNLOCKED");    
+        }
     }
     elseif($formCategory == 'timeslot'){
         if($formtype == 'add_timeslot'){
@@ -831,7 +1029,7 @@ try {
             }
         }
     }      
-    elseif ($formCategory == 'programme') {
+    elseif($formCategory == 'programme') {
         if ($formtype == 'add_programme') {
             $departmentId = $_POST['departmentId'] ?? '';
             $fullname     = strtoupper(trim($_POST['fullname'] ?? ''));
@@ -1239,7 +1437,6 @@ try {
         }
     }
     elseif($formCategory == 'workload'){
-
         if($formtype == "create_workload"){
             $teacherId = (int) ($_POST['teacherId'] ?? 0);
             $courseId = (int) ($_POST['courseId'] ?? 0);
@@ -1288,7 +1485,6 @@ try {
                 );
             }
         }
-
         elseif($formtype == 'delete_workload'){
             $workloadId = (int) ($_POST['workloadId'] ?? 0);
             if($workloadId <= 0){
@@ -1304,11 +1500,12 @@ try {
                 sendJsonResponse(500,'Delete Failed','Unable to delete workload.');
             }
         }
+    }
+    elseif($formCategory == "timetable"){
+        if($formtype == 'generate_timetable'){
 
-}
-
-    
-    
+        }
+    }
 
 } catch (Throwable $e) {
     // Catch ALL exceptions/errors and return them as valid JSON

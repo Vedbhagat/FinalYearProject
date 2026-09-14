@@ -7,7 +7,6 @@ npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./A
 @reference "tailwindcss";
 
 @theme {
-  /* Strictly Monochromatic Color Scheme */
   --color-primary: #18181b;        /* Zinc 900 */
   --color-primary-hover: #27272a;  /* Zinc 800 */
   --color-secondary: #f4f4f5;      /* Zinc 100 */
@@ -432,6 +431,66 @@ table td button {
 .dialog-button-group {
   @apply flex justify-center gap-3 pt-2;
 }
+
+/* ############################################################################### */
+/* ############################################################################### */
+/* ############################################################################### */
+/* ==========================================================================
+   DASHBOARD STATUS LISTS
+   ========================================================================== */
+.dashboard-lists-container {
+  @apply flex flex-col lg:flex-row gap-4 w-full my-4;
+}
+
+.status-group {
+  @apply flex-1 rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col gap-3;
+}
+
+.group-title {
+  @apply text-xs font-extrabold uppercase tracking-wider text-zinc-700 px-1 mb-1;
+}
+
+/* Light background tinting for status groups */
+.group-ready {
+  @apply bg-emerald-50/60 border-emerald-200;
+}
+
+.group-ongoing {
+  @apply bg-amber-50/60 border-amber-200;
+}
+
+.group-pending {
+  @apply bg-rose-50/60 border-rose-200;
+}
+
+.status-list {
+  @apply flex flex-col gap-2.5;
+}
+
+.group-ongoing .status-list .list-item{
+  @apply flex-col! *:m-2
+}
+
+.list-item {
+  @apply bg-white border border-zinc-200/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs hover:shadow-sm transition-all;
+}
+
+.item-data {
+  @apply flex items-center gap-3;
+}
+
+.item-count {
+  @apply text-xl font-black text-zinc-900;
+}
+
+.item-label {
+  @apply text-xs font-bold uppercase tracking-wide text-zinc-600;
+}
+/* ############################################################################### */
+/* ############################################################################### */
+/* ############################################################################### */
+
+
 
 /* ==========================================================================
    RESPONSIVE ADJUSTMENTS

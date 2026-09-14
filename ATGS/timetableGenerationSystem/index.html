@@ -5,16 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="src/style.css">
     <script src="jquery-4.0.0.min.js"></script>
-    <script src="apiCaller.js"></script>
     <title>Home</title>
+    <style>
+        #load_wrapper {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+        }
+        #loader_container {
+            width: 350px;
+            min-height: 200px;
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 15px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        #loader {
+            margin: 0;
+            width: 50px;
+            height: 50px;
+            box-sizing: border-box;
+            border-radius: 50%;
+            border: 8px solid #d3d3d3;
+            border-left-color: #000;
+            animation: l1 1s linear infinite;
+        }
+        #loader_data {
+            margin: 0;
+            text-transform: capitalize;
+            font-weight: 900;
+            text-align: center;
+        }
+        @keyframes l1 {to {transform: rotate(360deg);}}
+    </style>
 </head>
 <body>
     <div class="appBody">
     <main>
         <header>
-            <div class="user">Ved Bhagat</div>
+            <div class="user" id="user">fetching...</div>
             <div class="header-tag">
-                <select id="navigator" class="navigator dropdown" on name="" id="">
+                <button class="btn secondary" onclick="navTo('dashboard')" >Dashboard</button>
+                <select id="navigator" class="navigator dropdown" on name="" id="" hidden>
                     <option id="dashboard" value="" data-loc="sections/dashboard.html" selected>Dashboard</option>
                     <option id="timeslot" value="" data-loc="sections/timeslot.html">Timeslot</option>
                     <option id="classroom" value="" data-loc="sections/classroom.html">Classrooms</option>
@@ -25,8 +71,8 @@
                     <option id="optionalCourse" value="" data-loc="sections/optionalCourses.html">Optional Courses</option>
                     <option id="division" value="" data-loc="sections/division.html">Divisions</option>
                     <option id="optionalCoursesMapper" value="" data-loc="sections/optionalCoursesMapper.html">Optional Courses Mapper</option>
-                    <option id="teacherWorkload" disabled value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
-                    <option id="timetable" disabled value="" data-loc="sections/timetable.html">Timetable</option>
+                    <option id="teacherWorkload" value="" data-loc="sections/teacherWorkload.html">Teacher Workload</option>
+                    <option id="timetable" value="" data-loc="sections/timetable.html">Timetable</option>
                 </select>
             </div>
             <div class="header-menu">
@@ -36,20 +82,47 @@
                 <select class="dropdown" name="" id="">
                     <option value="">ODD sem</option>
                 </select>
-                <button class="btn primary critical">logout</button>
+                <button type="submit" id="logoutButton" class="btn primary critical">logout</button>
             </div>
         </header>
         <div id="MainContents"></div>
+        <div id="load_wrapper" hidden>
+            <div id="loader_container">
+                <p id="loader"></p>
+                <p id="loader_data">Loading timeslot</p>
+            </div>
+        </div>
     </main>
     </div>
 </body>
 <script src="https://kit.fontawesome.com/1042c9c102.js" crossorigin="anonymous"></script>
 <script>
-       
+    
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async function () {
+            try {
+                const response = await fetch('auth.php?action=logout', {
+                    method: 'post', // or POST depending on how you trigger it
+                    credentials: 'same-origin'
+                });
+                
+                const data = await response.json();
+                if (response.ok && data.responseBody) {
+                    window.location.href = data.responseBody;
+                } else {
+                    throw new Error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Error during logout:', error);
+            }
+        });
+    }
     $(document).ready(function(){
-        $("#MainContents").load('sections/teacherWorkload.html');
+        $("#MainContents").load('sections/dashboard.html');
         $(".navigator").change(
             function () {
+                checkLogin();
                 var currentlyViewing = $(".navigator>option:selected").attr("data-loc");
                 $("#MainContents").load(currentlyViewing);
             }
@@ -57,6 +130,35 @@
         
     });
     
+    async function navTo(module) {
+        await showLoader("Loading "+ module);
+        await $("#MainContents").load("sections/" + module +".html");
+        await hideLoader();
+    }
+
+    async function checkLogin(){
+        console.log("Checking valid login..");
+        const formData = new FormData();
+        formData.append('action', 'status');
+        $.ajax({
+            url: 'auth.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json'
+        })
+        .done(function(result) {
+            if (result.loggedIn) {
+                console.log("Valid Login");
+                document.getElementById('user').innerText = '@' + result.username;
+            } else {
+                console.log("Invalid Login");
+                window.location.href = "./login.html";
+            }
+        });
+    }
+
     async function load_existing(tablename){
         const formData = new FormData();
         formData.append('formCategory', 'load_existing');
@@ -113,14 +215,20 @@
         }else{
             form.css('display','block');
         }  
-    }
-    
+    } 
     function showInfoInline(infoBody){
         const info = $(`<p id="formInfoLine" class="none" ><span>${infoBody}</span></p>`);
         $('body').append(info);
         setTimeout(()=>{info.remove();},2500);
     }   
-
+    function showLoader(data){
+        $("#loader_data").empty().append(data);
+        $("#load_wrapper").prop('hidden',false);
+    }
+    function hideLoader(){
+        $("#load_wrapper").prop('hidden',true);
+        $("#loader_data").empty()
+    }  
     async function getPrerequisits(tablename){
         const formData = new FormData();
             formData.append('formCategory', 'getMinimalData');
@@ -135,82 +243,81 @@
             // console.log(result);
             return result;
     }
-
-function applyValidityCheckerDEPRECIATED() {
-    const form = document.querySelector('form');
-    const submitButton = document.querySelector('.formSubmit');
-    function updateSubmitButton() {
-        submitButton.disabled = !form.checkValidity();
-    }
-    form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('blur', (e) => {
-            if (!e.target.checkValidity()) {
-                e.target.reportValidity();
-            }
-            updateSubmitButton();
+    function applyValidityCheckerDEPRECIATED() {
+        const form = document.querySelector('form');
+        const submitButton = document.querySelector('.formSubmit');
+        function updateSubmitButton() {
+            submitButton.disabled = !form.checkValidity();
+        }
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('blur', (e) => {
+                if (!e.target.checkValidity()) {
+                    e.target.reportValidity();
+                }
+                updateSubmitButton();
+            });
+            input.addEventListener('input', updateSubmitButton);
+            input.addEventListener('change', updateSubmitButton);
         });
-        input.addEventListener('input', updateSubmitButton);
-        input.addEventListener('change', updateSubmitButton);
-    });
-    updateSubmitButton();
-}
-
-function applyValidityCheckerV2() {
-    const form = document.querySelector('form');
-    if (!form) {
-        console.warn('Form not found');
-        return;
+        updateSubmitButton();
     }
-    const submitButton = form.querySelector('.formSubmit');
-    if (!submitButton) {
-        console.warn('Submit button .formSubmit not found');
-        return;
-    }
-    function updateSubmitButton() {
-        submitButton.disabled = !form.checkValidity();
-    }
-    form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('blur', (e) => {
-            if (!e.target.checkValidity()) {
-                e.target.reportValidity();
-            }
-            updateSubmitButton();
+    function applyValidityCheckerV2() {
+        const form = document.querySelector('form');
+        if (!form) {
+            console.warn('Form not found');
+            return;
+        }
+        const submitButton = form.querySelector('.formSubmit');
+        if (!submitButton) {
+            console.warn('Submit button .formSubmit not found');
+            return;
+        }
+        function updateSubmitButton() {
+            submitButton.disabled = !form.checkValidity();
+        }
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('blur', (e) => {
+                if (!e.target.checkValidity()) {
+                    e.target.reportValidity();
+                }
+                updateSubmitButton();
+            });
+            input.addEventListener('input', updateSubmitButton);
+            input.addEventListener('change', updateSubmitButton);
         });
-        input.addEventListener('input', updateSubmitButton);
-        input.addEventListener('change', updateSubmitButton);
-    });
-    updateSubmitButton();
-}
-function applyValidityChecker() {
-    const form = document.querySelector('form');
-    if (!form) {
-        console.warn('Form not found');
-        return;
+        updateSubmitButton();
     }
-    const submitButton = form.querySelector('.formSubmit');
-    if (!submitButton) {
-        console.warn('Submit button .formSubmit not found');
-        return;
+    function applyValidityChecker() {
+        const form = document.querySelector('form');
+        if (!form) {
+            console.warn('Form not found');
+            return;
+        }
+        const submitButton = form.querySelector('.formSubmit');
+        if (!submitButton) {
+            console.warn('Submit button .formSubmit not found');
+            return;
+        }
+
+        function updateSubmitButton() {
+            submitButton.disabled = !form.checkValidity();
+        }
+
+        // Use jQuery event delegation on the form to handle dynamically added fields automatically
+        $(form)
+            .off('.validityChecker')
+            .on('input.validityChecker change.validityChecker', 'input, select, textarea', function() {
+                updateSubmitButton();
+            })
+            .on('blur.validityChecker', 'input, select, textarea', function(e) {
+                if (!this.checkValidity()) {
+                    this.reportValidity();
+                }
+                updateSubmitButton();
+            });
+
+        updateSubmitButton();
     }
-
-    function updateSubmitButton() {
-        submitButton.disabled = !form.checkValidity();
-    }
-
-    // Use jQuery event delegation on the form to handle dynamically added fields automatically
-    $(form)
-        .off('.validityChecker')
-        .on('input.validityChecker change.validityChecker', 'input, select, textarea', function() {
-            updateSubmitButton();
-        })
-        .on('blur.validityChecker', 'input, select, textarea', function(e) {
-            if (!this.checkValidity()) {
-                this.reportValidity();
-            }
-            updateSubmitButton();
-        });
-
-    updateSubmitButton();
-}
+    checkLogin();
 </script>
 </html>
