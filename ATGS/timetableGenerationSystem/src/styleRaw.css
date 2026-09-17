@@ -373,9 +373,46 @@ table td button {
   @apply bg-zinc-100 text-zinc-500 font-bold uppercase tracking-[6px] text-center text-xs py-4;
 }
 
-/* ==========================================================================
-   CARDS & DASHBOARD WIDGETS
-   ========================================================================== */
+
+.dashboard-lists-container {
+  @apply flex flex-col lg:flex-row gap-4 w-full my-4;
+}
+.status-group {
+  @apply flex-1 rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col gap-3;
+}
+
+.group-title {
+  @apply text-xs font-extrabold uppercase tracking-wider text-zinc-700 px-1 mb-1;
+}
+.group-ready {
+  @apply bg-emerald-50/60 border-emerald-200;
+}
+.group-ongoing {
+  @apply bg-amber-50/60 border-amber-200;
+}
+.group-pending {
+  @apply bg-rose-50/60 border-rose-200;
+}
+.status-list {
+  @apply flex flex-col gap-2.5;
+}
+
+.group-ongoing .status-list .list-item{
+  @apply flex-col! *:m-2
+}
+.list-item {
+  @apply bg-white border border-zinc-200/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs hover:shadow-sm transition-all;
+}
+.item-data {
+  @apply flex items-center gap-3;
+}
+.item-count {
+  @apply text-xl font-black text-zinc-900;
+}
+.item-label {
+  @apply text-xs font-bold uppercase tracking-wide text-zinc-600;
+}
+
 .cards {
   @apply flex flex-wrap gap-4 justify-between my-4;
 }
@@ -396,7 +433,6 @@ table td button {
   @apply absolute inset-x-0 bottom-0 rounded-none border-none bg-zinc-900/95 text-white opacity-0  transition-opacity py-2 text-xs uppercase font-bold backdrop-blur-xs;
 }
 
-/* Status Banner */
 .timetable-status {
   @apply bg-zinc-900 text-white rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4 shadow-md my-4;
 }
@@ -408,10 +444,11 @@ table td button {
 .timetable-status-caption {
   @apply text-xs font-medium text-zinc-400 uppercase tracking-wide mt-1;
 }
+.timetable-view-table{
+  @apply h-auto
+}
 
-/* ==========================================================================
-   MODAL DIALOGS & OVERLAYS
-   ========================================================================== */
+
 .tempPopup {
   @apply fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4;
 }
@@ -432,63 +469,6 @@ table td button {
   @apply flex justify-center gap-3 pt-2;
 }
 
-/* ############################################################################### */
-/* ############################################################################### */
-/* ############################################################################### */
-/* ==========================================================================
-   DASHBOARD STATUS LISTS
-   ========================================================================== */
-.dashboard-lists-container {
-  @apply flex flex-col lg:flex-row gap-4 w-full my-4;
-}
-
-.status-group {
-  @apply flex-1 rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col gap-3;
-}
-
-.group-title {
-  @apply text-xs font-extrabold uppercase tracking-wider text-zinc-700 px-1 mb-1;
-}
-
-/* Light background tinting for status groups */
-.group-ready {
-  @apply bg-emerald-50/60 border-emerald-200;
-}
-
-.group-ongoing {
-  @apply bg-amber-50/60 border-amber-200;
-}
-
-.group-pending {
-  @apply bg-rose-50/60 border-rose-200;
-}
-
-.status-list {
-  @apply flex flex-col gap-2.5;
-}
-
-.group-ongoing .status-list .list-item{
-  @apply flex-col! *:m-2
-}
-
-.list-item {
-  @apply bg-white border border-zinc-200/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs hover:shadow-sm transition-all;
-}
-
-.item-data {
-  @apply flex items-center gap-3;
-}
-
-.item-count {
-  @apply text-xl font-black text-zinc-900;
-}
-
-.item-label {
-  @apply text-xs font-bold uppercase tracking-wide text-zinc-600;
-}
-/* ############################################################################### */
-/* ############################################################################### */
-/* ############################################################################### */
 
 
 

@@ -59,7 +59,7 @@ runquery($conn, "
         CAPACITY INT,
         START_TIME TIME,
         END_TIME TIME,
-        CATEGORY ENUM('LECTURE_HALL', 'LAB') DEFAULT 'LECTURE_HALL',
+        CATEGORY ENUM('LECTURE HALL', 'IT LAB', 'PHYSICS LAB', 'CHEMISTRY LAB', 'BIOLOGY LAB') DEFAULT 'LECTURE HALL',
 
         CHECK(CAPACITY >= 20 AND CAPACITY <= 200),
         CHECK(START_TIME < END_TIME)
@@ -251,6 +251,7 @@ runquery($conn, "
         OPTIONAL_ID INT,
         YEAR_NUMBER INT,
         PROGRAMME_ID INT,
+        TYPE ENUM('LECTURE','IT PRACTICAL','PHYSICS PRACTICAL','BIOLOGY PRACTICAL','CHEMISTRY PRACTICAL'),
         SEMESTER ENUM('EVEN','ODD') NOT NULL,
         LONG_NAME VARCHAR(63) NOT NULL,
         SHORT_NAME VARCHAR(15) NOT NULL,
@@ -425,12 +426,12 @@ runquery($conn, "
 //   ['Second Floor',  202,  'LAB']
 // ];
 $rooms = [
-  ['First Floor',   "IT Lab 02",  'LAB'],
-  ['First Floor',   "IT Lab 01",  'LAB'],
-  ['First Floor',   "E-Leaning Lab",  'LAB'],
-  ['First Floor',   "108",  'LECTURE_HALL'],
-  ['Second Floor',  "008",  'LECTURE_HALL'],
-  ['Fourth Floor',  "401",  'LECTURE_HALL'],
+  ['First Floor',   "IT Lab 02",  'IT LAB'],
+  ['First Floor',   "IT Lab 01",  'IT LAB'],
+  ['First Floor',   "E-Leaning Lab",  'IT LAB'],
+  ['First Floor',   "108",  'LECTURE HALL'],
+  ['Second Floor',  "008",  'LECTURE HALL'],
+  ['Fourth Floor',  "401",  'LECTURE HALL'],
 ];
 $weekdays = [
   'MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'

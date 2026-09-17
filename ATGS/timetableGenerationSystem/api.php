@@ -3,6 +3,7 @@
 use LDAP\Result;
 
 include_once 'dbConnect.php';
+// include_once 'generator.php';
 header('Content-Type: application/json');
 
 $formCategory = $_REQUEST['formCategory'] ?? '';
@@ -1503,7 +1504,7 @@ try {
     }
     elseif($formCategory == "timetable"){
         if($formtype == 'generate_timetable'){
-
+            
         }
     }
 

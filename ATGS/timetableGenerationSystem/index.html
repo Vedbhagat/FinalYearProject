@@ -76,13 +76,8 @@
                 </select>
             </div>
             <div class="header-menu">
-                <select class="dropdown" name="" id="">
-                    <option value="">2025-23</option>
-                </select>
-                <select class="dropdown" name="" id="">
-                    <option value="">ODD sem</option>
-                </select>
-                <button type="submit" id="logoutButton" class="btn primary critical">logout</button>
+                <button type="submit" id="timetable" class="btn secondary" onclick="navTo('timetable')">Timetable</button>
+                <button type="submit" id="logoutButton" class="btn secondary critical">logout</button>
             </div>
         </header>
         <div id="MainContents"></div>
@@ -119,6 +114,7 @@
         });
     }
     $(document).ready(function(){
+        checkLogin();
         $("#MainContents").load('sections/dashboard.html');
         $(".navigator").change(
             function () {
@@ -154,6 +150,10 @@
                 document.getElementById('user').innerText = '@' + result.username;
             } else {
                 console.log("Invalid Login");
+                localStorage.clear();
+                sessionStorage.clear();
+                history.replaceState(null, '', window.location.href); // Wipes out history.state data
+                window.location.reload();
                 window.location.href = "./login.html";
             }
         });
@@ -319,5 +319,7 @@
         updateSubmitButton();
     }
     checkLogin();
+
+    window.addEventListener('visibilitychange',()=>{checkLogin();})
 </script>
 </html>
