@@ -1,0 +1,576 @@
+/* 
+e58a00 butterscoch color https://maketintsandshades.com/#colors=e58a00&hashtag=0&steps=5
+*/
+/* Compiler 
+npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
+npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./ATGS/timetableGenerationSystem/src/style.css --watch
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+@reference "tailwindcss";
+
+
+@theme {
+  --color-primary: oklch(0.6 0.12 290);
+  --color-secondary: oklch(0.7 0.14 295);
+  --color-accent: oklch(0.78 0.14 300);
+  --color-background: oklch(0.88 0.08 308);
+  --color-defaultText: #000000;
+  
+  --color-success-light: oklch(92.5% 0.084 155.995);
+  --color-success-dark: oklch(52.7% 0.154 150.069);
+  --color-info-light: oklch(88.2% 0.059 254.128);
+  --color-info-dark: oklch(48.8% 0.243 264.376);
+  --color-warning-light: oklch(94.5% 0.129 101.54);
+  --color-warning-dark: oklch(55.4% 0.135 66.442);
+  --color-error-light: oklch(88.5% 0.062 18.334);
+  --color-error-dark: oklch(50.5% 0.213 27.518);
+
+  --color-bdr-light: oklch(92.8% 0.006 264.531);
+  --color-bdr: oklch(70.7% 0.022 261.325);
+  --color-bdr-dark: oklch(44.6% 0.03 256.802);
+  
+  --font-monospace: "Jetbrains Mono",'consolas', monospace;
+  
+  --text-h1: 1.4rem;
+  --text-h2: 1.2rem;
+  --text-h3: 1.1rem;
+  --text-body1: 1rem;
+  --text-body2: 0.9rem;
+  --text-caption: 0.8rem;
+  --text-caption2: 0.7rem;
+  
+  --color-bg-normal: ;
+
+  --font-weight-regular: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+ 
+  --spacing-3xl: 24px;
+  --spacing-2xl: 21px;
+  --spacing-xl: 18px;
+  --spacing-lg: 15px;
+  --spacing-base: 12px;
+  --spacing-sm: 9px;
+  --spacing-xs: 6px;
+  --spacing-2xs: 3px;
+
+}
+
+/* TYPOGRAPHY */
+.H1{ @apply text-h1; }
+.H2{ @apply text-h2; }
+.H3{ @apply text-h3; }
+.Body1{ @apply text-body1; }
+.Body2{ @apply text-body2; }
+.Caption{ @apply text-caption; }
+.Caption2{ @apply text-caption2; }
+
+/* BUTTON */
+.btn{
+  @apply outline-0 border-2 px-lg py-sm mx-1.5 my-3 rounded uppercase font-bold text-caption shadow-sm cursor-pointer hover:shadow-gray-600 
+}
+.primary{
+  @apply border-primary bg-primary text-gray-50;
+}
+.secondary{
+  @apply border-primary bg-secondary/15 text-primary;
+}
+.tertiary{
+  @apply border-0! outline-0! decoration-1 underline text-primary shadow-none!;
+}
+.critical{
+  @apply bg-error-dark border-error-dark  my-xs
+}
+
+/* CHIPS */
+.chip{
+  @apply mx-xs my-auto px-xs py-2xs border rounded-full align-middle text-caption font-regular shadow-xs hover:cursor-pointer;
+}
+.chip-green{
+  @apply border-success-dark bg-success-light text-success-dark;
+}
+.chip-yellow{
+  @apply border-warning-dark bg-warning-light text-warning-dark;
+}
+.chip-red{
+  @apply border-error-dark bg-error-light text-error-dark;
+}
+.chip-blue{
+  @apply border-info-dark bg-info-light text-info-dark;
+}
+
+
+/* SEGMENTED CONTROL */
+.sgmnt-ctrls{
+  @apply border-1 border-bdr rounded;
+}
+.sgmnt-ctrls .divider{
+  @apply border-l-1 border-bdr-light w-[1px];
+}
+.sgmnt-ctrls .sgmnt-ctrl{
+  @apply px-2.5 py-1 border-bdr  text-center rounded w-full hover:cursor-pointer;
+}
+.sgmnt-ctrls .active{
+  @apply bg-primary text-gray-50 border-primary;
+}
+
+/* INPUTS */
+input,
+.myInput,
+.dropdown{ 
+  @apply outline-0 border-2 border-bdr rounded h-10 px-base py-sm m-xs uppercase focus:border-primary/50;
+}
+.inp-w-sm{
+  /* @apply lg:w-30 lg:col-span-1 */
+  @apply w-full
+}
+.inp-w-base{
+  /* @apply lg:w-60 lg:col-span-1 */
+  @apply w-full
+}
+.inp-w-lg{
+  /* @apply lg:w-full lg:col-span-2 */
+  @apply w-full
+}
+
+input[type="password"]{ 
+  @apply tracking-[10px];
+}
+input[type="checkbox"]{ 
+  @apply w-4!;
+}
+.dropdown{ 
+  @apply outline-none h-10 border-1 border-bdr font-bold  rounded  py-0! uppercase;
+}
+.dropdown option{
+  @apply p-base m-base
+}
+
+/* PROGRESS BAR */
+.progressBar{
+  @apply h-4 w-70 border-2 border-bdr rounded-full;
+}
+.progressBar .mover{
+  @apply h-full bg-primary w-[75%] rounded-full px-[7px];
+}
+
+/* TIMEPICKER */
+.timePicker {
+    @apply flex items-center  gap-4;
+}
+.time-group {
+    @apply  flex flex-col gap-1;
+}
+.time-input {
+    @apply w-30 h-10 text-center tracking-wider font-bold
+}
+.separator {
+    @apply text-xl font-bold text-gray-500;
+}
+.time-input::-webkit-outer-spin-button,
+.time-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.time-input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+
+/* FEEDBACK */
+.feedback{
+  @apply m-1 px-6 flex-2 py-3 border border-gray-300 rounded w-80 md:w-full ;
+}
+.feedback-heading{
+  @apply font-bold text-lg uppercase tracking-wider;
+}
+.feedback-description{
+  @apply text-sm text-justify;
+}
+.feedback-success{
+  @apply  text-success-dark bg-success-light;
+}
+.feedback-info{
+  @apply  text-info-dark bg-info-light;
+}
+.feedback-warning{
+  @apply text-warning-dark bg-warning-light;
+}
+.feedback-error{
+  @apply  text-error-dark bg-error-light;
+}
+
+/* DIALOG BOX */
+.dialog{
+  @apply w-full max-w-[400px] m-sm px-xl py-base shadow-sm shadow-accent/20 border border-bdr-light rounded-xl 
+}
+.dialog-heading{
+  @apply text-h3 text-center tracking-wide font-bold mb-1;
+}
+.dialog-description{
+  @apply text-body1 text-center;
+}
+.dialog .dialog-button-group{
+  @apply flex justify-center mt-2;
+}
+
+/* ################### UTILITY CSS END ################### */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* ######## Login Page ######## */
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box !important;
+  font-family:  "JetBrains Mono", monospace;
+  transition-duration: 200ms;
+  transition-property: none;
+  @apply text-body2
+}
+html{
+  @apply min-h-100 xl:min-h-100
+}
+body{
+  @apply min-h-100 xl:h-full bg-gray-100 flex justify-center items-center;
+}
+.appBody{
+  @apply min-h-full xl:h-full flex w-full xl:w-[1500px] xl:max-h-[900px] border-bdr xl:border-x
+}
+hr{
+  @apply border-bdr my-xl;
+}
+.lgn-main{
+  @apply h-100 flex justify-center items-center;
+}
+.lgn-container{
+  @apply p-xl w-full md:w-max flex flex-col border-1 border-bdr-dark/30 rounded-2xl bg-white shadow-lg
+}
+.lgn-heading{
+  @apply mb-lg text-center text-h1 font-bold tracking-wide uppercase;
+}
+.lgn-form form{
+  @apply flex flex-col;
+}
+.lgn-form form label{
+  @apply text-sm uppercase font-semibold;
+}
+.lgn-form form input{
+  @apply mb-base;
+}
+.lgn-form form .lgn-btn-grp .lgn-button{
+  @apply w-full m-0 mt-base font-semibold
+}
+
+
+/* header{
+  @apply flex justify-between items-center bg-white px-base py-sm border-b border-bdr-light
+} */
+header{
+  @apply grid grid-cols-3 gap-1 w-full px-base py-sm border-b-2 border-bdr-dark bg-background/60 *:text-h3 *:font-bold
+}
+header .user{
+  @apply items-start place-self-start align-middle uppercase my-auto
+}
+header .header-tag{
+  @apply uppercase place-self-center
+}
+header .header-tag select option{
+  @apply text-center
+}
+header .header-menu{
+  @apply flex place-self-end
+}
+header .header-menu select{
+  @apply text-left uppercase p-xs mx-base
+}
+
+
+main{
+  @apply h-screen w-full
+}
+.mainLoaderCurtain{
+  @apply h-screen
+}
+.mainLoader{
+  @apply h-screen flex
+}
+.progressBar{
+  @apply w-50 my-auto mx-auto
+}
+
+
+/* Compiler 
+npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
+*/
+#MainContents{
+  @apply p-base;
+}
+.cards{
+  @apply inline-flex grow-1 justify-between w-full items-center flex-wrap
+}
+.card{
+  @apply bg-white relative inline-flex flex-col justify-center items-center aspect-5/3 border p-base m-base w-max grow-1 shadow-accent/50  shadow border-bdr-light/50 border-1 basis-1/7 ;
+}
+.card:hover .btn{
+  @apply visible!;
+}
+.card .card-data{
+  @apply flex justify-center items-center flex-col
+}
+.card .card-data .card-count{
+  @apply text-2xl font-extrabold text-center
+}
+.card .card-data .card-label{
+  @apply text-center text-caption text-gray-800 font-semibold uppercase
+}
+.card .card-btn-grp{
+  @apply inline-flex justify-center items-center w-full
+}
+.card .card-btn-grp .btn{
+  @apply absolute invisible bottom-0 rounded-none transition px-base! py-sm! w-full h-full mb-0 text-body1 uppercase! font-semibold bg-primary/90 backdrop-blur-xs opacity-95;
+  transition-property:backdrop-filter,opacity;
+}
+
+.timetable-status{
+  @apply bg-white bg-primary! *:text-white m-base p-base flex flex-row justify-between items-center shadow-accent/50 shadow
+}
+.timetable-status-data{
+  @apply w-full text-left
+}
+.timetable-status-label{
+  @apply text-h1 font-extrabold
+}
+.timetable-status-caption{
+  @apply text-caption font-semibold
+}
+.timetable-status-btn-grp{
+  @apply bg-white rounded
+}
+.timetable-status-btn-grp button{
+  @apply bg-white m-0
+}
+
+
+
+
+.addnew-block{
+  @apply  min-h-100 min-w-[700px] flex flex-col place-self-center m-base
+
+}
+.addnew-block .blockHeading{
+  @apply text-h2 font-black uppercase tracking-wide text-center
+}
+.ghost{
+  @apply place-self-center font-bold border-0 shadow-none decoration-1 underline text-error-dark m-0 p-0 
+}
+.addnew-block form{
+  @apply m-base flex flex-col
+}
+.addnew-block form input{
+  @apply mb-base w-full
+}
+.addnew-block form fieldset{
+  @apply border-b-1 border-bdr flex flex-col justify-center p-base w-full
+}
+.addnew-block form fieldset div{
+  @apply flex items-center
+}
+.addnew-block form fieldset div label{
+  @apply w-70 place-self-center
+}
+.addnew-block form fieldset input,
+.addnew-block form fieldset .dropdown{
+  @apply w-full font-black
+}
+.addnew-block form fieldset .checkboxGroup div{
+  @apply mx-base 
+}
+.addnew-block form fieldset .checkboxGroup label{
+  @apply w-max!
+}
+.addnew-block .btn-grp{
+  @apply flex justify-center
+}
+
+
+
+.timetable-view-table table{
+  @apply font-medium! *:font-medium
+}
+
+.timetable-view-table table th{
+  @apply text-body1 border-3! uppercase font-monospace tracking-widest;
+}
+
+.timetable-view-table table th,
+.timetable-view-table table td{
+  @apply border-3 border-bdr p-xs
+}
+.timetable-view-table table .course{
+  @apply text-h3 font-extrabold text-center text-primary
+}
+.timetable-view-table table .more-details{
+  @apply text-gray-500
+}
+.timetable-view-table table .break{
+  @apply col-span-6 uppercase text-center text-h2 font-extrabold tracking-[10px] border-2!
+}
+
+
+.view-table,
+.addnew-block{
+  @apply m-xs
+}
+table{
+  @apply table-auto w-full
+}
+table caption{
+  @apply text-h3 font-semibold underline decoration-2
+}
+table thead{
+  @apply uppercase text-center font-semibold border-b border-bdr
+}
+table tbody tr{
+  @apply hover:bg-primary/10!
+}
+table tr:nth-child(2n){
+  @apply bg-primary/7
+}
+table td{
+  @apply px-base py-2xs table-cell capitalize text-center
+}
+table td button{
+  @apply py-2xs! px-xs! mx-1!
+}
+table tr{
+  @apply my-lg
+}
+
+
+
+
+.dull-bg{
+  @apply hidden fixed h-full w-full top-0 left-0 flex items-center justify-center bg-neutral-950/40;
+}
+.dialog{
+  @apply  bg-white opacity-100 border shadow-[0px_0px_44px_3px_#adadad] shadow-gray-800
+}
+
+/* Compiler 
+npx @tailwindcss/cli -i ./timetableGenerationSystem/src/styleRaw.css -o ./timetableGenerationSystem/src/style.css --watch
+npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./ATGS/timetableGenerationSystem/src/style.css --watch
+*/
+
+/* Professional Form Card */
+.addnew-block{
+    @apply bg-white max-w-4xl min-w-0 w-full mx-auto p-8 rounded-2xl
+           shadow-lg border border-bdr-light;
+}
+
+.addnew-block .blockHeading{
+    @apply text-2xl font-bold text-center mb-6 text-primary
+           tracking-normal uppercase;
+}
+
+.addnew-block form{
+    @apply gap-5;
+}
+
+.addnew-block form > div{
+    @apply flex flex-col;
+}
+
+.addnew-block label{
+    @apply text-sm font-semibold text-gray-700 mb-2 uppercase;
+}
+
+.addnew-block .btn-grp{
+    @apply flex justify-end gap-3 mt-6;
+}
+
+/* Toggle Button */
+.ghost{
+    @apply bg-white border border-bdr rounded-lg px-4 py-2
+           font-semibold text-primary no-underline
+           shadow-sm hover:shadow-md hover:bg-primary/5;
+}
+
+/* Table Container */
+.view-table{
+    @apply bg-white rounded-2xl shadow-lg border border-bdr-light
+           p-6 overflow-hidden;
+}
+
+/* Table */
+table{
+    @apply w-full border-collapse;
+}
+
+table caption{
+    @apply text-xl font-bold text-left mb-5 no-underline;
+}
+
+table thead{
+    @apply bg-gray-100 border-b-2 border-bdr;
+}
+
+table thead td{
+    @apply py-4 font-bold text-gray-700 uppercase tracking-wide;
+}
+
+table tbody tr{
+    @apply border-b border-gray-200;
+}
+
+table tbody tr:hover{
+    @apply bg-primary/5;
+}
+
+table td{
+    @apply px-4 py-3 text-sm;
+}
+
+/* Action Buttons */
+table td button{
+    @apply rounded-lg px-3 py-2 font-semibold;
+}
+
+/* Time Inputs */
+.timePicker{
+    @apply gap-4 justify-center;
+}
+
+.time-input{
+    @apply w-40 text-center bg-white border border-bdr
+           rounded-lg shadow-sm;
+}
+
+.separator{
+    @apply text-lg font-semibold text-gray-400;
+}
+
+/* Checkbox */
+.checkboxGroup{
+    @apply mt-2;
+}
+
+/* Mobile */
+@media (max-width: 768px){
+    .addnew-block{
+        @apply p-5;
+    }
+
+    .timePicker{
+        @apply flex-col;
+    }
+
+    .btn-grp{
+        @apply flex-col;
+    }
+
+    table{
+        @apply text-xs;
+    }
+}

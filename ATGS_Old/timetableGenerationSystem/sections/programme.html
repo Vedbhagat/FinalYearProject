@@ -1,0 +1,336 @@
+<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
+<div class="addnew-block">
+    <p class="blockHeading">Add New Programme</p>
+    <form id="form" onsubmit="" method="POST">
+        <fieldset hidden>
+            <div>
+                <label for="programmeId">Programme Id</label>
+                <input type="text" name="programmeId" id="programmeId" placeholder="Auto Generated (Disabled)" readonly>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="departmentId">Department</label>
+                <select class="dropdown myInput" name="departmentId" id="departmentId" required>
+                    <option value="" disabled selected>Select Department</option>
+                </select>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div>
+                <label for="fullname">*Programme Fullname</label>
+                <input id="fullname" name="fullname" type="text" placeholder="Bachelor of Science in Information Technology" required>
+            </div>
+            <div>
+                <label for="shortname">*Programme ShortName</label>
+                <input id="shortname" name="shortname" type="text" placeholder="B. Sc. I.T." required>
+            </div>
+        </fieldset>
+        <fieldset>
+            <div class="radiobuttonGroup"
+                 onchange="createDivisionInputs(document.querySelector('input[name=duration]:checked').value)">
+                <div>
+                    <input name="duration" id="oneYear" type="radio" value="1">
+                    <span>
+                        <label for="oneYear">One</label>
+                    </span>
+                </div>
+                <div>
+                    <input name="duration" id="TwoYear" type="radio" value="2">
+                    <span>
+                        <label for="TwoYear">Two</label>
+                    </span>
+                </div>
+                <div>
+                    <input name="duration" id="ThirdYear" type="radio" value="3" checked>
+                    <span>
+                        <label for="ThirdYear">Three</label>
+                    </span>
+                </div>
+                <div>
+                    <input name="duration" id="FourYear" type="radio" value="4">
+                    <span>
+                        <label for="FourYear">Four</label>
+                    </span>
+                </div>
+                <div>
+                    <input name="duration" id="FiveYear" type="radio" value="5">
+                    <span>
+                        <label for="FiveYear">Five</label>
+                    </span>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset id="divisionCountWrapper" hidden>
+            <legend>Year wise division count (division code will be auto generated)</legend>
+        </fieldset>
+        <div class="btn-grp">
+            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="add_programme()" type="button">Create</button>
+        </div>
+    </form>
+</div>
+<hr>
+<div class="view-table">
+    <table>
+        <caption>
+            Existing Programmes
+        </caption>
+        <thead>
+            <tr>
+                <td>Sr No</td>
+                <td>UID</td>
+                <td>Department</td>
+                <td>Programme</td>
+                <td>Programme(ShortName)</td>
+                <td>Years</td>
+                <td>Actions</td>
+            </tr>
+        </thead>
+        <tbody class="recordTable"></tbody>
+    </table>
+</div>
+<script>
+
+applyValidityChecker();
+var form = document.getElementById('form');
+
+async function populateDepartment() {
+    const minimalData = await getPrerequisits('department');
+    const depts = await minimalData.responseBody.departments;
+    const departmentSelect = $('#departmentId');
+    depts.forEach(dept => {
+        departmentSelect.append(`
+            <option value="${dept.DEPARTMENT_ID}">
+                ${dept.LONG_NAME}
+            </option>
+        `);
+    });
+    departmentSelect.prop('disabled', false);
+}
+
+function createDivisionInputs(duration) {
+    duration = parseInt(duration) || 0;
+    const wrapper = $('#divisionCountWrapper');
+    const existingValues = {};
+    wrapper.find('input[type="radio"]:checked').each(function () {
+        const year = $(this)
+            .attr('name')
+            .replace('division', '');
+        existingValues[year] = $(this).val();
+    });
+    wrapper.empty();
+    for (let year = 1; year <= duration; year++) {
+        let radioButtons = '';
+        for (let division = 1; division <= 5; division++) {
+            let checked = ''
+            if (existingValues[year] !== undefined) {
+                if (existingValues[year] == division) {
+                    checked = 'checked';
+                }
+            } else {
+                if (division === 1) {
+                    checked = 'checked';
+                }
+            }
+            radioButtons += `<label><input type="radio" name="division${year}" value="${division}" ${checked}>${division}</label>&emsp;&emsp;`;
+        }
+        wrapper.append(`
+            <div>
+                <label>Divisions for Year ${year}</label>
+                <div class="divisionRadioGroup">
+                    ${radioButtons}
+                </div>
+            </div>
+        `);
+    }
+    wrapper.prop('hidden', duration === 0);
+}
+
+populateDepartment();
+
+async function add_programme() {
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const formData = new FormData(form);
+    formData.append('formCategory', 'programme');
+    formData.append('formType', 'add_programme');
+    console.log([...formData.entries()]);
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        form.reset();
+        $('#ThirdYear').prop('checked', true);
+        createDivisionInputs(3);
+        createProgrammeTable();
+    })
+    .fail(function(xhr, status, error) {
+        if (xhr.responseJSON &&
+            xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function prefillUpdateform(recordId) {
+    const response = await get_one_programme(recordId);
+    const data = response.responseBody;
+    turnOn();
+    $('#programmeId').val(data.PROGRAMME_ID);
+    $('#departmentId').val(data.DEPARTMENT_ID);
+    $('#fullname').val(data.LONG_NAME);
+    $('#shortname').val(data.SHORT_NAME);
+    $(`input[name="duration"][value="${data.DURATION}"]`)
+        .prop('checked', true);
+    createDivisionInputs(data.DURATION);
+    if (data.DIVISIONS) {
+        for (const year in data.DIVISIONS) {
+            $(`input[name="division${year}"][value="${data.DIVISIONS[year]}"]`)
+                .prop('checked', true);
+        }
+    }
+    $('#prmyBtn')
+        .text('Update')
+        .attr('onclick', `update_programme(${recordId});turnOff()`);
+    $('#sndyBtn')
+        .text('Cancel')
+        .attr('onclick', 'cancelPrefilledUpdateform();showInfoInline("Update Cancelled");turnOff()');
+    $('#fullname').focus();
+    showInfoInline("Update Form Ready");
+}
+
+function cancelPrefilledUpdateform() {
+    form.reset();
+    $('#programmeId').val('');
+    $('#departmentId').val('');
+    $('#fullname').val('');
+    $('#shortname').val('');
+    $('#ThirdYear').prop('checked', true);
+    createDivisionInputs(3);
+    $('#prmyBtn')
+        .text('Create')
+        .removeAttr('data-recordId')
+        .attr('onclick', 'add_programme()');
+    $('#sndyBtn')
+        .text('Clear')
+        .attr('onclick', 'resetForm()');
+}
+
+async function update_programme(recordId) {
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    const formData = new FormData(form);
+    formData.append('formCategory', 'programme');
+    formData.append('formType', 'update_programme');
+    console.log([...formData.entries()]);
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    })
+    .done(function(result) {
+        showInfoInline(result.responseBody);
+        cancelPrefilledUpdateform();
+        createProgrammeTable();
+    })
+    .fail(function(xhr, status, error) {
+        if (xhr.responseJSON &&
+            xhr.responseJSON.responseBody) {
+            showInfoInline(xhr.responseJSON.responseBody);
+        } else {
+            showInfoInline("An unexpected error occurred.");
+        }
+    });
+}
+
+async function get_one_programme(programmeId) {
+    const formData = new FormData();
+    formData.append('formCategory', 'programme');
+    formData.append('formType', 'get_one_programme');
+    formData.append('programmeId', programmeId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    });
+    return result;
+}
+
+async function delete_programme(recordId) {
+    const formData = new FormData();
+    formData.append('formCategory', 'programme');
+    formData.append('formType', 'delete_programme');
+    formData.append('programmeId', recordId);
+    const result = await $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    });
+    showInfoInline(result.responseBody);
+    await createProgrammeTable();
+    return result;
+}
+
+async function createProgrammeTable() {
+    const programme = await load_existing('programme');
+    const consists = await load_existing('consists');
+    const depts = await getPrerequisits('department');
+    const deptsParsed = depts.responseBody.departments;
+    let count = 1;
+    $('.recordTable').html('');
+    programme.responseBody.forEach(element => {
+        const currDept = deptsParsed.find(
+            department =>
+                department.DEPARTMENT_ID == element[1]
+        )?.SHORT_NAME ?? '';
+        const duration = consists.responseBody.filter(
+            c => c[1] == element[0]
+        ).length;
+        const template = `
+            <tr>
+                <td>${count++}</td>
+                <td>${element[0]}</td>
+                <td>${currDept}</td>
+                <td>${element[2]}</td>
+                <td>${element[3]}</td>
+                <td>${duration}</td>
+                <td>
+                    <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});"> Update
+                    </button>
+                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog( 'Delete ?', 'confirm the delete operations', ${element[0]}, delete_programme );"> Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('.recordTable').append(template);
+    });
+}
+
+createDivisionInputs(
+    document.querySelector('input[name="duration"]:checked').value
+);
+
+createProgrammeTable();
+</script>

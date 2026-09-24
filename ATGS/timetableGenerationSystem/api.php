@@ -2,8 +2,15 @@
 
 use LDAP\Result;
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+
 include_once 'dbConnect.php';
-// include_once 'generator.php';
 header('Content-Type: application/json');
 
 $formCategory = $_REQUEST['formCategory'] ?? '';
@@ -1359,11 +1366,13 @@ try {
             $studCount = $_POST['studentCount'] ?? '';
             $classroomId = $_POST['classroomId'] ?? null;
             $hasPrefTime = $_POST['prefTime'] ?? false;
-            $isStartPref = $_POST['isStartPref'] ?? false;
+            $isStartPref = isset($_POST['isStartPref']) ? (int)$_POST['isStartPref'] ?? 0 : null;
             $timeBound = $_POST['timeBound'] ?? null;
             $query = "";
             if($hasPrefTime){
-                if($isStartPref){
+                $query = "UPDATE DIVISION SET STUDENT_COUNT = NULL, CLASSROOM_ID = NULL, START_TIME_ID = NULL, END_TIME_ID = NULL WHERE DIVISION_ID = ?";
+                $result = $conn->execute_query($query,[$divisionId]);
+                if($isStartPref == 1){
                     $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = ? WHERE DIVISION_ID = ?";
                     $result = $conn->execute_query($query,[$studCount,$classroomId,$timeBound,$divisionId]);
                 }
@@ -1503,10 +1512,679 @@ try {
         }
     }
     elseif($formCategory == "timetable"){
-        if($formtype == 'generate_timetable'){
-            
+        if ($formtype == 'check_status') {
+            $result = $conn->execute_query("SELECT COUNT(*) AS total, ACADEMIC_YEAR, SEMESTER FROM TIMETABLE GROUP BY ACADEMIC_YEAR, SEMESTER LIMIT 1");
+            if ($result && $row = $result->fetch_assoc()) {
+                sendJsonResponse(200, "Timetable exists", [
+                    'exists' => true,
+                    'academic_year' => $row['ACADEMIC_YEAR'],
+                    'semester' => $row['SEMESTER']
+                ]);
+            } else {
+                sendJsonResponse(200, "No timetable generated", ['exists' => false]);
+            }
+        }
+        elseif ($formtype == 'generate_and_save') {
+            require_once 'generatorv2.php'; // Ensure your generator script is loaded
+
+            $semester = strtoupper($_POST['semester'] ?? 'ODD');
+            $academicYear = trim($_POST['academicYear'] ?? '2026-27');
+
+            // 1. Run the core allocation pipeline
+            $allocationResult = generate(); // Populates $allocatedresourses['schedule']
+            $schedule = $allocationResult['schedule'] ?? [];
+
+            if (empty($schedule)) {
+                sendJsonResponse(422, "Generation Failed", "Could not allocate slots. Check resource limits.");
+            }
+
+            // 2. Persist allocations into TIMETABLE table
+            $conn->begin_transaction();
+            try {
+                // Clear any existing allotment for this combination
+                $conn->execute_query("DELETE FROM TIMETABLE WHERE ACADEMIC_YEAR = ? AND SEMESTER = ?", [$academicYear, $semester]);
+
+                $insertQuery = "INSERT INTO TIMETABLE (COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, WEEKDAY, TEACHER_ID, ACADEMIC_YEAR, SEMESTER) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                
+                foreach ($schedule as $row) {
+                    $conn->execute_query($insertQuery, [
+                        $row['COURSE_ID'],
+                        $row['DIVISION_ID'],
+                        $row['CLASSROOM_ID'],
+                        $row['SLOT_ID'],
+                        $row['WEEKDAY'],
+                        $row['TEACHER_ID'],
+                        $academicYear,
+                        $semester
+                    ]);
+                }
+
+                $conn->commit();
+                sendJsonResponse(201, "Timetable Saved", "Timetable generated and persisted successfully.");
+            } catch (Exception $e) {
+                $conn->rollback();
+                sendJsonResponse(500, "Database Error", $e->getMessage());
+            }
+        }
+        elseif ($formtype == 'get_division_view') {
+            // Fetch academic year & semester context
+            $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
+            if ($metaQuery->num_rows == 0) {
+                sendJsonResponse(404, "No Timetable Found");
+            }
+            $meta = $metaQuery->fetch_assoc();
+
+            // Fetch timeslots ordered by start time
+            $slotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT ORDER BY START_TIME ASC");
+            $timeslots = [];
+            while ($s = $slotQuery->fetch_assoc()) {
+                $timeslots[] = $s;
+            }
+
+            // Fetch all division details linked with programme, dept, year
+            $sqlDivisions = "
+                SELECT 
+                    dv.DIVISION_ID,
+                    dv.NAME AS DIVISION_NAME,
+                    y.YEAR_NAME,
+                    p.SHORT_NAME AS PROGRAMME_NAME,
+                    p.LONG_NAME AS PROGRAMME_FULL_NAME,
+                    d.SHORT_NAME AS DEPARTMENT_NAME
+                FROM DIVISION dv
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                ORDER BY p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME
+            ";
+            $divRes = $conn->execute_query($sqlDivisions);
+            $divisions = [];
+            while ($d = $divRes->fetch_assoc()) {
+                $divisions[$d['DIVISION_ID']] = [
+                    'DIVISION_ID' => $d['DIVISION_ID'],
+                    'DIVISION_NAME' => $d['DIVISION_NAME'],
+                    'YEAR_NAME' => $d['YEAR_NAME'],
+                    'PROGRAMME_NAME' => $d['PROGRAMME_NAME'],
+                    'PROGRAMME_FULL_NAME' => $d['PROGRAMME_FULL_NAME'],
+                    'DEPARTMENT_NAME' => $d['DEPARTMENT_NAME'],
+                    'schedule' => []
+                ];
+            }
+
+            // Fetch scheduled allocations
+            $sqlSchedule = "
+                SELECT 
+                    tt.DIVISION_ID,
+                    tt.SLOT_ID,
+                    tt.WEEKDAY,
+                    c.SHORT_NAME AS COURSE_SHORT_NAME,
+                    c.LONG_NAME AS COURSE_NAME,
+                    cr.ROOM_NUMBER,
+                    CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ";
+            $schedRes = $conn->execute_query($sqlSchedule, [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            while ($r = $schedRes->fetch_assoc()) {
+                $divId = $r['DIVISION_ID'];
+                $w = $r['WEEKDAY'];
+                $slotId = $r['SLOT_ID'];
+
+                if (isset($divisions[$divId])) {
+                    if (!isset($divisions[$divId]['schedule'][$w])) {
+                        $divisions[$divId]['schedule'][$w] = [];
+                    }
+                    $divisions[$divId]['schedule'][$w][$slotId] = $r;
+                }
+            }
+
+            sendJsonResponse(200, "Timetable Data Retrieved", [
+                'metadata' => [
+                    'ACADEMIC_YEAR' => $meta['ACADEMIC_YEAR'],
+                    'SEMESTER' => $meta['SEMESTER'],
+                    'timeslots' => $timeslots
+                ],
+                'divisions' => $divisions
+            ]);
+        }
+        elseif ($formtype == 'clear_timetable') {
+            $conn->execute_query("TRUNCATE TABLE TIMETABLE");
+            sendJsonResponse(200, "Timetable cleared");
+        }
+        elseif ($formtype == 'export_pdf') {
+            $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
+            if ($metaQuery->num_rows == 0) {
+                echo "<h3>No timetable generated yet to export.</h3>";
+                exit;
+            }
+            $meta = $metaQuery->fetch_assoc();
+
+            $slotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT ORDER BY START_TIME ASC");
+            $allTimeslots = [];
+            while ($s = $slotQuery->fetch_assoc()) { $allTimeslots[] = $s; }
+
+            // Fetch Division Timetables
+            $divRes = $conn->execute_query("
+                SELECT dv.DIVISION_ID, dv.NAME AS DIVISION_NAME, y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, 
+                       p.LONG_NAME AS PROGRAMME_FULL_NAME, d.SHORT_NAME AS DEPARTMENT_NAME, cr.ROOM_NUMBER
+                FROM DIVISION dv
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                LEFT JOIN CLASSROOM cr ON dv.CLASSROOM_ID = cr.CLASSROOM_ID
+                ORDER BY d.SHORT_NAME, p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME
+            ");
+            $divisions = [];
+            while ($d = $divRes->fetch_assoc()) {
+                $divisions[$d['DIVISION_ID']] = $d;
+                $divisions[$d['DIVISION_ID']]['schedule'] = [];
+            }
+
+            $schedRes = $conn->execute_query("
+                SELECT tt.DIVISION_ID, tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, 
+                       cr.ROOM_NUMBER, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            while ($r = $schedRes->fetch_assoc()) {
+                $divisions[$r['DIVISION_ID']]['schedule'][$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+            }
+
+            // Fetch Teacher Timetables
+            $tchrRes = $conn->execute_query("
+                SELECT tr.TEACHER_ID, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME, d.SHORT_NAME AS DEPARTMENT_NAME, d.LONG_NAME AS DEPARTMENT_LONG_NAME
+                FROM TEACHER tr
+                JOIN DEPARTMENT d ON tr.DEPARTMENT_ID = d.DEPARTMENT_ID
+                ORDER BY d.SHORT_NAME, tr.FIRST_NAME
+            ");
+            $teachers = [];
+            while ($t = $tchrRes->fetch_assoc()) {
+                $teachers[$t['TEACHER_ID']] = $t;
+                $teachers[$t['TEACHER_ID']]['schedule'] = [];
+            }
+
+            $tchrSchedRes = $conn->execute_query("
+                SELECT tt.TEACHER_ID, tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, 
+                       dv.NAME AS DIVISION_NAME, p.SHORT_NAME AS PROGRAMME_NAME, cr.ROOM_NUMBER
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            while ($r = $tchrSchedRes->fetch_assoc()) {
+                $teachers[$r['TEACHER_ID']]['schedule'][$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+            }
+
+            $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+            /**
+             * Helper function: Compresses slots, removes edge breaks, and merges consecutive breaks
+             */
+            function processCompressedSlots($allTimeslots, $schedule, $weekdays) {
+                // 1. Filter out completely empty non-break slots
+                $filtered = [];
+                foreach ($allTimeslots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        $filtered[] = $slot;
+                    } else {
+                        $hasData = false;
+                        foreach ($weekdays as $day) {
+                            if (isset($schedule[$day][$slot['SLOT_ID']])) {
+                                $hasData = true;
+                                break;
+                            }
+                        }
+                        if ($hasData) {
+                            $filtered[] = $slot;
+                        }
+                    }
+                }
+
+                // 2. Trim leading breaks (breaks at the start before any lecture)
+                while (!empty($filtered) && reset($filtered)['SLOT_TYPE'] === 'BREAK') {
+                    array_shift($filtered);
+                }
+
+                // 3. Trim trailing breaks (breaks at the end after all lectures)
+                while (!empty($filtered) && end($filtered)['SLOT_TYPE'] === 'BREAK') {
+                    array_pop($filtered);
+                }
+
+                if (empty($filtered)) {
+                    return [];
+                }
+
+                // 4. Merge consecutive breaks into single continuous break slots
+                $merged = [];
+                $tempBreak = null;
+
+                foreach ($filtered as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        if ($tempBreak === null) {
+                            $tempBreak = $slot;
+                        } else {
+                            // Merge end time into existing break
+                            $tempBreak['END_TIME'] = $slot['END_TIME'];
+                        }
+                    } else {
+                        if ($tempBreak !== null) {
+                            $merged[] = $tempBreak;
+                            $tempBreak = null;
+                        }
+                        $merged[] = $slot;
+                    }
+                }
+
+                if ($tempBreak !== null) {
+                    $merged[] = $tempBreak;
+                }
+
+                return $merged;
+            }
+
+            header('Content-Type: text/html; charset=utf-8');
+            ?>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Timetable</title>
+                <style>
+                    @page { size: A4 landscape; margin: 10mm; }
+                    body { font-family: Arial, sans-serif; font-size: 11px; margin: 0; padding: 0; }
+                    .page { page-break-after: always; padding: 10px; }
+                    .page:last-child { page-break-after: avoid; }
+                    .header { text-align: center; margin-bottom: 8px; }
+                    .header h2 { margin: 0; font-size: 14px; text-transform: uppercase; }
+                    .header h3 { margin: 3px 0; font-size: 12px; }
+                    .header p { margin: 2px 0; font-weight: bold; font-size: 10px; }
+                    .room-no { text-align: right; font-weight: bold; margin-bottom: 4px; }
+                    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                    th, td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 10px; word-wrap: break-word; }
+                    th { background-color: #f2f2f2; font-weight: bold; text-transform: uppercase; }
+                    .break { background-color: #e0e0e0; font-weight: bold; letter-spacing: 2px; }
+                    .timeWeek{font-size: 13px;}
+                    .course{font-size: 13px;}
+                </style>
+            </head>
+            <body onload="window.print();">
+
+                <?php foreach ($divisions as $div): 
+                    $processedSlots = processCompressedSlots($allTimeslots, $div['schedule'], $weekdays);
+                ?>
+                    <div class="page">
+                        <div class="header">
+                            <h2>KET's V. G. Vaze College of Arts, Science and Commerce (Autonomous)</h2><br>
+                            <h3>Class Time Table <?= htmlspecialchars($meta['ACADEMIC_YEAR']) ?></h3><br>
+                            <h3><?= htmlspecialchars($div['PROGRAMME_FULL_NAME']) ?></h3>
+                            <h3><?= ucwords(strtolower(htmlspecialchars($div['YEAR_NAME']))) ?> - <?= ucwords(strtolower(htmlspecialchars($meta['SEMESTER']))) ?> Semester</h3>
+                    </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;" class="timeWeek">Time</th>
+                                    <?php foreach ($weekdays as $day): ?>
+                                        <th class="timeWeek"><?= $day ?></th>
+                                    <?php endforeach; ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($processedSlots as $slot): ?>
+                                    <tr>
+                                        <td>
+                                            <b class="timeWeek"><?= date("h:i a", strtotime($slot['START_TIME'])) ?>  -  <?= date("h:i a", strtotime($slot['END_TIME'])) ?><br><?= ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) ? "(Practical- 2hrs )" : "" ?></b>
+                                        </td>
+                                        <?php if ($slot['SLOT_TYPE'] === 'BREAK'): ?>
+                                            <td colspan="6" class="break">BREAK</td>
+                                        <?php else: ?>
+                                            <?php foreach ($weekdays as $day): 
+                                                $entry = $div['schedule'][$day][$slot['SLOT_ID']] ?? null;
+                                            ?>
+                                                <td  class="slotBox"> 
+                                                    <?php if ($entry): ?>
+                                                        <b  class="course"><?= htmlspecialchars($entry['COURSE_SHORT_NAME']) ?></b><br>
+                                                        <span><?= htmlspecialchars($entry['TEACHER_NAME']) ?><br></span>
+                                                        (Room: <?= htmlspecialchars($entry['ROOM_NUMBER']) ?>)
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endforeach; ?>
+
+                <?php foreach ($teachers as $tchr): 
+                    $processedSlots = processCompressedSlots($allTimeslots, $tchr['schedule'], $weekdays);
+                ?>
+                    <div class="page">
+                        <div class="header">
+                            <h2>KET's V. G. Vaze College of Arts, Science and Commerce (Autonomous)</h2><br>
+                            <h3>TEACHER ALLOCATION TIMETABLE  - A.Y: <?= htmlspecialchars($meta['ACADEMIC_YEAR']) ?></h3><br>   
+                            <h3><?= htmlspecialchars($tchr['TEACHER_NAME']) ?> <br> (<?= htmlspecialchars($tchr['DEPARTMENT_LONG_NAME']) ?>)</h3>
+                            <br>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 12%;" class="timeWeek">Time</th>
+                                    <?php foreach ($weekdays as $day): ?>
+                                        <th class="timeWeek"><?= $day ?></th>
+                                    <?php endforeach; ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($processedSlots as $slot): ?>
+                                    <tr>
+                                        <td>
+                                        <b class="timeWeek"><?= date("h:i a", strtotime($slot['START_TIME'])) ?>  -  <?= date("h:i a", strtotime($slot['END_TIME'])) ?><br><?= ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) ? "(Practical- 2hrs )" : "" ?></b>
+                                        </td>
+                                        <?php if ($slot['SLOT_TYPE'] === 'BREAK'): ?>
+                                            <td colspan="6" class="break">BREAK</td>
+                                        <?php else: ?>
+                                            <?php foreach ($weekdays as $day): 
+                                                $entry = $tchr['schedule'][$day][$slot['SLOT_ID']] ?? null;
+                                            ?>
+                                                <td class="slotBox">
+                                                    <?php if ($entry): ?>
+                                                        <b class="course"><?= htmlspecialchars($entry['COURSE_SHORT_NAME']) ?></b><br>
+                                                        <b><?= htmlspecialchars($entry['PROGRAMME_NAME']) ?>&nbsp - Div <?= htmlspecialchars($entry['DIVISION_NAME']) ?></b><br>
+                                                        (Room: <?= htmlspecialchars($entry['ROOM_NUMBER']) ?>)
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <br><br>
+                    </div>
+                <?php endforeach; ?>
+
+            </body>
+            </html>
+            <?php
+            exit;
+        }
+        elseif ($formtype == 'export_xls') {
+            $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
+            if ($metaQuery->num_rows == 0) {
+                sendJsonResponse(404, "No timetable found.");
+            }
+            $meta = $metaQuery->fetch_assoc();
+
+            $slotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT ORDER BY START_TIME ASC");
+            $allTimeslots = [];
+            while ($s = $slotQuery->fetch_assoc()) { $allTimeslots[] = $s; }
+
+            $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+            /**
+             * Helper function: Compresses slots, removes edge breaks, and merges consecutive breaks
+             */
+            function processCompressedSlots($allTimeslots, $schedule, $weekdays) {
+                $filtered = [];
+                foreach ($allTimeslots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        $filtered[] = $slot;
+                    } else {
+                        $hasData = false;
+                        foreach ($weekdays as $day) {
+                            if (isset($schedule[$day][$slot['SLOT_ID']])) {
+                                $hasData = true;
+                                break;
+                            }
+                        }
+                        if ($hasData) {
+                            $filtered[] = $slot;
+                        }
+                    }
+                }
+
+                while (!empty($filtered) && reset($filtered)['SLOT_TYPE'] === 'BREAK') {
+                    array_shift($filtered);
+                }
+
+                while (!empty($filtered) && end($filtered)['SLOT_TYPE'] === 'BREAK') {
+                    array_pop($filtered);
+                }
+
+                if (empty($filtered)) {
+                    return [];
+                }
+
+                $merged = [];
+                $tempBreak = null;
+
+                foreach ($filtered as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        if ($tempBreak === null) {
+                            $tempBreak = $slot;
+                        } else {
+                            $tempBreak['END_TIME'] = $slot['END_TIME'];
+                        }
+                    } else {
+                        if ($tempBreak !== null) {
+                            $merged[] = $tempBreak;
+                            $tempBreak = null;
+                        }
+                        $merged[] = $slot;
+                    }
+                }
+
+                if ($tempBreak !== null) {
+                    $merged[] = $tempBreak;
+                }
+
+                return $merged;
+            }
+
+            // Set multi-worksheet Excel headers
+            $filename = "Departmental_Timetables_" . $meta['ACADEMIC_YEAR'] . ".xls";
+            header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+            header("Content-Disposition: attachment; filename=\"$filename\"");
+            header("Pragma: no-cache");
+            header("Expires: 0");
+
+            // XML Header for Multi-Sheet Workbook
+            echo '<?xml version="1.0"?>';
+            echo '<?mso-application progid="Excel.Sheet"?>';
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+            echo 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+            echo 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:html="http://www.w3.org/TR/REC-html40">';
+
+            // Embedded CSS / Styles for Excel
+            echo '<Styles>';
+            echo '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>';
+            echo '<Style ss:ID="HeaderTitle"><Font ss:FontName="Arial" ss:Size="13" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
+            echo '<Style ss:ID="SubHeader"><Font ss:FontName="Arial" ss:Size="11" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
+            echo '<Style ss:ID="TableHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="TableCell"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="BreakCell"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '</Styles>';
+
+            // Fetch All Departments
+            $deptRes = $conn->execute_query("SELECT DEPARTMENT_ID, SHORT_NAME, LONG_NAME FROM DEPARTMENT ORDER BY SHORT_NAME");
+            while ($dept = $deptRes->fetch_assoc()) {
+                $deptId = $dept['DEPARTMENT_ID'];
+                $deptName = htmlspecialchars($dept['SHORT_NAME']);
+
+                echo '<Worksheet ss:Name="' . $deptName . '">';
+                echo '<Table>';
+                echo '<Column ss:Width="120"/>'; // Time column
+                for ($i = 0; $i < 6; $i++) { echo '<Column ss:Width="130"/>'; } // Day columns
+
+                // --- 1. DIVISION TIMETABLES FOR THIS DEPARTMENT ---
+                $divRes = $conn->execute_query("
+                    SELECT dv.DIVISION_ID, dv.NAME AS DIVISION_NAME, y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, 
+                           p.LONG_NAME AS PROGRAMME_FULL_NAME, cr.ROOM_NUMBER
+                    FROM DIVISION dv
+                    JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                    JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                    LEFT JOIN CLASSROOM cr ON dv.CLASSROOM_ID = cr.CLASSROOM_ID
+                    WHERE p.DEPARTMENT_ID = ?
+                    ORDER BY p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME
+                ", [$deptId]);
+
+                while ($div = $divRes->fetch_assoc()) {
+                    $schedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, 
+                               cr.ROOM_NUMBER, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                        WHERE tt.DIVISION_ID = ?
+                    ", [$div['DIVISION_ID']]);
+
+                    $divSchedule = [];
+                    while ($r = $schedRes->fetch_assoc()) {
+                        $divSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $divSchedule, $weekdays);
+
+                    // PDF Header Format in Excel Sheet
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">Class Time Table ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($div['PROGRAMME_FULL_NAME']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . ucwords(strtolower(htmlspecialchars($div['YEAR_NAME']))) . ' - ' . ucwords(strtolower(htmlspecialchars($meta['SEMESTER']))) . ' Semester (Div ' . htmlspecialchars($div['DIVISION_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($divSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $divSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['TEACHER_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>'; // Space between division tables
+                }
+
+                // --- 2. TEACHER ALLOCATION TIMETABLES FOR THIS DEPARTMENT ---
+                $tchrRes = $conn->execute_query("
+                    SELECT tr.TEACHER_ID, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME, d.LONG_NAME AS DEPARTMENT_LONG_NAME
+                    FROM TEACHER tr
+                    JOIN DEPARTMENT d ON tr.DEPARTMENT_ID = d.DEPARTMENT_ID
+                    WHERE tr.DEPARTMENT_ID = ?
+                    ORDER BY tr.FIRST_NAME
+                ", [$deptId]);
+
+                while ($tchr = $tchrRes->fetch_assoc()) {
+                    $tchrSchedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, dv.NAME AS DIVISION_NAME, p.SHORT_NAME AS PROGRAMME_NAME, cr.ROOM_NUMBER
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                        JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        WHERE tt.TEACHER_ID = ?
+                    ", [$tchr['TEACHER_ID']]);
+
+                    $tchrSchedule = [];
+                    while ($r = $tchrSchedRes->fetch_assoc()) {
+                        $tchrSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $tchrSchedule, $weekdays);
+
+                    // PDF Header Format for Teachers in Excel
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">TEACHER ALLOCATION TIMETABLE - A.Y: ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($tchr['TEACHER_NAME']) . ' (' . htmlspecialchars($tchr['DEPARTMENT_LONG_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($tchrSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $tchrSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['PROGRAMME_NAME'] . " - Div " . $entry['DIVISION_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>';
+                }
+
+                echo '</Table>';
+                echo '</Worksheet>';
+            }
+
+            echo '</Workbook>';
+            exit;
         }
     }
+    
 
 } catch (Throwable $e) {
     // Catch ALL exceptions/errors and return them as valid JSON

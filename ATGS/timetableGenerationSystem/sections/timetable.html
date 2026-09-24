@@ -1,973 +1,336 @@
-<!-- ============================================================
-     TIMETABLE MODULE
-     ============================================================ -->
-<head>
-<style>
-    /* ============================================================
-   TIMETABLE MODULE
-   ============================================================ */
-
-.timetable-module {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-
-/* ============================================================
-   HEADER
-   ============================================================ */
-
-.timetable-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background-color: #fff;
-  border: 1px solid #e4e4e7;
-  border-radius: 1rem;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-.timetable-heading-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.timetable-title {
-  margin: 0;
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  text-transform: uppercase;
-  color: #18181b;
-}
-
-.timetable-subtitle {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #71717a;
-}
-
-.timetable-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-
-/* ============================================================
-   LOCK CONTROL
-   ============================================================ */
-
-.lock-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background-color: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  color: #3f3f46;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-}
-
-.lock-control:hover {
-  background-color: #e4e4e7;
-}
-
-.lock-control input {
-  flex-shrink: 0;
-}
-
-
-/* ============================================================
-   STATUS
-   ============================================================ */
-
-.timetable-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background-color: #18181b;
-  color: #fff;
-  border-radius: 1rem;
-  padding: 1rem 1.25rem;
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-.timetable-status-label {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  text-transform: uppercase;
-  color: #fff;
-}
-
-.timetable-status-caption {
-  margin-top: 0.25rem;
-  font-size: 11px;
-  line-height: 1rem;
-  font-weight: 500;
-  color: #a1a1aa;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-
-/* ============================================================
-   TABLE CONTAINER
-   ============================================================ */
-
-.timetable-view-table {
-  background-color: #fff;
-  border: 1px solid #e4e4e7;
-  border-radius: 1rem;
-  box-shadow:
-    0 1px 3px 0 rgb(0 0 0 / 0.1),
-    0 1px 2px -1px rgb(0 0 0 / 0.1);
-  overflow: hidden;
-}
-
-.timetable-scroll {
-  width: 100%;
-  overflow-x: auto;
-}
-
-
-/* ============================================================
-   MAIN TIMETABLE
-   ============================================================ */
-
-.timetable {
-  width: 100%;
-  min-width: 1000px;
-  border-collapse: collapse;
-  text-align: center;
-  table-layout: fixed;
-}
-
-.timetable caption {
-  caption-side: top;
-  text-align: left;
-  padding: 1.25rem 1.25rem 0.75rem;
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  color: #18181b;
-  border-bottom: 1px solid #f4f4f5;
-}
-
-
-/* ============================================================
-   TABLE HEADER
-   ============================================================ */
-
-.timetable thead {
-  background-color: #f4f4f5;
-}
-
-.timetable thead th {
-  padding: 0.75rem;
-  font-size: 11px;
-  line-height: 1rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #3f3f46;
-  border: 1px solid #d4d4d8;
-}
-
-.timetable .time-column {
-  width: 110px;
-  background-color: #18181b;
-  color: #fff;
-}
-
-
-/* ============================================================
-   TABLE BODY
-   ============================================================ */
-
-.timetable tbody tr {
-  border-bottom: 1px solid #e4e4e7;
-}
-
-.timetable tbody tr:nth-child(even) {
-  background-color: rgb(250 250 250 / 0.5);
-}
-
-.timetable tbody tr:hover {
-  background-color: #f4f4f5;
-}
-
-
-/* ============================================================
-   TIME SLOT
-   ============================================================ */
-
-.timetable .time-slot {
-  width: 110px;
-  padding: 1rem 0.5rem;
-  background-color: #fafafa;
-  border: 1px solid #d4d4d8;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 900;
-  color: #27272a;
-  white-space: nowrap;
-}
-
-.timetable .time-slot span {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 10px;
-  line-height: 1rem;
-  font-weight: 500;
-  color: #71717a;
-}
-
-
-/* ============================================================
-   CLASS CELLS
-   ============================================================ */
-
-.timetable .class-cell {
-  min-width: 150px;
-  padding: 1rem 0.75rem;
-  border: 1px solid #d4d4d8;
-  vertical-align: middle;
-}
-
-.class-details {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-}
-
-.timetable .course {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.025em;
-  color: #18181b;
-}
-
-.timetable .more-details {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  font-size: 10px;
-  line-height: 1rem;
-  font-weight: 500;
-  color: #71717a;
-}
-
-.timetable .room {
-  font-weight: 700;
-  color: #3f3f46;
-}
-
-.timetable .teacher {
-  color: #71717a;
-}
-
-.timetable .separator {
-  color: #d4d4d8;
-}
-
-
-/* ============================================================
-   FREE PERIOD
-   ============================================================ */
-
-.timetable .free-cell {
-  padding: 1rem 0.75rem;
-  border: 1px solid #d4d4d8;
-  background-color: rgb(250 250 250 / 0.6);
-  vertical-align: middle;
-}
-
-.timetable .free-cell span {
-  display: inline-flex;
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  border: 1px dashed #d4d4d8;
-  font-size: 10px;
-  line-height: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #a1a1aa;
-}
-
-
-/* ============================================================
-   BREAK
-   ============================================================ */
-
-.timetable .break-row {
-  background-color: #f4f4f5;
-}
-
-.timetable .break-row:hover {
-  background-color: #f4f4f5;
-}
-
-.timetable .break-cell {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d4d4d8;
-  background-color: #f4f4f5;
-}
-
-.timetable .break-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  line-height: 1rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.35em;
-  color: #71717a;
-}
-
-
-/* ============================================================
-   DEPARTMENT TIMETABLE
-   ============================================================ */
-
-.department-timetable {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.department-timetable .section-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f4f4f5;
-}
-
-.department-timetable .section-heading h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.025em;
-  color: #18181b;
-}
-
-.department-timetable .section-heading p {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  color: #71717a;
-}
-
-.department-select {
-  width: auto;
-  min-width: 220px;
-}
-
-.department-table-wrapper {
-  overflow-x: auto;
-}
-
-.department-table {
-  width: 100%;
-  min-width: 650px;
-  border-collapse: collapse;
-}
-
-.department-table thead {
-  background-color: #f4f4f5;
-}
-
-.department-table th {
-  padding: 0.75rem 1rem;
-  font-size: 11px;
-  line-height: 1rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #3f3f46;
-  border: 1px solid #e4e4e7;
-}
-
-.department-table td {
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  font-weight: 500;
-  color: #3f3f46;
-  text-align: center;
-  border: 1px solid #e4e4e7;
-}
-
-.department-table tbody tr:hover {
-  background-color: #fafafa;
-}
-
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-
-@media (max-width: 700px) {
-
-  .timetable-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .timetable-actions {
-    justify-content: stretch;
-  }
-
-  .timetable-actions .btn,
-  .lock-control {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .timetable-status {
-    align-items: flex-start;
-  }
-
-  .timetable-title {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
-  }
-
-  .department-timetable .section-heading {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .department-select {
-    width: 100%;
-  }
-}
-
-
-/* ============================================================
-   PRINT
-   ============================================================ */
-
-@media print {
-
-  body {
-    background-color: #fff;
-  }
-
-  .timetable-module {
-    gap: 0.5rem;
-  }
-
-  .timetable-header,
-  .timetable-status,
-  .timetable-actions,
-  .department-timetable {
-    display: none !important;
-  }
-
-  .timetable-view-table {
-    border: 0;
-    box-shadow: none;
-    border-radius: 0;
-  }
-
-  .timetable-scroll {
-    overflow: visible;
-  }
-
-  .timetable {
-    min-width: 0;
-  }
-
-  .timetable thead th,
-  .timetable tbody th,
-  .timetable tbody td {
-    border: 1px solid #000 !important;
-  }
-
-  .timetable .course {
-    font-size: 10px;
-    line-height: 1rem;
-  }
-
-  .timetable .more-details {
-    font-size: 8px;
-    line-height: 1rem;
-  }
-}
-</style>
-</head>
-<body>
-    
-
-<section class="timetable-module" aria-labelledby="timetable-heading">
-
-    <!-- Timetable Header -->
-    <div class="timetable-header">
-        <div class="timetable-heading-group">
-            <h2 id="timetable-heading" class="timetable-title">
-                Timetable
-            </h2>
-            <p class="timetable-subtitle">
-                Weekly class schedule
-            </p>
-        </div>
-
-        <div class="timetable-actions">
-            <label class="lock-control">
-                <input type="checkbox" id="lockTimetable">
-                <span>Lock Details</span>
-            </label>
-
-            <button type="button" class="btn secondary" id="editTimetable">
-                Edit
-            </button>
-
-            <button type="button" class="btn primary" id="saveTimetable">
-                Save
-            </button>
-        </div>
-    </div>
-
-
-    <!-- Timetable Status -->
-    <div class="timetable-status">
-        <div>
-            <p class="timetable-status-label">Weekly Schedule</p>
-            <p class="timetable-status-caption">
-                Monday - Saturday
-            </p>
-        </div>
-
-        <span class="chip chip-green">
-            Active
-        </span>
-    </div>
-
-
-    <!-- Timetable -->
-    <div class="timetable-view-table">
-
-        <div class="timetable-scroll">
-
-            <table class="timetable">
-                <caption>
-                    Weekly Timetable
-                </caption>
-
-                <thead>
-                    <tr>
-                        <th scope="col" class="time-column">
-                            Time
-                        </th>
-
-                        <th scope="col">Monday</th>
-                        <th scope="col">Tuesday</th>
-                        <th scope="col">Wednesday</th>
-                        <th scope="col">Thursday</th>
-                        <th scope="col">Friday</th>
-                        <th scope="col">Saturday</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <!-- 09:00 - 10:00 -->
-                    <tr>
-                        <th scope="row" class="time-slot">
-                            09:00
-                            <span>10:00</span>
-                        </th>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-                    </tr>
-
-
-                    <!-- 10:00 - 11:00 -->
-                    <tr>
-                        <th scope="row" class="time-slot">
-                            10:00
-                            <span>11:00</span>
-                        </th>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Mathematics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 302</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">A. Patil</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Physics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 204</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">S. Sharma</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Mathematics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 302</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">A. Patil</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Computer Science</p>
-                                <p class="more-details">
-                                    <span class="room">Lab 01</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">R. Joshi</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Physics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 204</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">S. Sharma</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="free-cell">
-                            <span>Free</span>
-                        </td>
-                    </tr>
-
-
-                    <!-- BREAK -->
-                    <tr class="break-row">
-                        <th scope="row" class="time-slot">
-                            11:00
-                            <span>11:30</span>
-                        </th>
-
-                        <td colspan="6" class="break-cell">
-                            <span class="break-label">Break</span>
-                        </td>
-                    </tr>
-
-
-                    <!-- 11:30 - 12:30 -->
-                    <tr>
-                        <th scope="row" class="time-slot">
-                            11:30
-                            <span>12:30</span>
-                        </th>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Computer Science</p>
-                                <p class="more-details">
-                                    <span class="room">Lab 01</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">R. Joshi</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="free-cell">
-                            <span>Free</span>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Mathematics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 302</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">A. Patil</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Physics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 204</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">S. Sharma</span>
-                                </p>
-                            </div>
-                        </td>
-                    </tr>
-
-
-                    <!-- 12:30 - 13:30 -->
-                    <tr>
-                        <th scope="row" class="time-slot">
-                            12:30
-                            <span>13:30</span>
-                        </th>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Physics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 204</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">S. Sharma</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="free-cell">
-                            <span>Free</span>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">English</p>
-                                <p class="more-details">
-                                    <span class="room">Room 505</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">Nanda Rupnar</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Physics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 204</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">S. Sharma</span>
-                                </p>
-                            </div>
-                        </td>
-
-                        <td class="free-cell">
-                            <span>Free</span>
-                        </td>
-
-                        <td class="class-cell">
-                            <div class="class-details">
-                                <p class="course">Mathematics</p>
-                                <p class="more-details">
-                                    <span class="room">Room 302</span>
-                                    <span class="separator">•</span>
-                                    <span class="teacher">A. Patil</span>
-                                </p>
-                            </div>
-                        </td>
-                    </tr>
-
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-
-
-    <!-- Department Timetable -->
-    <section class="view-table department-timetable">
-        <div class="section-heading">
+<!-- Libraries for PDF and Excel generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div id="generateSection" class="addnew-block" style="display: none;">
+    <p class="blockHeading">Generate New Timetable</p>
+    <form id="generateTimetableForm" onsubmit="return false;">
+        <fieldset>
             <div>
-                <h3>Department Wise Timetable</h3>
-                <p>View schedules grouped by department.</p>
+                <label for="academicYear">Academic Year</label>
+                <input type="text" id="academicYear" name="academicYear" placeholder="e.g., 2026-27" required pattern="^\d{4}-\d{2,4}$">
             </div>
+            <div>
+                <label>Semester Type</label>
+                <div class="radiobuttonGroup">
+                    <div>
+                        <input type="radio" name="semester" id="semOdd" value="ODD" checked>
+                        <label for="semOdd">Odd Semester</label>
+                    </div>
+                    <div>
+                        <input type="radio" name="semester" id="semEven" value="EVEN">
+                        <label for="semEven">Even Semester</label>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <div class="btn-grp">
+            <button class="primary btn" id="btnGenerate" onclick="generateTimetable();" type="button">
+                Run Generator & Save
+            </button>
+        </div>
+    </form>
+</div>
 
-            <select class="dropdown department-select" id="departmentSelect">
-                <option value="">Select Department</option>
-                <option value="computer">Computer Science</option>
-                <option value="mechanical">Mechanical</option>
-                <option value="civil">Civil</option>
-                <option value="electronics">Electronics</option>
+<!-- 2. TIMETABLE DISPLAY & EXPORT VIEW (Displayed if timetable exists) -->
+<div id="viewSection" style="display: none;">
+    <!-- Controls & Division Selector Bar -->
+    <div class="timetable-status flex-wrap">
+        <div class="timetable-status-data">
+            <div class="timetable-status-label">Master Timetable</div>
+            <div class="timetable-status-caption" id="metaBadgeAY">A.Y: -- | Semester: --</div>
+        </div>
+        <div class="flex items-center gap-3">
+            <label class="text-white text-xs font-bold uppercase tracking-wider mb-0">Select Division:</label>
+            <select id="divisionSelector" class="dropdown w-auto text-zinc-900 font-bold" onchange="renderSelectedDivisionTimetable(this.value)">
+                <!-- Dynamically populated -->
             </select>
+            <button class="btn secondary" onclick="exportToExcel();" title="Export current division sheet to Excel">
+                Export Excel
+            </button>
+            <button class="btn secondary" onclick="exportToPDF();" title="Export current view to PDF">
+                Export PDF
+            </button>
+            <button class="btn critical" onclick="confirmRegenerate();" title="Wipe current timetable and regenerate">
+                Regenerate
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable & Printable Sheet Container -->
+    <div class="view-table timetable-view-table" id="printableTimetableArea">
+        <!-- Official Institutional Header Details -->
+        <div class="text-center pb-4 border-b border-zinc-200 mb-4 flex flex-col gap-1">
+            <h1 class="H1 text-2xl font-black uppercase text-zinc-900" id="headerCollegeName">KET'S V. G. VAZE COLLEGE OF ARTS, SCIENCE & COMMERCE</h1>
+            <h2 class="H2 text-lg font-bold uppercase text-zinc-700" id="headerDeptProg">DEPARTMENT: <span id="valDept">--</span> | PROGRAMME: <span id="valProg">--</span></h2>
+            <div class="flex justify-center gap-6 text-xs font-bold uppercase tracking-wider text-zinc-600 mt-1">
+                <span>Year: <span id="valYear" class="text-zinc-900">--</span></span>
+                <span>Division: <span id="valDiv" class="text-zinc-900">--</span></span>
+                <span>Semester: <span id="valSem" class="text-zinc-900">--</span></span>
+                <span>Academic Year: <span id="valAY" class="text-zinc-900">--</span></span>
+            </div>
         </div>
 
-        <div class="department-table-wrapper">
-            <table class="department-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Department</th>
-                        <th scope="col">Classes</th>
-                        <th scope="col">Faculty</th>
-                        <th scope="col">Rooms</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
+        <!-- Timetable Grid -->
+        <table id="timetableGridTable">
+            <thead>
+                <tr id="tableHeaderRow">
+                    <th>Day / Time</th>
+                    <!-- Timeslot columns populated dynamically -->
+                </tr>
+            </thead>
+            <tbody id="timetableGridBody">
+                <!-- Days and scheduled slots populated dynamically -->
+            </tbody>
+        </table>
+    </div>
+</div>
 
-                <tbody>
-                    <tr>
-                        <td>Computer Science</td>
-                        <td>24</td>
-                        <td>12</td>
-                        <td>08</td>
-                        <td>
-                            <span class="chip chip-green">Ready</span>
-                        </td>
-                    </tr>
+<script>
+let currentTimetableData = null;
+let currentMetadata = null;
 
-                    <tr>
-                        <td>Mechanical</td>
-                        <td>21</td>
-                        <td>10</td>
-                        <td>07</td>
-                        <td>
-                            <span class="chip chip-green">Ready</span>
-                        </td>
-                    </tr>
+// Initial Verification on Page Load
+async function checkTimetableStatus() {
+    const formData = new FormData();
+    formData.append('formCategory', 'timetable');
+    formData.append('formType', 'check_status');
 
-                    <tr>
-                        <td>Civil</td>
-                        <td>18</td>
-                        <td>09</td>
-                        <td>06</td>
-                        <td>
-                            <span class="chip chip-yellow">Draft</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+    try {
+        const res = await $.ajax({
+            url: 'api.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json'
+        });
 
-</section>
-</body>
+        if (res.responseBody && res.responseBody.exists) {
+            $('#generateSection').hide();
+            $('#viewSection').show();
+            await loadTimetableData();
+        } else {
+            $('#viewSection').hide();
+            $('#generateSection').show();
+        }
+    } catch (e) {
+        showInfoInline("Error checking timetable status.");
+    }
+}
+
+// Trigger timetable generation algorithm
+async function generateTimetable() {
+    const form = document.getElementById('generateTimetableForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData(form);
+    formData.append('formCategory', 'timetable');
+    formData.append('formType', 'generate_and_save');
+
+    showLoader("Generating Timetable...");
+    try {
+        const res = await $.ajax({
+            url: 'api.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json'
+        });
+        hideLoader();
+        showInfoInline(res.statusDescription || "Timetable generated successfully.");
+        checkTimetableStatus();
+    } catch (xhr) {
+        hideLoader();
+        const msg = xhr.responseJSON?.responseBody || "Failed to generate timetable.";
+        showInfoInline(msg);
+    }
+}
+
+// Fetch generated timetable grid data
+async function loadTimetableData() {
+    showLoader("Loading Timetable...");
+    const formData = new FormData();
+    formData.append('formCategory', 'timetable');
+    formData.append('formType', 'get_division_view');
+
+    try {
+        const res = await $.ajax({
+            url: 'api.php',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json'
+        });
+        hideLoader();
+
+        currentTimetableData = res.responseBody.divisions;
+        currentMetadata = res.responseBody.metadata;
+
+        $('#metaBadgeAY').text(`A.Y: ${currentMetadata.ACADEMIC_YEAR} | Semester: ${currentMetadata.SEMESTER}`);
+
+        // Populate Division Selector
+        const selector = $('#divisionSelector');
+        selector.empty();
+        Object.keys(currentTimetableData).forEach(divId => {
+            const d = currentTimetableData[divId];
+            selector.append(`<option value="${divId}">${d.PROGRAMME_NAME} - ${d.YEAR_NAME} (Div ${d.DIVISION_NAME})</option>`);
+        });
+
+        if (Object.keys(currentTimetableData).length > 0) {
+            renderSelectedDivisionTimetable(selector.val());
+        }
+    } catch (xhr) {
+        hideLoader();
+        showInfoInline("Error loading timetable data.");
+    }
+}
+
+function renderSelectedDivisionTimetable(divisionId) {
+    if (!currentTimetableData || !currentTimetableData[divisionId]) return;
+
+    const data = currentTimetableData[divisionId];
+    const weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+    // Update Header Text Values safely
+    $('#valDept').text(data.DEPARTMENT_NAME || 'N/A');
+    $('#valProg').text(data.PROGRAMME_NAME || 'N/A');
+    $('#valYear').text(data.YEAR_NAME || 'N/A');
+    $('#valDiv').text(data.DIVISION_NAME || 'N/A');
+    $('#valSem').text(currentMetadata ? currentMetadata.SEMESTER : 'N/A');
+    $('#valAY').text(currentMetadata ? currentMetadata.ACADEMIC_YEAR : 'N/A');
+
+    const allSlots = (currentMetadata && currentMetadata.timeslots) ? currentMetadata.timeslots : [];
+
+    // --- 1. FILTER ACTIVE NON-BREAK SLOTS ---
+    let filteredSlots = allSlots.filter(function(slot) {
+        if (slot.SLOT_TYPE === 'BREAK') {
+            return true;
+        }
+        for (let i = 0; i < weekdays.length; i++) {
+            const day = weekdays[i];
+            if (data.schedule && data.schedule[day] && data.schedule[day][slot.SLOT_ID]) {
+                return true;
+            }
+        }
+        return false;
+    });
+
+    // --- 2. TRIM LEADING BREAKS (Breaks before the first lecture) ---
+    while (filteredSlots.length > 0 && filteredSlots[0].SLOT_TYPE === 'BREAK') {
+        filteredSlots.shift();
+    }
+
+    // --- 3. TRIM TRAILING BREAKS (Breaks after the last lecture) ---
+    while (filteredSlots.length > 0 && filteredSlots[filteredSlots.length - 1].SLOT_TYPE === 'BREAK') {
+        filteredSlots.pop();
+    }
+
+    // --- 4. MERGE CONSECUTIVE BREAKS ---
+    const processedSlots = [];
+    let tempBreak = null;
+
+    filteredSlots.forEach(function(slot) {
+        if (slot.SLOT_TYPE === 'BREAK') {
+            if (tempBreak === null) {
+                tempBreak = Object.assign({}, slot);
+            } else {
+                tempBreak.END_TIME = slot.END_TIME; // Extend end time
+            }
+        } else {
+            if (tempBreak !== null) {
+                processedSlots.push(tempBreak);
+                tempBreak = null;
+            }
+            processedSlots.push(slot);
+        }
+    });
+
+    if (tempBreak !== null) {
+        processedSlots.push(tempBreak);
+    }
+
+    // --- 5. BUILD TABLE HEADERS ---
+    const headerRow = $('#tableHeaderRow');
+    headerRow.empty().append('<th>Day / Time</th>');
+
+    processedSlots.forEach(function(slot) {
+        const start = slot.START_TIME ? slot.START_TIME.slice(0, 5) : '';
+        const end = slot.END_TIME ? slot.END_TIME.slice(0, 5) : '';
+        const type = slot.SLOT_TYPE || '';
+        headerRow.append('<th>' + start + ' - ' + end + '<br><span class="text-[10px] text-zinc-400 font-normal">(' + type + ')</span></th>');
+    });
+
+    // --- 6. BUILD TABLE ROWS ---
+    const tbody = $('#timetableGridBody');
+    tbody.empty();
+
+    weekdays.forEach(function(day) {
+        let trHtml = '<tr><td class="font-bold bg-zinc-50">' + day + '</td>';
+
+        processedSlots.forEach(function(slot) {
+            if (slot.SLOT_TYPE === 'BREAK') {
+                trHtml += '<td class="break">BREAK</td>';
+            } else {
+                const entry = (data.schedule && data.schedule[day]) ? data.schedule[day][slot.SLOT_ID] : null;
+
+                if (entry) {
+                    const course = entry.COURSE_SHORT_NAME || entry.COURSE_NAME || '';
+                    const teacher = entry.TEACHER_NAME || '';
+                    const room = entry.ROOM_NUMBER || '';
+
+                    trHtml += '<td class="course">' +
+                                '<div class="font-bold text-zinc-900">' + course + '</div>' +
+                                '<div class="text-[11px] text-zinc-600">' + teacher + '</div>' +
+                                '<div class="text-[10px] text-zinc-500 font-normal">Room: ' + room + '</div>' +
+                              '</td>';
+                } else {
+                    trHtml += '<td class="text-zinc-300">--</td>';
+                }
+            }
+        });
+
+        trHtml += '</tr>';
+        tbody.append(trHtml);
+    });
+}
+
+function exportToExcel() {
+    window.location.href = 'api.php?formCategory=timetable&formType=export_xls';
+}
+
+function exportToPDF() {
+    window.open('api.php?formCategory=timetable&formType=export_pdf', '_blank');
+}
+
+
+
+// Confirmation Dialog to Reset/Regenerate
+function confirmRegenerate() {
+    if (!confirm("Regenerating will clear the currently saved timetable for this period. Do you wish to continue?")) {
+        return;
+    }
+    const formData = new FormData();
+    formData.append('formCategory', 'timetable');
+    formData.append('formType', 'clear_timetable');
+
+    $.ajax({
+        url: 'api.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json'
+    }).done(function() {
+        checkTimetableStatus();
+    });
+}
+
+// Execute initial load
+checkTimetableStatus();
+</script>

@@ -1,12 +1,12 @@
 [
     {
         "sequence": 0,
-        "dataCount": 7,
+        "dataCount": 16,
         "label": "Timeslot",
         "module": "timeslot",
-        "isLocked": false,
-        "isReady": false,
-        "isOngoing": true,
+        "isLocked": true,
+        "isReady": true,
+        "isOngoing": false,
         "isPending": false
     },
     {
@@ -15,7 +15,7 @@
         "label": "Classroom",
         "module": "classroom",
         "isLocked": true,
-        "isReady": false,
+        "isReady": true,
         "isOngoing": false,
         "isPending": true
     },
@@ -25,17 +25,17 @@
         "label": "Department",
         "module": "department",
         "isLocked": true,
-        "isReady": false,
+        "isReady": true,
         "isOngoing": false,
         "isPending": true
     },
     {
         "sequence": 3,
-        "dataCount": 6,
+        "dataCount": 7,
         "label": "Teacher",
         "module": "teacher",
         "isLocked": true,
-        "isReady": false,
+        "isReady": true,
         "isOngoing": false,
         "isPending": true
     },
@@ -44,14 +44,14 @@
         "dataCount": 1,
         "label": "Programme",
         "module": "programme",
-        "isLocked": true,
+        "isLocked": false,
         "isReady": false,
-        "isOngoing": false,
+        "isOngoing": true,
         "isPending": true
     },
     {
         "sequence": 5,
-        "dataCount": 20,
+        "dataCount": 22,
         "label": "Course",
         "module": "course",
         "isLocked": true,
@@ -61,7 +61,7 @@
     },
     {
         "sequence": 6,
-        "dataCount": 0,
+        "dataCount": 6,
         "label": "Optional Course",
         "module": "optionalCourses",
         "isLocked": true,
@@ -71,7 +71,7 @@
     },
     {
         "sequence": 7,
-        "dataCount": 1,
+        "dataCount": 4,
         "label": "Division",
         "module": "division",
         "isLocked": true,
@@ -81,7 +81,7 @@
     },
     {
         "sequence": 8,
-        "dataCount": 0,
+        "dataCount": 6,
         "label": "Map Optional Course",
         "module": "optionalCoursesMapper",
         "isLocked": true,
@@ -91,7 +91,7 @@
     },
     {
         "sequence": 9,
-        "dataCount": 8,
+        "dataCount": 10,
         "label": "Workload",
         "module": "teacherWorkload",
         "isLocked": true,
