@@ -1525,14 +1525,16 @@ try {
             }
         }
         elseif ($formtype == 'generate_and_save') {
-            require_once 'generatorv2.php'; // Ensure your generator script is loaded
+            require_once 'generatorv2.php'; // Ensure generator script is loaded
 
             $semester = strtoupper($_POST['semester'] ?? 'ODD');
             $academicYear = trim($_POST['academicYear'] ?? '2026-27');
 
             // 1. Run the core allocation pipeline
-            $allocationResult = generate(); // Populates $allocatedresourses['schedule']
-            $schedule = $allocationResult['schedule'] ?? [];
+            $allocationResult = generateTimetable($semester, $academicYear);
+            
+            // FIX 1: Access 'timetable' instead of 'schedule'
+            $schedule = $allocationResult['timetable'] ?? [];
 
             if (empty($schedule)) {
                 sendJsonResponse(422, "Generation Failed", "Could not allocate slots. Check resource limits.");
@@ -1541,27 +1543,47 @@ try {
             // 2. Persist allocations into TIMETABLE table
             $conn->begin_transaction();
             try {
-                // Clear any existing allotment for this combination
-                $conn->execute_query("DELETE FROM TIMETABLE WHERE ACADEMIC_YEAR = ? AND SEMESTER = ?", [$academicYear, $semester]);
+                // Clear existing timetable entries
+                $deleteStmt = $conn->prepare("DELETE FROM TIMETABLE WHERE ACADEMIC_YEAR = ? AND SEMESTER = ?");
+                $deleteStmt->bind_param("ss", $academicYear, $semester);
+                $deleteStmt->execute();
+                $deleteStmt->close();
 
-                $insertQuery = "INSERT INTO TIMETABLE (COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, WEEKDAY, TEACHER_ID, ACADEMIC_YEAR, SEMESTER) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                
+                // Prepare insert statement
+                $insertStmt = $conn->prepare("
+                    INSERT INTO TIMETABLE (COURSE_ID, DIVISION_ID, CLASSROOM_ID, SLOT_ID, WEEKDAY, TEACHER_ID, ACADEMIC_YEAR, SEMESTER) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+
                 foreach ($schedule as $row) {
-                    $conn->execute_query($insertQuery, [
-                        $row['COURSE_ID'],
-                        $row['DIVISION_ID'],
-                        $row['CLASSROOM_ID'],
-                        $row['SLOT_ID'],
-                        $row['WEEKDAY'],
-                        $row['TEACHER_ID'],
-                        $academicYear,
+                    $courseId    = $row['COURSE_ID'];
+                    $divisionId  = $row['DIVISION_ID'];
+                    $classroomId = $row['ROOM_ID'];
+                    $slotId      = $row['SLOT_ID'];
+                    $weekday     = $row['DAY'];
+                    $teacherId   = $row['TEACHER_ID'];
+
+                    // Fixed type string: "iiiisiss" (8 items)
+                    $insertStmt->bind_param(
+                        "iiiisiss", 
+                        $courseId, 
+                        $divisionId, 
+                        $classroomId, 
+                        $slotId, 
+                        $weekday, 
+                        $teacherId, 
+                        $academicYear, 
                         $semester
-                    ]);
+                    );
+                    $insertStmt->execute();
                 }
 
+                $insertStmt->close();
                 $conn->commit();
-                sendJsonResponse(201, "Timetable Saved", "Timetable generated and persisted successfully.");
+
+                sendJsonResponse(201, "Timetable Saved", "Timetable generated and persisted successfully.", [
+                    'validation' => $allocationResult['validation'] ?? []
+                ]);
             } catch (Exception $e) {
                 $conn->rollback();
                 sendJsonResponse(500, "Database Error", $e->getMessage());

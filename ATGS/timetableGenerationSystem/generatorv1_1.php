@@ -1,7 +1,8 @@
+
 <?php
 /**
  * generatorv2.php
- * Dynamic Division-Aware Timetable Engine with Weekly Workload Balancing
+ * Dynamic Division-Aware Slot Allocation Timetable Engine
  */
 
 include_once 'dbConnect.php';
@@ -71,8 +72,8 @@ function generateTimetable($semester = 'ODD', $academicYear = '2026-27') {
 
     $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-    // Step 5: Allocate lecture courses using WORKLOAD BALANCER
-    allocateCoursesBalanced(
+    // Step 5: Allocate lecture courses using dynamic per-division available slot lookup
+    allocateCourses(
         $divisions,                     // Division data array with populated 'workload'
         $expandedWorkloads['lectures'], // Course lecture workload data
         $lectureSlots,                  // Array of available lecture time slots
@@ -99,11 +100,12 @@ function generateTimetable($semester = 'ODD', $academicYear = '2026-27') {
 }
 
 // -------------------------------------------------------------------------
-// 1. DYNAMIC DIVISION SLOT & STATE COMPUTATION HELPERS
+// 1. DYNAMIC DIVISION SLOT COMPUTATION HELPERS
 // -------------------------------------------------------------------------
 
 /**
- * Returns available slot IDs for a division on a given day that don't overlap with existing assignments.
+ * Returns an array of slot IDs that are NOT overlapping with any practical or lecture
+ * already assigned to the specific Division on a given day.
  */
 function getDivisionAvailableSlots($dId, $day, $candidateLectureSlots, $overlappingSlots, $state) {
     $availableSlots = [];
@@ -425,7 +427,7 @@ function allocatePracticals($practicals, $divisionPracticalSlots, $classrooms, $
 }
 
 // -------------------------------------------------------------------------
-// 4. BALANCED LECTURE ALLOCATION PIPELINE
+// 4. LECTURE ALLOCATION PIPELINE (WITH PER-DIVISION FREE SLOT LOOKUP)
 // -------------------------------------------------------------------------
 
 function selectClassroom($dId, $day, $slotId, $studentCount, $lectureHalls, $overlappingSlots, $state) {
@@ -445,221 +447,44 @@ function selectClassroom($dId, $day, $slotId, $studentCount, $lectureHalls, $ove
     return null;
 }
 
-
-/**
- * REFACTORED COURSE ALLOCATION WITH DAILY TIME-WINDOW & RANDOMIZED TEACHER SELECTION
- */
-function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
-    debugLog("=== START TIME-WINDOW & RANDOMIZED COURSE ALLOCATION ===", $debug);
+function allocateCourses($divisions, $courses, $lectureSlots, $weekdays, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
+    debugLog("=== START LECTURE ALLOCATION WITH DYNAMIC FREE SLOTS ===", $debug);
 
     $unassignedWorkload = [];
-    $dailyQuota = [];
-
-    // 1. Division Time-window construction: Total workload / 6 rounded down (floor)
     foreach ($divisions as $dId => $divData) {
         $unassignedWorkload[$dId] = $divData['workload'] ?? [];
-        $totalLectures = count($unassignedWorkload[$dId]);
-        
-        // Floor of total workload divided across 6 week days
-        $dailyQuota[$dId] = ($totalLectures > 0) ? (int)floor($totalLectures / count($weekdays)) : 0;
     }
 
-    // 2. PASS 1: Allocate equal daily quota across 6 weekdays
     foreach ($weekdays as $day) {
         foreach ($divisions as $dId => $divData) {
-            if (empty($unassignedWorkload[$dId])) continue;
-
-            $assignedToday = 0;
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
-
-            foreach ($freeSlots as $slotId) {
-                if (empty($unassignedWorkload[$dId])) break;
-                if ($assignedToday >= $dailyQuota[$dId]) break; // Respect rounded down daily limit
-
-                // Filter candidate workloads whose teachers are free in this slot
-                $availableCandidates = [];
-                foreach ($unassignedWorkload[$dId] as $index => $lec) {
-                    $tId = $lec['teacher_id'];
-
-                    if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) continue;
-                    if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) continue;
-
-                    $availableCandidates[] = $index;
-                }
-
-                // Randomly select one available candidate workload
-                if (!empty($availableCandidates)) {
-                    $selectedIndex = $availableCandidates[array_rand($availableCandidates)];
-                    $lec = $unassignedWorkload[$dId][$selectedIndex];
-                    $cId = $lec['course_id'];
-                    $tId = $lec['teacher_id'];
-
-                    $selectedRoom = selectClassroom($dId, $day, $slotId, $lec['student_count'] ?? 60, $lectureHalls, $overlappingSlots, $state);
-
-                    if ($selectedRoom) {
-                        $state = markStateOccupied($tId, $dId, $selectedRoom, $day, $slotId, $overlappingSlots, $state);
-                        $state['divisionDayRoom'][$dId][$day]       = $selectedRoom;
-                        $state['courseDayCount'][$dId][$cId][$day]  = ($state['courseDayCount'][$dId][$cId][$day] ?? 0) + 1;
-                        $state['divisionDailyLectures'][$dId][$day] = ($state['divisionDailyLectures'][$dId][$day] ?? 0) + 1;
-
-                        $state['assigned'][] = [
-                            'DAY'         => $day,
-                            'SLOT_ID'     => $slotId,
-                            'DIVISION_ID' => $dId,
-                            'COURSE_ID'   => $cId,
-                            'TYPE'        => 'LECTURE',
-                            'TEACHER_ID'  => $tId,
-                            'ROOM_ID'     => $selectedRoom
-                        ];
-
-                        unset($unassignedWorkload[$dId][$selectedIndex]);
-                        $unassignedWorkload[$dId] = array_values($unassignedWorkload[$dId]);
-                        $assignedToday++;
-                    }
-                }
-            }
-        }
-    }
-
-    // 3. PASS 2: Add remaining 1 or 2 pending courses to the FIRST empty slot of MONDAY and TUESDAY
-    $overflowDays = ['MONDAY', 'TUESDAY'];
-    foreach ($divisions as $dId => $divData) {
-        if (empty($unassignedWorkload[$dId])) continue;
-
-        foreach ($overflowDays as $day) {
-            if (empty($unassignedWorkload[$dId])) break;
-
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
-
-            foreach ($freeSlots as $slotId) {
-                if (empty($unassignedWorkload[$dId])) break;
-
-                // Find candidate workloads available for this overflow slot
-                $availableCandidates = [];
-                foreach ($unassignedWorkload[$dId] as $index => $lec) {
-                    $tId = $lec['teacher_id'];
-
-                    if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) continue;
-                    if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) continue;
-
-                    $availableCandidates[] = $index;
-                }
-
-                if (!empty($availableCandidates)) {
-                    $selectedIndex = $availableCandidates[array_rand($availableCandidates)];
-                    $lec = $unassignedWorkload[$dId][$selectedIndex];
-                    $cId = $lec['course_id'];
-                    $tId = $lec['teacher_id'];
-
-                    $selectedRoom = selectClassroom($dId, $day, $slotId, $lec['student_count'] ?? 60, $lectureHalls, $overlappingSlots, $state);
-
-                    if ($selectedRoom) {
-                        $state = markStateOccupied($tId, $dId, $selectedRoom, $day, $slotId, $overlappingSlots, $state);
-                        $state['divisionDayRoom'][$dId][$day]       = $selectedRoom;
-                        $state['courseDayCount'][$dId][$cId][$day]  = ($state['courseDayCount'][$dId][$cId][$day] ?? 0) + 1;
-                        $state['divisionDailyLectures'][$dId][$day] = ($state['divisionDailyLectures'][$dId][$day] ?? 0) + 1;
-
-                        $state['assigned'][] = [
-                            'DAY'         => $day,
-                            'SLOT_ID'     => $slotId,
-                            'DIVISION_ID' => $dId,
-                            'COURSE_ID'   => $cId,
-                            'TYPE'        => 'LECTURE',
-                            'TEACHER_ID'  => $tId,
-                            'ROOM_ID'     => $selectedRoom
-                        ];
-
-                        unset($unassignedWorkload[$dId][$selectedIndex]);
-                        $unassignedWorkload[$dId] = array_values($unassignedWorkload[$dId]);
-                    }
-                }
-            }
-        }
-    }
-
-    // 4. FALLBACK PASS: Catch any remaining unallocated workloads across the week
-    foreach ($divisions as $dId => $divData) {
-        if (!empty($unassignedWorkload[$dId])) {
-            runFallbackAllocation($dId, $unassignedWorkload[$dId], $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, $state, $debug);
-        }
-    }
-
-    debugLog("=== END TIME-WINDOW ALLOCATION ===", $debug);
-}
-
-
-/**
- * ALLOCATE COURSES WITH WEEKLY WORKLOAD BALANCER
- */
-function allocateCoursesBalanced_dep($divisions, $courses, $lectureSlots, $weekdays, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
-    debugLog("=== START WORKLOAD-BALANCED LECTURE ALLOCATION ===", $debug);
-
-    $unassignedWorkload = [];
-    $maxDailyCap = [];
-
-    // Calculate maximum lectures allowed per day per division to balance across the week
-    foreach ($divisions as $dId => $divData) {
-        $unassignedWorkload[$dId] = $divData['workload'] ?? [];
-        $totalLectures = count($unassignedWorkload[$dId]);
-        
-        // Target equal distribution: e.g., 10 lectures over 6 days = max 2 lectures/day initially
-        $maxDailyCap[$dId] = ($totalLectures > 0) ? (int)ceil($totalLectures / count($weekdays)) : 2;
-    }
-
-    // PASS 1: Balanced allocation using daily caps and slot rotation
-    foreach ($weekdays as $dayIndex => $day) {
-        // Rotate candidate slots per day so early slots don't consume all lectures
-        $rotatedSlots = $lectureSlots;
-        if ($dayIndex % 2 === 1) {
-            $rotatedSlots = array_reverse($lectureSlots); // Reverse slots on odd days (1, 3, 5)
-        } else if ($dayIndex % 3 === 2) {
-            // Shift array elements for mid-week slot variation
-            $first = array_shift($rotatedSlots);
-            $rotatedSlots[] = $first;
-        }
-
-        foreach ($divisions as $dId => $divData) {
-            if (empty($unassignedWorkload[$dId])) continue;
-
-            // Enforce daily cap in Pass 1 to prevent front-loading
-            $currentDailyLectures = $state['divisionDailyLectures'][$dId][$day] ?? 0;
-            if ($currentDailyLectures >= $maxDailyCap[$dId]) {
+            if (empty($unassignedWorkload[$dId])) {
                 continue;
             }
 
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $rotatedSlots, $overlappingSlots, $state);
+            // Get exact list of non-overlapping, available slots for THIS division on THIS day
+            $freeDivisionSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
 
-            foreach ($freeSlots as $slotId) {
-                if (empty($unassignedWorkload[$dId])) break;
-                if (($state['divisionDailyLectures'][$dId][$day] ?? 0) >= $maxDailyCap[$dId]) break;
-
-                $candidateIndex = -1;
-                foreach ($unassignedWorkload[$dId] as $index => $lec) {
-                    $cId = $lec['course_id'];
-                    $tId = $lec['teacher_id'];
-
-                    // Prevent same subject twice on same day if possible
-                    if (($state['courseDayCount'][$dId][$cId][$day] ?? 0) >= 1) {
-                        continue;
-                    }
-
-                    if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) continue;
-                    if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) continue;
-
-                    $candidateIndex = $index;
+            foreach ($freeDivisionSlots as $slotId) {
+                if (empty($unassignedWorkload[$dId])) {
                     break;
                 }
 
-                // Fallback: If course daily limit prevented assignment, pick any valid course
-                if ($candidateIndex === -1) {
-                    foreach ($unassignedWorkload[$dId] as $index => $lec) {
-                        $tId = $lec['teacher_id'];
-                        if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) continue;
-                        if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) continue;
+                $candidateIndex = -1;
+                foreach ($unassignedWorkload[$dId] as $index => $lec) {
+                    $tId = $lec['teacher_id'];
 
-                        $candidateIndex = $index;
-                        break;
+                    // Check if Teacher is free in this slot
+                    if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) {
+                        continue;
                     }
+
+                    // Check Teacher DB Availability
+                    if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) {
+                        continue;
+                    }
+
+                    $candidateIndex = $index;
+                    break;
                 }
 
                 if ($candidateIndex !== -1) {
@@ -671,9 +496,6 @@ function allocateCoursesBalanced_dep($divisions, $courses, $lectureSlots, $weekd
 
                     if ($selectedRoom) {
                         $state = markStateOccupied($tId, $dId, $selectedRoom, $day, $slotId, $overlappingSlots, $state);
-                        $state['divisionDayRoom'][$dId][$day]       = $selectedRoom;
-                        $state['courseDayCount'][$dId][$cId][$day]  = ($state['courseDayCount'][$dId][$cId][$day] ?? 0) + 1;
-                        $state['divisionDailyLectures'][$dId][$day] = ($state['divisionDailyLectures'][$dId][$day] ?? 0) + 1;
 
                         $state['assigned'][] = [
                             'DAY'         => $day,
@@ -693,14 +515,14 @@ function allocateCoursesBalanced_dep($divisions, $courses, $lectureSlots, $weekd
         }
     }
 
-    // PASS 2: Relax daily caps for any remaining unassigned lectures
+    // Run fallback pass for any remaining unassigned lectures
     foreach ($divisions as $dId => $divData) {
         if (!empty($unassignedWorkload[$dId])) {
             runFallbackAllocation($dId, $unassignedWorkload[$dId], $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, $state, $debug);
         }
     }
 
-    debugLog("=== END WORKLOAD-BALANCED LECTURE ALLOCATION ===", $debug);
+    debugLog("=== END LECTURE COURSE ALLOCATION ===", $debug);
 }
 
 function runFallbackAllocation($dId, &$unassignedLectures, $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
@@ -720,7 +542,6 @@ function runFallbackAllocation($dId, &$unassignedLectures, $weekdays, $lectureSl
                 if ($allocated) break;
 
                 if (isTeacherOccupied($tId, $day, $slotId, $overlappingSlots, $state)) continue;
-                if (isset($teacherAvail[$tId][$day][$slotId]) && !$teacherAvail[$tId][$day][$slotId]) continue;
 
                 $selectedRoom = selectClassroom($dId, $day, $slotId, $lec['student_count'] ?? 60, $lectureHalls, $overlappingSlots, $state);
 
@@ -869,3 +690,5 @@ function runFinalValidation($allUnits, $state, $divisions, $timeslots) {
         'Unallocated_Details'              => $state['unallocated']
     ];
 }
+
+

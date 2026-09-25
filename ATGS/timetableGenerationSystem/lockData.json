@@ -4,9 +4,9 @@
         "dataCount": 16,
         "label": "Timeslot",
         "module": "timeslot",
-        "isLocked": true,
-        "isReady": true,
-        "isOngoing": false,
+        "isLocked": false,
+        "isReady": false,
+        "isOngoing": true,
         "isPending": false
     },
     {
@@ -15,7 +15,7 @@
         "label": "Classroom",
         "module": "classroom",
         "isLocked": true,
-        "isReady": true,
+        "isReady": false,
         "isOngoing": false,
         "isPending": true
     },
@@ -25,17 +25,17 @@
         "label": "Department",
         "module": "department",
         "isLocked": true,
-        "isReady": true,
+        "isReady": false,
         "isOngoing": false,
         "isPending": true
     },
     {
         "sequence": 3,
-        "dataCount": 7,
+        "dataCount": 6,
         "label": "Teacher",
         "module": "teacher",
         "isLocked": true,
-        "isReady": true,
+        "isReady": false,
         "isOngoing": false,
         "isPending": true
     },
@@ -44,14 +44,14 @@
         "dataCount": 1,
         "label": "Programme",
         "module": "programme",
-        "isLocked": false,
+        "isLocked": true,
         "isReady": false,
-        "isOngoing": true,
+        "isOngoing": false,
         "isPending": true
     },
     {
         "sequence": 5,
-        "dataCount": 22,
+        "dataCount": 17,
         "label": "Course",
         "module": "course",
         "isLocked": true,
@@ -61,7 +61,7 @@
     },
     {
         "sequence": 6,
-        "dataCount": 6,
+        "dataCount": 0,
         "label": "Optional Course",
         "module": "optionalCourses",
         "isLocked": true,
@@ -71,7 +71,7 @@
     },
     {
         "sequence": 7,
-        "dataCount": 4,
+        "dataCount": 2,
         "label": "Division",
         "module": "division",
         "isLocked": true,
@@ -91,7 +91,7 @@
     },
     {
         "sequence": 9,
-        "dataCount": 10,
+        "dataCount": 21,
         "label": "Workload",
         "module": "teacherWorkload",
         "isLocked": true,

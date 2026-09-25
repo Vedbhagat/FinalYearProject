@@ -217,3 +217,38 @@ Output the final timetable in:
 DAY | TIME | DIVISION | COURSE | TYPE | TEACHER | ROOM/LAB
 
 Most important: Never sacrifice workload completion to satisfy a lower-priority preference. The final timetable must be complete and conflict-free wherever the input data makes a solution possible.
+
+
+
+
+just modify the allocate courses as follows
+
+the allocation must be division wise weekday's first empty slot wise  (to ensure minimum gap between lectuers).
+
+Division Timewindow construction: The total division workload must be divided to the 6 week days and then the resulted number will be the number of courses that to be conducted in  a day if the number is decimal value then the number shall be rounded down and allocation must begin.. and at the end when one or two courses are pending to be allocated then those courses must be added at the first empty slot of monday and tuesday.
+
+for every division for every weekday, get all the availaible slots after the practical allocation so as to get the slots that are available for theory course allocation. this shall cancel all the overlapping slots that over lap with the allocated practical course. Also cancel all the slots that are outside the division prefrence time window.
+
+/* for each division, for each week, for each allocatable slot, sort the unallocated workload by the number of lectures and allocate the first workload if the teacher,classroom, and division is available and will not create a conflict. This will ensure that the slots if possible are not left empty indirectly ensuring minimum gap between lectures. */
+
+for each division, for each week, for each allocatable slot, filter the available teacher from that department for that specific slot and randomly select one of them and then randamly select any one of there worklaod and allocate a lecture to them at that slot on taht weekday in that division.
+
+and for the following 
+1) division Start Preference + division Has Practical Courses -> the allocation must work from the practical slot towards the start time and when there are no empty slots in between them then allocate courses on the other side of the practical slot.
+2) division end Preference + division Has Practical Courses -> the allocation must work from the practical slot towards the end time and when there are no empty slots in between them then allocate courses on the other side of the practical slot.
+3) division Start Preference + division do not have Practical Courses -> the allocation must begin from the start time preference in the clock wise slot allocation manner.
+4) division end Preference + division do not have Practical Courses -> the allocation must begin from the end time preference in the counter clock wise slot allocation manner.
+
+if any courses are not allocated due to start or end time preference then the preference can be disrespected for the complete allocation.
+
+The function shall complete the allocation and must not leave any workload unassigned.
+and also make sure that there are no conflicts between the teachers, divisions, courses, classrooms etc
+
+
+
+The correct the fix practical slot function ass follows
+if a division has practical workload then mark it for practical slot fixing
+then take one division at a time and fix the first available practical slot with lab by considering practical slot + lab availabilty + division student count + division time prefrence. if slot 7 -9 is allocated with the lab 2 then the slot 7 - 9 is still available with the lab 1. also make sure that the lab type is matching with the practical type as IT practical cannot be conducted in the Bio or physics lab
+
+
+The fix practical slots is not working properly it is not considering the division start/end time preference. Correct it by making minimal changes in the code. initially Make an array of slots with labs and lab types do not consider weekday just consider the slot as a single slot will be fixed as a practical slot for the entire week. Then for each division, check the workload for existence of practical courses if yes then continue. Then check the type of practical (IT PHY BOI etc) and select all the slot from the previously created array that match with the practical type. Then check for the division student count and select all the slots from the previous selection that have equal or more capacity of lab. Then check for the division time preference and select all the slots from the previous selection that are available in the division time window. Then sort the final selection by the capacity and take the first slot and fix that slot for that divison and mark that slot with lab in the array as alloted so that it is not allocated to another division in the same timeslot.
