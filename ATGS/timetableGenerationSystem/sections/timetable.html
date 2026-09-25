@@ -131,7 +131,7 @@ async function generateTimetable() {
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'generate_and_save');
 
-    showLoader("Generating Timetable...");
+    timer = timer = showLoader("Generating Timetable...");
     try {
         const res = await $.ajax({
             url: 'api.php',
@@ -141,11 +141,11 @@ async function generateTimetable() {
             contentType: false,
             dataType: 'json'
         });
-        hideLoader();
+        hideLoader(timer);
         showInfoInline(res.statusDescription || "Timetable generated successfully.");
         checkTimetableStatus();
     } catch (xhr) {
-        hideLoader();
+        hideLoader(timer);
         const msg = xhr.responseJSON?.responseBody || "Failed to generate timetable.";
         showInfoInline(msg);
     }
@@ -153,7 +153,7 @@ async function generateTimetable() {
 
 // Fetch generated timetable grid data
 async function loadTimetableData() {
-    showLoader("Loading Timetable...");
+    timer = timer = showLoader("Loading Timetable...");
     const formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'get_division_view');
@@ -167,7 +167,7 @@ async function loadTimetableData() {
             contentType: false,
             dataType: 'json'
         });
-        hideLoader();
+        hideLoader(timer);
 
         currentTimetableData = res.responseBody.divisions;
         currentMetadata = res.responseBody.metadata;
@@ -186,7 +186,7 @@ async function loadTimetableData() {
             renderSelectedDivisionTimetable(selector.val());
         }
     } catch (xhr) {
-        hideLoader();
+        hideLoader(timer);
         showInfoInline("Error loading timetable data.");
     }
 }

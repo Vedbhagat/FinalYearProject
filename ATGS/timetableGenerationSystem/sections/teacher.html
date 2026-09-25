@@ -186,7 +186,7 @@ async function add_teacher() {
     const formData = new FormData(form);
     formData.append('formCategory', 'teacher');
     formData.append('formType', 'add_teacher');
-    
+    timer = showLoader("Adding new Teacher");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -206,6 +206,9 @@ async function add_teacher() {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -214,14 +217,17 @@ async function get_one_teacher(teacherId){
     formData.append("formCategory","teacher");
     formData.append("formType","get_one_teacher");
     formData.append("teacherId",teacherId);
+    timer = showLoader("Fetching Teacher");
     return await $.ajax({
         url:"api.php",
         type:"POST",
         data:formData,
         processData:false,
         contentType:false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
-
 }
 
 async function prefillUpdateform(recordId){
@@ -254,6 +260,7 @@ async function update_teacher(){
     const formData = new FormData(form);
     formData.append("formCategory","teacher");
     formData.append("formType","update_teacher");
+    timer = showLoader("Updating Teacher");
     $.ajax({
         url:"api.php",
         type:"POST",
@@ -270,6 +277,9 @@ async function update_teacher(){
     .fail(function(xhr){
         if(xhr.responseJSON) showInfoInline(xhr.responseJSON.responseBody);
         else showInfoInline("Unexpected Error");
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -278,12 +288,16 @@ async function delete_teacher(recordId){
     formData.append("formCategory","teacher");
     formData.append("formType","delete_teacher");
     formData.append("teacherId",recordId);
+    timer = showLoader("Deleting Teacher");
     const result = await $.ajax({
         url:"api.php",
         type:"POST",
         data:formData,
         processData:false,
         contentType:false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     showInfoInline(result.responseBody);
     createTeacherTable();

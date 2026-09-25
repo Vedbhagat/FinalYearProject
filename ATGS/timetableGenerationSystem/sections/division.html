@@ -270,7 +270,7 @@ async function add_divisionDetails() {
     const formData = new FormData(form);
     formData.append('formCategory', 'division');
     formData.append('formType', 'add_divisionDetails');
-    
+    timer = showLoader("Updating Division");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -291,6 +291,9 @@ async function add_divisionDetails() {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -299,7 +302,7 @@ async function delete_divisionDetails(recordId) {
     formData.append('formCategory', 'division');
     formData.append('formType', 'delete_divisionDetails');
     formData.append('divisionId', recordId);
-
+    timer = showLoader("Deleting Division Details");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -319,6 +322,9 @@ async function delete_divisionDetails(recordId) {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 

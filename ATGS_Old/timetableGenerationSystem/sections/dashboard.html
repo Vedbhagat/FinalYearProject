@@ -45,7 +45,7 @@ function get_dashboard() {
     const formData = new FormData();
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'get_dashboard');
-    showLoader("Loading Dashboard");
+    timer = timer = showLoader("Loading Dashboard");
     return $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -55,7 +55,7 @@ function get_dashboard() {
         dataType: 'json'
     })
     .always(function(){
-        hideLoader();
+        hideLoader(timer);
     });
 }
 
@@ -129,7 +129,7 @@ async function lock_module(sequence){
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'lock_module');
     formData.append('sequence', sequence);
-    showLoader("Locking Module");
+    timer = timer = showLoader("Locking Module");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -151,7 +151,7 @@ async function lock_module(sequence){
         }
     })
     .always(function(){
-        hideLoader();
+        hideLoader(timer);
     });
 }
 
@@ -160,7 +160,7 @@ async function unlock_module(sequence){
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'unlock_module');
     formData.append('sequence', sequence);
-    showLoader("UnLocking Module");
+    timer = timer = showLoader("UnLocking Module");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -182,7 +182,7 @@ async function unlock_module(sequence){
         }
     })
     .always(function(){
-        hideLoader();
+        hideLoader(timer);
     });
 }
 

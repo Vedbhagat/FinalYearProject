@@ -76,7 +76,7 @@ async function add_timeslot() {
     const formData = new FormData(form);
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'add_timeslot');
-
+    timer = showLoader("Adding new Timeslot");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -96,6 +96,9 @@ async function add_timeslot() {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -136,8 +139,8 @@ async function update_timeslot(recordId){
     const formData = new FormData(form);
     formData.append('formCategory', 'timeslot');
     formData.append('formType','update_timeslot');
-    console.log(form);
-    
+    // console.log(form);
+    timer = showLoader("Updating Timeslot");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -158,6 +161,9 @@ async function update_timeslot(recordId){
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -166,12 +172,16 @@ async function get_one_timeslot(slotId) {
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'get_one_timeslot');
     formData.append('slotId', slotId);
+    timer = showLoader("Fetching Timeslot");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
         processData: false,
         contentType: false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     return result;
 }
@@ -181,12 +191,16 @@ async function delete_timeslot(recordId) {
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'delete_timeslot');
     formData.append('slotId', recordId);
+    timer = showLoader("Deleting Timeslot");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
         processData: false,
         contentType: false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     showInfoInline(result.responseBody);
     await createTimeslotTable();

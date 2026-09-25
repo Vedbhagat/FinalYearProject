@@ -40,9 +40,9 @@
             height: 50px;
             box-sizing: border-box;
             border-radius: 50%;
-            border: 8px solid #d3d3d3;
+            border: 7px solid #d3d3d3;
             border-left-color: #000;
-            animation: l1 1s linear infinite;
+            animation: l1 1.5s linear infinite;
         }
         #loader_data {
             margin: 0;
@@ -293,8 +293,12 @@
         <div id="MainContents"></div>
         <div id="load_wrapper" hidden>
             <div id="loader_container">
+                
                 <p id="loader"></p>
-                <p id="loader_data">Loading timeslot</p>
+                <div>
+                    <p id="loader_data">Loading timeslot</p>
+                    <p style="text-align: center;">(<span id="loader_time">0</span> Seconds)</p>
+                </div>
             </div>
         </div>
     </main>
@@ -302,7 +306,7 @@
 </body>
 <script src="https://kit.fontawesome.com/1042c9c102.js" crossorigin="anonymous"></script>
 <script>
-    
+    let timer;
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener('click', async function () {
@@ -337,13 +341,13 @@
     });
     
     async function navTo(module) {
-        await showLoader("Loading "+ module);
-        await $("#MainContents").load("sections/" + module +".html");
-        await hideLoader();
+        // timer = showLoader("Loading "+ module);
+        $("#MainContents").load("sections/" + module +".html");
+        // hideLoader(timer);
     }
 
     async function checkLogin(){
-        console.log("Checking valid login..");
+        // console.log("Checking valid login..");
         const formData = new FormData();
         formData.append('action', 'status');
         $.ajax({
@@ -356,10 +360,11 @@
         })
         .done(function(result) {
             if (result.loggedIn) {
-                console.log("Valid Login");
+                // console.log("Valid Login");
                 document.getElementById('user').innerText = '@' + result.username;
+                // showInfoInline("Logged In");
             } else {
-                console.log("Invalid Login");
+                // console.log("Invalid Login");
                 localStorage.clear();
                 sessionStorage.clear();
                 history.replaceState(null, '', window.location.href); // Wipes out history.state data
@@ -373,6 +378,7 @@
         const formData = new FormData();
         formData.append('formCategory', 'load_existing');
         formData.append('tablename', tablename);
+        timer = showLoader("Fetching Data");
         const result = await $.ajax({
             url: 'api.php',
             type: 'POST',
@@ -426,29 +432,45 @@
             form.css('display','block');
         }  
     } 
-    function showInfoInline(infoBody){
+    function showInfoInline(infoBody, timeInSec=2.5){
         const info = $(`<p id="formInfoLine" class="none" ><span>${infoBody}</span></p>`);
         $('body').append(info);
-        setTimeout(()=>{info.remove();},2500);
+        setTimeout(()=>{info.remove();},timeInSec*1000);
+        hideLoader(timer);
     }   
     function showLoader(data){
+        clearInterval(timer);
         $("#loader_data").empty().append(data);
         $("#load_wrapper").prop('hidden',false);
+        elapsedtime = setInterval(function(){
+            $("#loader_time").text(
+                Number(
+                    $("#loader_time").text()
+                )+1
+            )
+        },1000);
+        return elapsedtime;
     }
-    function hideLoader(){
+    function hideLoader(timer = elapsedtime){
         $("#load_wrapper").prop('hidden',true);
-        $("#loader_data").empty()
+        $("#loader_data").empty();
+        $("#loader_time").text(0);
+        clearInterval(timer);
     }  
     async function getPrerequisits(tablename){
         const formData = new FormData();
             formData.append('formCategory', 'getMinimalData');
             formData.append('formType', tablename);
+            timer = showLoader("Fetching Data From Server");
             const result = await $.ajax({
                 url: 'api.php',
                 type: 'POST',
                 data: formData,
                 processData: false,
                 contentType: false
+            })
+            .always(function(){
+                hideLoader(timer);
             });
             // console.log(result);
             return result;

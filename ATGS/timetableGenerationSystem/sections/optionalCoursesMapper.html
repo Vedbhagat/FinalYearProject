@@ -155,7 +155,7 @@ async function map_course() {
     const formData = new FormData(form);
     formData.append('formCategory', 'optionalcoursemapper');
     formData.append('formType', 'map_course2division');
-
+    timer = showLoader("Mapping Course to Division");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -173,6 +173,9 @@ async function map_course() {
     })
     .fail(function(xhr) {
         showInfoInline(xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.');
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -181,7 +184,7 @@ async function unmap_course(courseId1) {
     formData.append('formCategory', 'optionalcoursemapper');
     formData.append('formType', 'unmap_course');
     formData.append('courseId1', courseId1);
-
+    timer = showLoader("Un-Mapping Course to Division");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -198,6 +201,9 @@ async function unmap_course(courseId1) {
     })
     .fail(function(xhr) {
         showInfoInline(xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.');
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 

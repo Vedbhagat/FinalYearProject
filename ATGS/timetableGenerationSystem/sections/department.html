@@ -58,7 +58,7 @@ async function add_department() {
     
     formData.append('formCategory', 'department');
     formData.append('formType', 'add_department');
-
+    timer = showLoader("Adding new Department");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -78,6 +78,9 @@ async function add_department() {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -114,7 +117,7 @@ async function update_department(recordId){
     const formData = new FormData(form);
     formData.append('formCategory', 'department');
     formData.append('formType','update_department');
-    
+    timer = showLoader("Updating Department");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -135,6 +138,9 @@ async function update_department(recordId){
         }else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -143,12 +149,16 @@ async function get_one_department(departmentId) {
     formData.append('formCategory', 'department');
     formData.append('formType', 'get_one_department');
     formData.append('departmentId', departmentId);
+    timer = showLoader("Fetching Department");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
         processData: false,
         contentType: false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     return result;
 }
@@ -157,12 +167,16 @@ async function delete_department(recordId) {
     formData.append('formCategory', 'department');
     formData.append('formType', 'delete_department');
     formData.append('departmentId', recordId);
+    timer = showLoader("Deleting Department");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
         processData: false,
         contentType: false
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     showInfoInline(result.responseBody);
     await createDepartmentTable();

@@ -158,6 +158,7 @@ async function add_programme() {
     formData.append('formCategory', 'programme');
     formData.append('formType', 'add_programme');
     console.log([...formData.entries()]);
+    timer = showLoader("Adding new Programme");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -180,6 +181,9 @@ async function add_programme() {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -236,6 +240,7 @@ async function update_programme(recordId) {
     formData.append('formCategory', 'programme');
     formData.append('formType', 'update_programme');
     console.log([...formData.entries()]);
+    timer = showLoader("Updating Programme");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -256,6 +261,9 @@ async function update_programme(recordId) {
         } else {
             showInfoInline("An unexpected error occurred.");
         }
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -264,6 +272,7 @@ async function get_one_programme(programmeId) {
     formData.append('formCategory', 'programme');
     formData.append('formType', 'get_one_programme');
     formData.append('programmeId', programmeId);
+    timer = showLoader("Fetching Programme");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -271,6 +280,9 @@ async function get_one_programme(programmeId) {
         processData: false,
         contentType: false,
         dataType: 'json'
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     return result;
 }
@@ -280,6 +292,7 @@ async function delete_programme(recordId) {
     formData.append('formCategory', 'programme');
     formData.append('formType', 'delete_programme');
     formData.append('programmeId', recordId);
+    timer = showLoader("Deleting Programme");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -287,6 +300,9 @@ async function delete_programme(recordId) {
         processData: false,
         contentType: false,
         dataType: 'json'
+    })
+    .always(function() {
+        hideLoader(timer);
     });
     showInfoInline(result.responseBody);
     await createProgrammeTable();

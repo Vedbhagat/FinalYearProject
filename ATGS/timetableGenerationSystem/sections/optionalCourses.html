@@ -185,7 +185,7 @@ async function map_course() {
     const formData = new FormData(form);
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'map_course');
-
+    timer = showLoader("Mapping Course");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -204,6 +204,9 @@ async function map_course() {
         showInfoInline(
             xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.'
         );
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -213,7 +216,7 @@ async function unmap_course(recordId) {
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'unmap_course');
     formData.append('mainCourse', recordId);
-
+    timer = showLoader("Unmapping Course");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -233,6 +236,9 @@ async function unmap_course(recordId) {
             xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.'
         );
     })
+    .always(function() {
+        hideLoader(timer);
+    });
 }
 
 async function createOptionalCourseTable() {

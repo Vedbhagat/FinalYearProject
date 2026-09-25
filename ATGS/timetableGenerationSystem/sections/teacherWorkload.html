@@ -239,6 +239,7 @@ async function create_workload() {
     const formData = new FormData(form);
     formData.append('formCategory', 'workload');
     formData.append('formType', 'create_workload');
+    timer = showLoader("Adding new Workload");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -264,6 +265,7 @@ async function delete_workload(recordId) {
     formData.append('formCategory', 'workload');
     formData.append('formType', 'delete_workload');
     formData.append('workloadId', recordId);
+    timer = showLoader("Deleting Workload");
     $.ajax({
         url: 'api.php',
         type: 'POST',
