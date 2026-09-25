@@ -105,7 +105,7 @@ async function update_classroom(recordId){
     console.log(formData);
     formData.append('formCategory','classroom');
     formData.append('formType','update_classroom');
-    timer = timer = showLoader("Updating Classroom");
+    timer =showLoader("Updating Classroom");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -140,7 +140,7 @@ async function get_one_classroom(classroomId) {
     formData.append('formCategory','classroom');
     formData.append('formType', 'get_one_classroom');
     formData.append('classroomId', classroomId);
-    timer = timer = showLoader("Fetching Classroom");
+    timer =showLoader("Fetching Classroom");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',

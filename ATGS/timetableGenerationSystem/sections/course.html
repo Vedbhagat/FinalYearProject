@@ -1,5 +1,5 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
-<div class="addnew-block">
+<div class="addnew-block" style="display: none;">
     <p class="blockHeading">Add New Course</p>
     <form id="form" onsubmit="" method="POST">
         <fieldset hidden>
@@ -214,7 +214,7 @@ async function add_course() {
     const formData = new FormData(form);
     formData.append('formCategory', 'course');
     formData.append('formType', 'add_course');
-    timer = timer = showLoader("Adding new Course");
+    timer =showLoader("Adding new Course");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -244,7 +244,7 @@ async function get_one_course(courseId){
     formData.append("formCategory","course");
     formData.append("formType","get_one_course");
     formData.append("courseId",courseId);
-    timer = timer = showLoader("Fetching Course");
+    timer =showLoader("Fetching Course");
     return await $.ajax({
         url:"api.php",
         type:"POST",
@@ -308,7 +308,7 @@ async function update_course(recordId){
     const formData = new FormData(form);
     formData.append('formCategory', 'course');
     formData.append('formType','update_course');
-    timer = timer = showLoader("Updating Course");
+    timer = showLoader("Updating Course");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -365,7 +365,7 @@ async function delete_course(recordId) {
     formData.append('formCategory', 'course');
     formData.append('formType', 'delete_course');
     formData.append('courseId', recordId);
-    timer = timer = showLoader("Deleting Course");
+    timer =showLoader("Deleting Course");
     const result = await $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -450,6 +450,4 @@ async function createCourseTable(departmentId = false, programmeId = false, seme
 }
 
 createCourseTable();
-
 </script>
-<script>turnOn()</script>

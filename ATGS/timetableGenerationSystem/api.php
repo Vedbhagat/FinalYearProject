@@ -22,7 +22,7 @@ $user_id = $_SESSION['user_id'] ?? null;
 //     exit;
 // }
 
-sleep(4);
+sleep(0);
 
 function sendJsonResponse($httpStatusCode, $httpStatusDescription, $jsonResponseBody = '', $actionToPerform = '') {
     http_response_code($httpStatusCode);

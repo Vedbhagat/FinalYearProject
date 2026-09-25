@@ -1,14 +1,16 @@
-<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
-<div class="addnew-block">
+<!-- <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button> -->
+<div class="addnew-block" style="display: none;">
     <p class="blockHeading">Map Optional Courses To Division</p>
     <form id="form" onsubmit="" method="POST">
         <fieldset>
-            <div>
-                <label for="optionGroup">Course Group</label>
-                <select class="dropdown" name="optionGroup" id="optionGroup" required>
-                    <option value="" disabled selected>Select Course Group</option>
-                </select>
-            </div>
+            <fieldset disabled>
+                <div>
+                    <label for="optionGroup">Course Group</label>
+                    <select class="dropdown" name="optionGroup" id="optionGroup" required>
+                        <option value="" disabled selected>Select Course Group</option>
+                    </select>
+                </div>
+            </fieldset>
             <fieldset id="divisionMappingSection">
                 <!-- Dynamically populated division fields appear here -->
             </fieldset>
@@ -49,6 +51,8 @@
 </div>
 
 <script>
+turnOff();
+
 applyValidityChecker();
 
 var form = document.getElementById('form');
@@ -176,6 +180,7 @@ async function map_course() {
     })
     .always(function() {
         hideLoader(timer);
+        turnOff();
     });
 }
 
@@ -336,4 +341,3 @@ async function createOptionalCourseTable() {
 populateOptionalCourseGroup();
 createOptionalCourseTable();
 </script>
-<script>turnOn()</script>

@@ -51,7 +51,7 @@
     },
     {
         "sequence": 5,
-        "dataCount": 17,
+        "dataCount": 19,
         "label": "Course",
         "module": "course",
         "isLocked": true,
@@ -61,7 +61,7 @@
     },
     {
         "sequence": 6,
-        "dataCount": 0,
+        "dataCount": 4,
         "label": "Optional Course",
         "module": "optionalCourses",
         "isLocked": true,
@@ -81,7 +81,7 @@
     },
     {
         "sequence": 8,
-        "dataCount": 6,
+        "dataCount": 10,
         "label": "Map Optional Course",
         "module": "optionalCoursesMapper",
         "isLocked": true,

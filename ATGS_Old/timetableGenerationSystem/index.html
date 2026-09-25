@@ -127,7 +127,7 @@
     });
     
     async function navTo(module) {
-        await timer = timer = showLoader("Loading "+ module);
+        await timer =showLoader("Loading "+ module);
         await $("#MainContents").load("sections/" + module +".html");
         await hideLoader(timer);
     }
@@ -221,7 +221,7 @@
         $('body').append(info);
         setTimeout(()=>{info.remove();},2500);
     }   
-    function timer = timer = showLoader(data){
+    function timer =showLoader(data){
         $("#loader_data").empty().append(data);
         $("#load_wrapper").prop('hidden',false);
     }

@@ -45,7 +45,7 @@ function get_dashboard() {
     const formData = new FormData();
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'get_dashboard');
-    timer = timer = showLoader("Loading Dashboard");
+    timer =showLoader("Loading Dashboard");
     return $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -128,7 +128,7 @@ async function lock_module(sequence){
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'lock_module');
     formData.append('sequence', sequence);
-    timer = timer = showLoader("Locking Module");
+    timer =showLoader("Locking Module");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -159,7 +159,7 @@ async function unlock_module(sequence){
     formData.append('formCategory', 'dashboard');
     formData.append('formType', 'unlock_module');
     formData.append('sequence', sequence);
-    timer = timer = showLoader("UnLocking Module");
+    timer =showLoader("UnLocking Module");
     $.ajax({
         url: 'api.php',
         type: 'POST',

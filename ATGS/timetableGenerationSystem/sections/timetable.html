@@ -131,7 +131,7 @@ async function generateTimetable() {
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'generate_and_save');
 
-    timer = timer = showLoader("Generating Timetable...");
+    timer =showLoader("Generating Timetable...");
     try {
         const res = await $.ajax({
             url: 'api.php',
@@ -153,7 +153,7 @@ async function generateTimetable() {
 
 // Fetch generated timetable grid data
 async function loadTimetableData() {
-    timer = timer = showLoader("Loading Timetable...");
+    timer =showLoader("Loading Timetable...");
     const formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'get_division_view');
