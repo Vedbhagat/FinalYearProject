@@ -84,9 +84,9 @@
         "dataCount": 10,
         "label": "Map Optional Course",
         "module": "optionalCoursesMapper",
-        "isLocked": true,
-        "isReady": true,
-        "isOngoing": false,
+        "isLocked": false,
+        "isReady": false,
+        "isOngoing": true,
         "isPending": true
     },
     {
@@ -94,9 +94,9 @@
         "dataCount": 23,
         "label": "Workload",
         "module": "teacherWorkload",
-        "isLocked": false,
+        "isLocked": true,
         "isReady": false,
-        "isOngoing": true,
+        "isOngoing": false,
         "isPending": true
     }
 ]

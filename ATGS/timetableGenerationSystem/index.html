@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="src/style.css">
     <script src="jquery-4.0.0.min.js"></script>
     <title>Home</title>
-    <style>
+    <!-- /<style>
         #load_wrapper {
             position: fixed;
             inset: 0;
@@ -68,7 +68,7 @@
             background-color: var(--bg-page);
             color: var(--text-main);
             margin: 0;
-            padding: 1.5rem;
+            /* padding: 1.5rem; */
         }
 
         .timetable-module {
@@ -261,7 +261,7 @@
             border-radius: 4px;
             background: #e2e8f0;
         }
-    </style>
+    </style> -->
 </head>
 <body>
     <div class="appBody" style="overflow-y: auto;">
@@ -385,6 +385,9 @@
             data: formData,
             processData: false,
             contentType: false
+        })
+        .always(function() {
+            hideLoader(timer);
         });
         return result;
     }
@@ -439,6 +442,7 @@
         hideLoader(timer);
     }   
     function showLoader(data){
+        // console.log(event);
         clearInterval(timer);
         $("#loader_data").empty().append(data);
         $("#load_wrapper").prop('hidden',false);
@@ -457,6 +461,9 @@
         $("#loader_time").text(0);
         clearInterval(timer);
     }  
+    function resetForm(){
+        turnOff();
+    }
     async function getPrerequisits(tablename){
         const formData = new FormData();
             formData.append('formCategory', 'getMinimalData');

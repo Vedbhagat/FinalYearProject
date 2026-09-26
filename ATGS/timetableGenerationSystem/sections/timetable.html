@@ -32,33 +32,38 @@
     </form>
 </div>
 
-<!-- 2. TIMETABLE DISPLAY & EXPORT VIEW (Displayed if timetable exists) -->
 <div id="viewSection" style="display: none;">
-    <!-- Controls & Division Selector Bar -->
-    <div class="timetable-status flex-wrap">
+    <div class="timetable-status">
+        
         <div class="timetable-status-data">
             <div class="timetable-status-label">Master Timetable</div>
-            <div class="timetable-status-caption" id="metaBadgeAY">A.Y: -- | Semester: --</div>
+            <div class="timetable-status-caption" id="metaBadgeAY">A.Y: 2026-27 | Semester: ODD</div>
         </div>
-        <div class="flex items-center gap-3">
-            <label class="text-white text-xs font-bold uppercase tracking-wider mb-0">Select Division:</label>
-            <select id="divisionSelector" class="dropdown w-auto text-zinc-900 font-bold" onchange="renderSelectedDivisionTimetable(this.value)">
-                <!-- Dynamically populated -->
-            </select>
-            <button class="btn secondary" onclick="exportToExcel();" title="Export current division sheet to Excel">
-                Export Excel
-            </button>
-            <button class="btn secondary" onclick="exportToPDF();" title="Export current view to PDF">
-                Export PDF
-            </button>
-            <button class="btn critical" onclick="confirmRegenerate();" title="Wipe current timetable and regenerate">
-                Regenerate
-            </button>
+        
+        <div class="timetable-controls-group">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <span class="control-label hidden sm:inline-block">Division:</span>
+                <select id="divisionSelector" class="dropdown" onchange="renderSelectedDivisionTimetable(this.value)">
+                   
+                </select>
+            </div>
+
+            <div class="action-buttons-wrapper">
+                <button class="btn secondary" onclick="exportToExcel();" title="Export current division sheet to Excel">
+                    Export Excel
+                </button>
+                <button class="btn secondary" onclick="exportToPDF();" title="Export current view to PDF">
+                    Export PDF
+                </button>
+                <button class="btn critical" onclick="confirmRegenerate();" title="Wipe current timetable and regenerate">
+                    Regenerate
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Printable & Printable Sheet Container -->
-    <div class="view-table timetable-view-table" id="printableTimetableArea">
+    <div class="timetable-view-table" id="printableTimetableArea">
         <!-- Official Institutional Header Details -->
         <div class="text-center pb-4 border-b border-zinc-200 mb-4 flex flex-col gap-1">
             <h1 class="H1 text-2xl font-black uppercase text-zinc-900" id="headerCollegeName">KET'S V. G. VAZE COLLEGE OF ARTS, SCIENCE & COMMERCE</h1>
@@ -70,21 +75,23 @@
                 <span>Academic Year: <span id="valAY" class="text-zinc-900">--</span></span>
             </div>
         </div>
-
-        <!-- Timetable Grid -->
-        <table id="timetableGridTable">
-            <thead>
-                <tr id="tableHeaderRow">
-                    <th>Day / Time</th>
-                    <!-- Timeslot columns populated dynamically -->
-                </tr>
-            </thead>
-            <tbody id="timetableGridBody">
-                <!-- Days and scheduled slots populated dynamically -->
-            </tbody>
-        </table>
     </div>
 </div>
+        <!-- Timetable Grid -->
+<div class="timetable-table-container">
+    <table class="view-table">
+        <thead>
+            <tr id="tableHeaderRow">
+                <th>Day / Time</th>
+                <!-- Timeslot columns populated dynamically -->
+            </tr>
+        </thead>
+        <tbody id="timetableGridBody">
+            <!-- Days and scheduled slots populated dynamically -->
+        </tbody>
+    </table>
+</div>
+
 
 <script>
 let currentTimetableData = null;

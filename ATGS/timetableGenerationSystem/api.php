@@ -2049,44 +2049,81 @@ try {
 
             $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-            /**
-             * Helper function: Compresses slots, removes edge breaks, and merges consecutive breaks
-             */
             function processCompressedSlots($allTimeslots, $schedule, $weekdays) {
-                $filtered = [];
+                if (empty($allTimeslots)) {
+                    return [];
+                }
+
+                // Step 1: Flag which slots actually contain scheduled data on at least one day
+                $activeSlotIds = [];
                 foreach ($allTimeslots as $slot) {
                     if ($slot['SLOT_TYPE'] === 'BREAK') {
-                        $filtered[] = $slot;
-                    } else {
-                        $hasData = false;
-                        foreach ($weekdays as $day) {
-                            if (isset($schedule[$day][$slot['SLOT_ID']])) {
-                                $hasData = true;
-                                break;
-                            }
-                        }
-                        if ($hasData) {
-                            $filtered[] = $slot;
+                        continue;
+                    }
+                    foreach ($weekdays as $day) {
+                        if (isset($schedule[$day][$slot['SLOT_ID']])) {
+                            $activeSlotIds[$slot['SLOT_ID']] = true;
+                            break;
                         }
                     }
                 }
 
-                while (!empty($filtered) && reset($filtered)['SLOT_TYPE'] === 'BREAK') {
-                    array_shift($filtered);
+                // Step 2: Filter out empty slots, BUT preserve continuous time flow
+                $filteredSlots = [];
+                $lastEndTime = null;
+
+                foreach ($allTimeslots as $slot) {
+                    $slotId   = $slot['SLOT_ID'];
+                    $hasData  = isset($activeSlotIds[$slotId]);
+                    $isBreak  = ($slot['SLOT_TYPE'] === 'BREAK');
+
+                    // Always keep BREAKs and slots with actual allocations
+                    if ($hasData || $isBreak) {
+                        $filteredSlots[] = $slot;
+                        $lastEndTime = $slot['END_TIME'];
+                        continue;
+                    }
+
+                    // If a 2-hour practical slot is empty (like 07:00-09:00 or 11:45-01:45),
+                    // check if the same time span is already covered by 1-hour slots.
+                    // If covered, SKIP IT completely to eliminate redundant empty rows.
+                    $isOverlappingPractical = ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL']));
+                    if ($isOverlappingPractical) {
+                        // Drop empty overlapping practical slots
+                        continue;
+                    }
+
+                    // Keep empty 1-hour lecture slots ONLY if they fall between scheduled lectures (gap in time flow)
+                    if ($lastEndTime !== null && strtotime($slot['START_TIME']) >= strtotime($lastEndTime)) {
+                        // Check if there are future active lectures
+                        $hasFutureData = false;
+                        foreach ($allTimeslots as $futureSlot) {
+                            if (strtotime($futureSlot['START_TIME']) > strtotime($slot['START_TIME']) && isset($activeSlotIds[$futureSlot['SLOT_ID']])) {
+                                $hasFutureData = true;
+                                break;
+                            }
+                        }
+
+                        if ($hasFutureData) {
+                            $filteredSlots[] = $slot;
+                            $lastEndTime = $slot['END_TIME'];
+                        }
+                    }
                 }
 
-                while (!empty($filtered) && end($filtered)['SLOT_TYPE'] === 'BREAK') {
-                    array_pop($filtered);
+                // Step 3: Trim leading and trailing BREAKs
+                while (!empty($filteredSlots) && reset($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_shift($filteredSlots);
+                }
+                while (!empty($filteredSlots) && end($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_pop($filteredSlots);
                 }
 
-                if (empty($filtered)) {
-                    return [];
-                }
-
+                // Step 4: Merge consecutive BREAK slots into a single continuous break
                 $merged = [];
                 $tempBreak = null;
 
-                foreach ($filtered as $slot) {
+                foreach ($filteredSlots as $slot) {
                     if ($slot['SLOT_TYPE'] === 'BREAK') {
                         if ($tempBreak === null) {
                             $tempBreak = $slot;
@@ -2131,6 +2168,8 @@ try {
                     .break { background-color: #e0e0e0; font-weight: bold; letter-spacing: 2px; }
                     .timeWeek{font-size: 13px;}
                     .course{font-size: 13px;}
+                    .slotBox{height: 28px; table-layout: fixed;}
+                    .emptySlot{font-size: 9px; font-weight: 500; letter-spacing: 1px; color: gray;}
                 </style>
             </head>
             <body onload="window.print();">
@@ -2173,7 +2212,7 @@ try {
                                                         <span><?= htmlspecialchars($entry['TEACHER_NAME']) ?><br></span>
                                                         (Room: <?= htmlspecialchars($entry['ROOM_NUMBER']) ?>)
                                                     <?php else: ?>
-                                                        -
+                                                        <div class="emptySlot">( FREE )</div>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
@@ -2221,10 +2260,15 @@ try {
                                                 <td class="slotBox">
                                                     <?php if ($entry): ?>
                                                         <b class="course"><?= htmlspecialchars($entry['COURSE_SHORT_NAME']) ?></b><br>
-                                                        <b><?= htmlspecialchars($entry['PROGRAMME_NAME']) ?>&nbsp - Div <?= htmlspecialchars($entry['DIVISION_NAME']) ?></b><br>
+                                                        <b>
+                                                            <?= strtoupper(htmlspecialchars(($div['YEAR_NAME'] == "FIRST YEAR")? "FY" : (($div['YEAR_NAME'] == "SECOND YEAR")? "SY" : (($div['YEAR_NAME'] == "THIRD YEAR")? "TY" : "")))) ?> 
+                                                            <?= htmlspecialchars($entry['PROGRAMME_NAME']) ?>&nbsp - Div 
+                                                            <?= htmlspecialchars($entry['DIVISION_NAME']) ?>
+                                                        </b>
+                                                        <br>
                                                         (Room: <?= htmlspecialchars($entry['ROOM_NUMBER']) ?>)
                                                     <?php else: ?>
-                                                        -
+                                                        <div class="emptySlot">( FREE )</div>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
@@ -2276,7 +2320,7 @@ try {
                                                         <b><?= htmlspecialchars($entry['PROGRAMME_NAME']) ?>&nbsp - Div <?= htmlspecialchars($entry['DIVISION_NAME']) ?></b><br>
                                                         (<?= htmlspecialchars($entry['TEACHER_NAME']) ?>)
                                                     <?php else: ?>
-                                                        -
+                                                        <div class="emptySlot">( FREE )</div>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
@@ -2294,7 +2338,7 @@ try {
             <?php
             exit;
         }
-        elseif ($formtype == 'export_xls_old') {
+        elseif ($formtype == 'export_xls_old1') {
             $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
             if ($metaQuery->num_rows == 0) {
                 sendJsonResponse(404, "No timetable found.");
@@ -2553,7 +2597,7 @@ try {
             echo '</Workbook>';
             exit;
         }
-        elseif ($formtype == 'export_xls') {
+        elseif ($formtype == 'export_xls_old2') {
             $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
             if ($metaQuery->num_rows == 0) {
                 sendJsonResponse(404, "No timetable found.");
@@ -2902,6 +2946,1102 @@ try {
             echo '</Table>';
             echo '</Worksheet>';
 
+            echo '</Workbook>';
+            exit;
+        }
+        elseif ($formtype == 'export_xls_old3') {
+            $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
+            if ($metaQuery->num_rows == 0) {
+                sendJsonResponse(404, "No timetable found.");
+            }
+            $meta = $metaQuery->fetch_assoc();
+
+            // Fetch timeslots, excluding BREAK slots
+            $slotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT WHERE SLOT_TYPE != 'BREAK' ORDER BY START_TIME ASC");
+            $lectureSlots = [];
+            while ($s = $slotQuery->fetch_assoc()) { 
+                $lectureSlots[] = $s; 
+            }
+
+            // Fetch all timeslots including breaks for existing departmental generators
+            $allSlotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT ORDER BY START_TIME ASC");
+            $allTimeslots = [];
+            while ($s = $allSlotQuery->fetch_assoc()) { 
+                $allTimeslots[] = $s; 
+            }
+
+            $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+            $shortDays = ['MONDAY' => 'MON', 'TUESDAY' => 'TUE', 'WEDNESDAY' => 'WED', 'THURSDAY' => 'THU', 'FRIDAY' => 'FRI', 'SATURDAY' => 'SAT'];
+
+            function processCompressedSlots($allTimeslots, $schedule, $weekdays) {
+                if (empty($allTimeslots)) {
+                    return [];
+                }
+
+                // Step 1: Identify which slot_ids have actual scheduled data on at least one day
+                $activeSlotIds = [];
+                foreach ($allTimeslots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        continue;
+                    }
+                    foreach ($weekdays as $day) {
+                        if (isset($schedule[$day][$slot['SLOT_ID']])) {
+                            $activeSlotIds[$slot['SLOT_ID']] = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Step 2: Filter out redundant empty slots while preserving visual time flow
+                $filteredSlots = [];
+                $lastEndTime = null;
+
+                foreach ($allTimeslots as $slot) {
+                    $slotId   = $slot['SLOT_ID'];
+                    $hasData  = isset($activeSlotIds[$slotId]);
+                    $isBreak  = ($slot['SLOT_TYPE'] === 'BREAK');
+
+                    // Always retain BREAKs and slots that contain actual scheduled classes
+                    if ($hasData || $isBreak) {
+                        $filteredSlots[] = $slot;
+                        $lastEndTime = $slot['END_TIME'];
+                        continue;
+                    }
+
+                    // Drop empty overlapping/duplicate 2-hour practical slots
+                    $isPracticalSlot = ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL']));
+                    if ($isPracticalSlot) {
+                        continue;
+                    }
+
+                    // Keep intermediate empty 1-hour lecture slots IF AND ONLY IF they fall between scheduled lectures
+                    if ($lastEndTime !== null && strtotime($slot['START_TIME']) >= strtotime($lastEndTime)) {
+                        $hasFutureData = false;
+                        foreach ($allTimeslots as $futureSlot) {
+                            if (strtotime($futureSlot['START_TIME']) > strtotime($slot['START_TIME']) 
+                                && isset($activeSlotIds[$futureSlot['SLOT_ID']])) {
+                                $hasFutureData = true;
+                                break;
+                            }
+                        }
+
+                        if ($hasFutureData) {
+                            $filteredSlots[] = $slot;
+                            $lastEndTime = $slot['END_TIME'];
+                        }
+                    }
+                }
+
+                // Step 3: Trim leading and trailing BREAK slots
+                while (!empty($filteredSlots) && reset($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_shift($filteredSlots);
+                }
+                while (!empty($filteredSlots) && end($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_pop($filteredSlots);
+                }
+
+                // Step 4: Merge consecutive BREAK slots into a single continuous break block
+                $merged = [];
+                $tempBreak = null;
+
+                foreach ($filteredSlots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        if ($tempBreak === null) {
+                            $tempBreak = $slot;
+                        } else {
+                            $tempBreak['END_TIME'] = $slot['END_TIME'];
+                        }
+                    } else {
+                        if ($tempBreak !== null) {
+                            $merged[] = $tempBreak;
+                            $tempBreak = null;
+                        }
+                        $merged[] = $slot;
+                    }
+                }
+
+                if ($tempBreak !== null) {
+                    $merged[] = $tempBreak;
+                }
+
+                return $merged;
+            }
+
+            // Set multi-worksheet Excel headers
+            $filename = "Departmental_Timetables_" . $meta['ACADEMIC_YEAR'] . ".xls";
+            header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+            header("Content-Disposition: attachment; filename=\"$filename\"");
+            header("Pragma: no-cache");
+            header("Expires: 0");
+
+            // XML Header for Multi-Sheet Workbook
+            echo '<?xml version="1.0"?>';
+            echo '<?mso-application progid="Excel.Sheet"?>';
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+            echo 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+            echo 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:html="http://www.w3.org/TR/REC-html40">';
+
+            // Embedded CSS / Styles for Excel
+            echo '<Styles>';
+            echo '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>';
+            echo '<Style ss:ID="HeaderTitle"><Font ss:FontName="Arial" ss:Size="13" ss:Bold="1" ss:Color="#FFFFFF"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#595959" ss:Pattern="Solid"/></Style>';
+            echo '<Style ss:ID="MasterTitle"><Font ss:FontName="Arial" ss:Size="12" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="SubHeader"><Font ss:FontName="Arial" ss:Size="11" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
+            echo '<Style ss:ID="TableHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="TableCell"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="BreakCell"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '</Styles>';
+
+            // =========================================================================
+            // --- 1. NEW WORKSHEET: MASTER TIMETABLE ---
+            // =========================================================================
+            echo '<Worksheet ss:Name="Master Timetable">';
+            echo '<Table>';
+            echo '<Column ss:Width="50"/>';  // Sr. No.
+            echo '<Column ss:Width="65"/>';  // Capacity
+            echo '<Column ss:Width="90"/>';  // Room Number
+            echo '<Column ss:Width="55"/>';  // Day
+
+            // Each lecture timeslot takes 3 sub-columns: Class, Subject Name, Teacher Name
+            $totalLectureSlots = count($lectureSlots);
+            for ($i = 0; $i < $totalLectureSlots * 3; $i++) {
+                echo '<Column ss:Width="100"/>';
+            }
+
+            $totalColumnsAcross = 4 + ($totalLectureSlots * 3);
+            $mergeAcrossTitle = $totalColumnsAcross - 5; // Start at col 5
+
+            // Row 1: Header Title
+            echo '<Row ss:Height="25">';
+            // echo '<Cell ss:StyleID="HeaderTitle"><Data ss:Type="String">N</Data></Cell>';
+            // echo '<Cell ss:MergeAcross="' . ($totalColumnsAcross - 2) . '" ss:StyleID="HeaderTitle"><Data ss:Type="String">MASTER TIME TABLE ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell>';
+            echo '<Cell ss:MergeAcross="' . 3 . '" ss:StyleID="HeaderTitle"></Cell>';
+            echo '<Cell ss:MergeAcross="' . ($totalColumnsAcross - 1 - 4) . '" ss:StyleID="HeaderTitle"><Data ss:Type="String">MASTER TIME TABLE ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell>';
+            echo '</Row>';
+
+            // Row 2: Top Header Labels (MergeDown="1" spans across Row 2 and Row 3)
+            echo '<Row ss:Height="20">';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">Sr. No.</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">Capacity</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">ROOM NUMBER</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">DAY</Data></Cell>';
+            echo '<Cell ss:MergeAcross="' . (($totalLectureSlots * 3) - 1) . '" ss:StyleID="MasterTitle"><Data ss:Type="String">TIME</Data></Cell>';
+            echo '</Row>';
+
+            // Row 3: Time Slot Headers (Requires ss:Index="5" to skip merged columns 1-4)
+            echo '<Row ss:Height="22">';
+            foreach ($lectureSlots as $idx => $slot) {
+                $timeFormatted = date("g:i A", strtotime($slot['START_TIME'])) . " - " . date("g:i A", strtotime($slot['END_TIME']));
+                $indexAttr = ($idx === 0) ? ' ss:Index="5"' : '';
+                echo '<Cell' . $indexAttr . ' ss:MergeAcross="2" ss:StyleID="TableHeader"><Data ss:Type="String">' . htmlspecialchars($timeFormatted) . '</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Row 4: Sub-headers (Requires ss:Index="5" to start sub-headers at column 5)
+            echo '<Row ss:Height="20">';
+            for ($s = 0; $s < $totalLectureSlots; $s++) {
+                $indexAttr = ($s === 0) ? ' ss:Index="5"' : '';
+                echo '<Cell' . $indexAttr . ' ss:StyleID="TableHeader"><Data ss:Type="String">Class</Data></Cell>';
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Subject Name</Data></Cell>';
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Teacher Name</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Fetch Classrooms & Allocations
+            $classroomsRes = $conn->execute_query("SELECT CLASSROOM_ID, ROOM_NUMBER, CAPACITY FROM CLASSROOM ORDER BY ROOM_NUMBER ASC");
+            $masterClassrooms = [];
+            while ($c = $classroomsRes->fetch_assoc()) {
+                $masterClassrooms[] = $c;
+            }
+
+            $masterSchedRes = $conn->execute_query("
+                SELECT tt.CLASSROOM_ID, tt.SLOT_ID, tt.WEEKDAY,
+                       c.SHORT_NAME AS COURSE_SHORT_NAME, c.ISPRACTICAL,
+                       y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, dv.NAME AS DIVISION_NAME,
+                       CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            $masterData = [];
+            while ($r = $masterSchedRes->fetch_assoc()) {
+                $masterData[$r['CLASSROOM_ID']][$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+            }
+
+            // Populate Master Timetable Rows
+            $srNo = 1;
+            foreach ($masterClassrooms as $cr) {
+                $cId = $cr['CLASSROOM_ID'];
+                $rNum = htmlspecialchars($cr['ROOM_NUMBER']);
+                $cap = htmlspecialchars($cr['CAPACITY'] ?? '-');
+
+                foreach ($weekdays as $dayIndex => $day) {
+                    echo '<Row ss:Height="30">';
+
+                    if ($dayIndex === 0) {
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="Number">' . $srNo . '</Data></Cell>';
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="String">' . $cap . '</Data></Cell>';
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="String">' . $rNum . '</Data></Cell>';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $shortDays[$day] . '</Data></Cell>';
+                    } else {
+                        echo '<Cell ss:Index="4" ss:StyleID="TableCell"><Data ss:Type="String">' . $shortDays[$day] . '</Data></Cell>';
+                    }
+
+                    // Render allotments per slot
+                    $slotCount = count($lectureSlots);
+                    for ($sIdx = 0; $sIdx < $slotCount; $sIdx++) {
+                        $sId = $lectureSlots[$sIdx]['SLOT_ID'];
+                        $entry = $masterData[$cId][$day][$sId] ?? null;
+
+                        // Check if previous slot was a practical that spans into this slot
+                        $prevSlotId = ($sIdx > 0) ? $lectureSlots[$sIdx - 1]['SLOT_ID'] : null;
+                        $prevEntry = ($prevSlotId && isset($masterData[$cId][$day][$prevSlotId])) ? $masterData[$cId][$day][$prevSlotId] : null;
+
+                        if ($entry) {
+                            $className = htmlspecialchars($entry['PROGRAMME_NAME']) . '-' . htmlspecialchars($entry['DIVISION_NAME']);
+                            $subjName = htmlspecialchars($entry['COURSE_SHORT_NAME']);
+                            if (!empty($entry['ISPRACTICAL'])) {
+                                $subjName .= " (Pr)";
+                            }
+                            $teacherName = htmlspecialchars($entry['TEACHER_NAME']);
+
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $className . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $subjName . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $teacherName . '</Data></Cell>';
+                        } elseif ($prevEntry && !empty($prevEntry['ISPRACTICAL'])) {
+                            // Render second allotment for a 2-hour practical course
+                            $className = htmlspecialchars($prevEntry['PROGRAMME_NAME']) . '-' . htmlspecialchars($prevEntry['DIVISION_NAME']);
+                            $subjName = htmlspecialchars($prevEntry['COURSE_SHORT_NAME']) . " (Pr)";
+                            $teacherName = htmlspecialchars($prevEntry['TEACHER_NAME']);
+
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $className . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $subjName . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $teacherName . '</Data></Cell>';
+                        } else {
+                            // Empty allotment
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                        }
+                    }
+
+                    echo '</Row>';
+                }
+                $srNo++;
+            }
+
+            echo '</Table>';
+            echo '</Worksheet>';
+
+            // =========================================================================
+            // --- 2. EXISTING DEPARTMENTAL & TEACHER WORKSHEETS (PRESERVED) ---
+            // =========================================================================
+            $deptRes = $conn->execute_query("SELECT DEPARTMENT_ID, SHORT_NAME, LONG_NAME FROM DEPARTMENT ORDER BY SHORT_NAME");
+            while ($dept = $deptRes->fetch_assoc()) {
+                $deptId = $dept['DEPARTMENT_ID'];
+                $deptName = htmlspecialchars($dept['SHORT_NAME']);
+
+                echo '<Worksheet ss:Name="' . $deptName . '">';
+                echo '<Table>';
+                echo '<Column ss:Width="120"/>'; // Time column
+                for ($i = 0; $i < 6; $i++) { echo '<Column ss:Width="130"/>'; } // Day columns
+
+                // --- DIVISION TIMETABLES ---
+                $divRes = $conn->execute_query("
+                    SELECT dv.DIVISION_ID, dv.NAME AS DIVISION_NAME, y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, 
+                           p.LONG_NAME AS PROGRAMME_FULL_NAME, cr.ROOM_NUMBER
+                    FROM DIVISION dv
+                    JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                    JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                    LEFT JOIN CLASSROOM cr ON dv.CLASSROOM_ID = cr.CLASSROOM_ID
+                    WHERE p.DEPARTMENT_ID = ?
+                    ORDER BY p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME
+                ", [$deptId]);
+
+                while ($div = $divRes->fetch_assoc()) {
+                    $schedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, 
+                               cr.ROOM_NUMBER, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                        WHERE tt.DIVISION_ID = ?
+                    ", [$div['DIVISION_ID']]);
+
+                    $divSchedule = [];
+                    while ($r = $schedRes->fetch_assoc()) {
+                        $divSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $divSchedule, $weekdays);
+
+                    // Header Format in Excel Sheet
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">Class Time Table ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($div['PROGRAMME_FULL_NAME']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . ucwords(strtolower(htmlspecialchars($div['YEAR_NAME']))) . ' - ' . ucwords(strtolower(htmlspecialchars($meta['SEMESTER']))) . ' Semester (Div ' . htmlspecialchars($div['DIVISION_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($divSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $divSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['TEACHER_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>';
+                }
+
+                // --- TEACHER TIMETABLES ---
+                $tchrRes = $conn->execute_query("
+                    SELECT tr.TEACHER_ID, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME, d.LONG_NAME AS DEPARTMENT_LONG_NAME
+                    FROM TEACHER tr
+                    JOIN DEPARTMENT d ON tr.DEPARTMENT_ID = d.DEPARTMENT_ID
+                    WHERE tr.DEPARTMENT_ID = ?
+                    ORDER BY tr.FIRST_NAME
+                ", [$deptId]);
+
+                while ($tchr = $tchrRes->fetch_assoc()) {
+                    $tchrSchedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, dv.NAME AS DIVISION_NAME, p.SHORT_NAME AS PROGRAMME_NAME, cr.ROOM_NUMBER
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                        JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        WHERE tt.TEACHER_ID = ?
+                    ", [$tchr['TEACHER_ID']]);
+
+                    $tchrSchedule = [];
+                    while ($r = $tchrSchedRes->fetch_assoc()) {
+                        $tchrSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $tchrSchedule, $weekdays);
+
+                    // Header Format for Teachers in Excel
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">TEACHER ALLOCATION TIMETABLE - A.Y: ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($tchr['TEACHER_NAME']) . ' (' . htmlspecialchars($tchr['DEPARTMENT_LONG_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($tchrSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $tchrSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['PROGRAMME_NAME'] . " - Div " . $entry['DIVISION_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>';
+                }
+
+                echo '</Table>';
+                echo '</Worksheet>';
+            }
+            /*
+            // =========================================================================
+            // --- 3. EXISTING CLASSROOM ALLOCATIONS WORKSHEET (PRESERVED) ---
+            // =========================================================================
+            echo '<Worksheet ss:Name="Classrooms">';
+            echo '<Table>';
+            echo '<Column ss:Width="120"/>'; // Room No
+            echo '<Column ss:Width="100"/>'; // Weekday
+
+            foreach ($allTimeslots as $slot) {
+                echo '<Column ss:Width="200"/>';
+            }
+
+            $clsRes = $conn->execute_query("
+                SELECT cr.CLASSROOM_ID, cr.ROOM_NUMBER
+                FROM CLASSROOM cr
+                ORDER BY cr.ROOM_NUMBER
+            ");
+
+            $clsSchedRes = $conn->execute_query("
+                SELECT tt.CLASSROOM_ID, tt.SLOT_ID, tt.WEEKDAY,
+                       c.SHORT_NAME AS COURSE_SHORT_NAME, y.YEAR_NAME,
+                       p.SHORT_NAME AS PROGRAMME_NAME, dv.NAME AS DIVISION_NAME
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            $roomSchedules = [];
+            while ($r = $clsSchedRes->fetch_assoc()) {
+                $roomSchedules[$r['CLASSROOM_ID']][$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+            }
+
+            // Table Header Row: TimeSlots
+            echo '<Row ss:Height="25">';
+            echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Room No</Data></Cell>';
+            echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Weekday</Data></Cell>';
+            foreach ($allTimeslots as $slot) {
+                $timeRange = date("g:i", strtotime($slot['START_TIME'])) . " to " . date("g:i", strtotime($slot['END_TIME']));
+                if ($slot['SLOT_TYPE'] === 'BREAK') {
+                    $timeRange .= " (BREAK)";
+                }
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . htmlspecialchars($timeRange) . '</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Table Rows: Grouped by Classroom
+            while ($cr = $clsRes->fetch_assoc()) {
+                $classroomId = $cr['CLASSROOM_ID'];
+                $roomNumber = htmlspecialchars($cr['ROOM_NUMBER']);
+                $totalDays = count($weekdays);
+
+                foreach ($weekdays as $index => $day) {
+                    echo '<Row ss:Height="35">';
+
+                    if ($index === 0) {
+                        echo '<Cell ss:MergeDown="' . ($totalDays - 1) . '" ss:StyleID="TableCell"><Data ss:Type="String">' . $roomNumber . '</Data></Cell>';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    } else {
+                        echo '<Cell ss:Index="2" ss:StyleID="TableCell"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+
+                    foreach ($allTimeslots as $slot) {
+                        $slotId = $slot['SLOT_ID'];
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else if (isset($roomSchedules[$classroomId][$day][$slotId])) {
+                            $entry = $roomSchedules[$classroomId][$day][$slotId];
+                            $formattedDetail = htmlspecialchars($entry['COURSE_SHORT_NAME']) . '-' . 
+                                               str_replace(' ', '', ucwords(strtolower(htmlspecialchars($entry['YEAR_NAME'])))) . '-' . 
+                                               htmlspecialchars($entry['PROGRAMME_NAME']) . '-' . 
+                                               htmlspecialchars($entry['DIVISION_NAME']);
+
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $formattedDetail . '</Data></Cell>';
+                        } else {
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                        }
+                    }
+
+                    echo '</Row>';
+                }
+            }
+
+            echo '</Table>';
+            echo '</Worksheet>';
+            */
+            echo '</Workbook>';
+            exit;
+        }
+        elseif ($formtype == 'export_xls') {
+            $metaQuery = $conn->execute_query("SELECT ACADEMIC_YEAR, SEMESTER FROM TIMETABLE LIMIT 1");
+            if ($metaQuery->num_rows == 0) {
+                sendJsonResponse(404, "No timetable found.");
+            }
+            $meta = $metaQuery->fetch_assoc();
+
+            // Fetch timeslots, excluding BREAK slots
+            $slotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT WHERE SLOT_TYPE != 'BREAK' ORDER BY START_TIME ASC");
+            $lectureSlots = [];
+            while ($s = $slotQuery->fetch_assoc()) { 
+                $lectureSlots[] = $s; 
+            }
+
+            // Fetch all timeslots including breaks for existing departmental generators
+            $allSlotQuery = $conn->execute_query("SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT ORDER BY START_TIME ASC");
+            $allTimeslots = [];
+            while ($s = $allSlotQuery->fetch_assoc()) { 
+                $allTimeslots[] = $s; 
+            }
+
+            $weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+            $shortDays = ['MONDAY' => 'MON', 'TUESDAY' => 'TUE', 'WEDNESDAY' => 'WED', 'THURSDAY' => 'THU', 'FRIDAY' => 'FRI', 'SATURDAY' => 'SAT'];
+
+            function processCompressedSlots($allTimeslots, $schedule, $weekdays) {
+                if (empty($allTimeslots)) {
+                    return [];
+                }
+
+                // Step 1: Identify which slot_ids have actual scheduled data on at least one day
+                $activeSlotIds = [];
+                foreach ($allTimeslots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        continue;
+                    }
+                    foreach ($weekdays as $day) {
+                        if (isset($schedule[$day][$slot['SLOT_ID']])) {
+                            $activeSlotIds[$slot['SLOT_ID']] = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Step 2: Filter out redundant empty slots while preserving visual time flow
+                $filteredSlots = [];
+                $lastEndTime = null;
+
+                foreach ($allTimeslots as $slot) {
+                    $slotId   = $slot['SLOT_ID'];
+                    $hasData  = isset($activeSlotIds[$slotId]);
+                    $isBreak  = ($slot['SLOT_TYPE'] === 'BREAK');
+
+                    // Always retain BREAKs and slots that contain actual scheduled classes
+                    if ($hasData || $isBreak) {
+                        $filteredSlots[] = $slot;
+                        $lastEndTime = $slot['END_TIME'];
+                        continue;
+                    }
+
+                    // Drop empty overlapping/duplicate 2-hour practical slots
+                    $isPracticalSlot = ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL']));
+                    if ($isPracticalSlot) {
+                        continue;
+                    }
+
+                    // Keep intermediate empty 1-hour lecture slots IF AND ONLY IF they fall between scheduled lectures
+                    if ($lastEndTime !== null && strtotime($slot['START_TIME']) >= strtotime($lastEndTime)) {
+                        $hasFutureData = false;
+                        foreach ($allTimeslots as $futureSlot) {
+                            if (strtotime($futureSlot['START_TIME']) > strtotime($slot['START_TIME']) 
+                                && isset($activeSlotIds[$futureSlot['SLOT_ID']])) {
+                                $hasFutureData = true;
+                                break;
+                            }
+                        }
+
+                        if ($hasFutureData) {
+                            $filteredSlots[] = $slot;
+                            $lastEndTime = $slot['END_TIME'];
+                        }
+                    }
+                }
+
+                // Step 3: Trim leading and trailing BREAK slots
+                while (!empty($filteredSlots) && reset($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_shift($filteredSlots);
+                }
+                while (!empty($filteredSlots) && end($filteredSlots)['SLOT_TYPE'] === 'BREAK') {
+                    array_pop($filteredSlots);
+                }
+
+                // Step 4: Merge consecutive BREAK slots into a single continuous break block
+                $merged = [];
+                $tempBreak = null;
+
+                foreach ($filteredSlots as $slot) {
+                    if ($slot['SLOT_TYPE'] === 'BREAK') {
+                        if ($tempBreak === null) {
+                            $tempBreak = $slot;
+                        } else {
+                            $tempBreak['END_TIME'] = $slot['END_TIME'];
+                        }
+                    } else {
+                        if ($tempBreak !== null) {
+                            $merged[] = $tempBreak;
+                            $tempBreak = null;
+                        }
+                        $merged[] = $slot;
+                    }
+                }
+
+                if ($tempBreak !== null) {
+                    $merged[] = $tempBreak;
+                }
+
+                return $merged;
+            }
+
+            // Set multi-worksheet Excel headers
+            $filename = "Departmental_Timetables_" . $meta['ACADEMIC_YEAR'] . ".xls";
+            header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+            header("Content-Disposition: attachment; filename=\"$filename\"");
+            header("Pragma: no-cache");
+            header("Expires: 0");
+
+            // XML Header for Multi-Sheet Workbook
+            echo '<?xml version="1.0"?>';
+            echo '<?mso-application progid="Excel.Sheet"?>';
+            echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:o="urn:schemas-microsoft-com:office:office" ';
+            echo 'xmlns:x="urn:schemas-microsoft-com:office:excel" ';
+            echo 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" ';
+            echo 'xmlns:html="http://www.w3.org/TR/REC-html40">';
+
+            // Embedded CSS / Styles for Excel
+            echo '<Styles>';
+            echo '<Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>';
+            echo '<Style ss:ID="HeaderTitle"><Font ss:FontName="Arial" ss:Size="13" ss:Bold="1" ss:Color="#FFFFFF"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#595959" ss:Pattern="Solid"/></Style>';
+            echo '<Style ss:ID="MasterTitle"><Font ss:FontName="Arial" ss:Size="12" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="SubHeader"><Font ss:FontName="Arial" ss:Size="11" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
+            echo '<Style ss:ID="TableHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="TableCell"><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '<Style ss:ID="BreakCell"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Interior ss:Color="#E0E0E0" ss:Pattern="Solid"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>';
+            echo '</Styles>';
+
+            // =========================================================================
+            // --- 1. NEW WORKSHEET: MASTER TIMETABLE ---
+            // =========================================================================
+            echo '<Worksheet ss:Name="Master Timetable">';
+            echo '<Table>';
+            echo '<Column ss:Width="50"/>';  // Sr. No.
+            echo '<Column ss:Width="65"/>';  // Capacity
+            echo '<Column ss:Width="90"/>';  // Room Number
+            echo '<Column ss:Width="55"/>';  // Day
+
+            // Set specific widths for each sub-column in every timeslot block
+            $totalLectureSlots = count($lectureSlots);
+            for ($s = 0; $s < $totalLectureSlots; $s++) {
+                echo '<Column ss:Width="80"/>';  // Width for "Class"
+                echo '<Column ss:Width="130"/>'; // Width for "Subject Name"
+                echo '<Column ss:Width="130"/>'; // Width for "Teacher Name"
+            }
+
+            $totalColumnsAcross = 4 + ($totalLectureSlots * 3);
+            $mergeAcrossTitle = $totalColumnsAcross - 5; // Start at col 5
+
+            // Row 1: Header Title
+            echo '<Row ss:Height="25">';
+            // echo '<Cell ss:StyleID="HeaderTitle"><Data ss:Type="String">N</Data></Cell>';
+            // echo '<Cell ss:MergeAcross="' . ($totalColumnsAcross - 2) . '" ss:StyleID="HeaderTitle"><Data ss:Type="String">MASTER TIME TABLE ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell>';
+            echo '<Cell ss:MergeAcross="' . 3 . '" ss:StyleID="HeaderTitle"></Cell>';
+            echo '<Cell ss:MergeAcross="' . ($totalColumnsAcross - 1 - 4) . '" ss:StyleID="HeaderTitle"><Data ss:Type="String">MASTER TIME TABLE ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell>';
+            echo '</Row>';
+
+            // Row 2: Top Header Labels (MergeDown="1" spans across Row 2 and Row 3)
+            echo '<Row ss:Height="20">';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">Sr. No.</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">Capacity</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">ROOM NUMBER</Data></Cell>';
+            echo '<Cell ss:MergeDown="1" ss:StyleID="TableHeader"><Data ss:Type="String">DAY</Data></Cell>';
+            echo '<Cell ss:MergeAcross="' . (($totalLectureSlots * 3) - 1) . '" ss:StyleID="MasterTitle"><Data ss:Type="String">TIME</Data></Cell>';
+            echo '</Row>';
+
+            // Row 3: Time Slot Headers (Requires ss:Index="5" to skip merged columns 1-4)
+            echo '<Row ss:Height="22">';
+            foreach ($lectureSlots as $idx => $slot) {
+                $timeFormatted = date("g:i A", strtotime($slot['START_TIME'])) . " - " . date("g:i A", strtotime($slot['END_TIME']));
+                $indexAttr = ($idx === 0) ? ' ss:Index="5"' : '';
+                echo '<Cell' . $indexAttr . ' ss:MergeAcross="2" ss:StyleID="TableHeader"><Data ss:Type="String">' . htmlspecialchars($timeFormatted) . '</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Row 4: Sub-headers (Requires ss:Index="5" to start sub-headers at column 5)
+            echo '<Row ss:Height="20">';
+            for ($s = 0; $s < $totalLectureSlots; $s++) {
+                $indexAttr = ($s === 0) ? ' ss:Index="5"' : '';
+                echo '<Cell' . $indexAttr . ' ss:StyleID="TableHeader"><Data ss:Type="String">Class</Data></Cell>';
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Subject Name</Data></Cell>';
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Teacher Name</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Fetch Classrooms & Allocations
+            $classroomsRes = $conn->execute_query("SELECT CLASSROOM_ID, ROOM_NUMBER, CAPACITY FROM CLASSROOM ORDER BY ROOM_NUMBER ASC");
+            $masterClassrooms = [];
+            while ($c = $classroomsRes->fetch_assoc()) {
+                $masterClassrooms[] = $c;
+            }
+
+            $masterSchedRes = $conn->execute_query("
+                SELECT tt.CLASSROOM_ID, tt.SLOT_ID, tt.WEEKDAY,
+                    c.SHORT_NAME AS COURSE_SHORT_NAME, c.ISPRACTICAL,
+                    y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, dv.NAME AS DIVISION_NAME,
+                    CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME,
+                    ts.START_TIME, ts.END_TIME, ts.SLOT_TYPE
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                JOIN TIMESLOT ts ON tt.SLOT_ID = ts.SLOT_ID
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            $masterData = [];
+            while ($r = $masterSchedRes->fetch_assoc()) {
+                $cId = $r['CLASSROOM_ID'];
+                $day = $r['WEEKDAY'];
+
+                $allocStart = strtotime($r['START_TIME']);
+                $allocEnd   = strtotime($r['END_TIME']);
+
+                // Map this allocation to EVERY 1-hour lecture slot that falls within its time range
+                foreach ($lectureSlots as $lSlot) {
+                    $slotStart = strtotime($lSlot['START_TIME']);
+                    $slotEnd   = strtotime($lSlot['END_TIME']);
+
+                    if ($slotStart < $allocEnd && $slotEnd > $allocStart) {
+                        $masterData[$cId][$day][$lSlot['SLOT_ID']] = $r;
+                    }
+                }
+            }
+
+            // Populate Master Timetable Rows
+            $srNo = 1;
+            foreach ($masterClassrooms as $cr) {
+                $cId = $cr['CLASSROOM_ID'];
+                $rNum = htmlspecialchars($cr['ROOM_NUMBER']);
+                $cap = htmlspecialchars($cr['CAPACITY'] ?? '-');
+
+                foreach ($weekdays as $dayIndex => $day) {
+                    echo '<Row ss:Height="30">';
+
+                    if ($dayIndex === 0) {
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="Number">' . $srNo . '</Data></Cell>';
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="String">' . $cap . '</Data></Cell>';
+                        echo '<Cell ss:MergeDown="5" ss:StyleID="TableCell"><Data ss:Type="String">' . $rNum . '</Data></Cell>';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $shortDays[$day] . '</Data></Cell>';
+                    } else {
+                        echo '<Cell ss:Index="4" ss:StyleID="TableCell"><Data ss:Type="String">' . $shortDays[$day] . '</Data></Cell>';
+                    }
+
+                    // Render allotments per slot
+                    $slotCount = count($lectureSlots);
+                    for ($sIdx = 0; $sIdx < $slotCount; $sIdx++) {
+                        $sId = $lectureSlots[$sIdx]['SLOT_ID'];
+                        $entry = $masterData[$cId][$day][$sId] ?? null;
+
+                        if ($entry) {
+
+                            $className = 
+                                strtoupper(htmlspecialchars(($entry['YEAR_NAME'] == "FIRST YEAR")? "FY " : (($entry['YEAR_NAME'] == "SECOND YEAR")? "SY " : (($entry['YEAR_NAME'] == "THIRD YEAR")? "TY " : "")))) .
+                                htmlspecialchars($entry['PROGRAMME_NAME']) .
+                                '- ' .
+                                htmlspecialchars($entry['DIVISION_NAME']);
+
+                            $subjName = htmlspecialchars($entry['COURSE_SHORT_NAME']);
+
+                            if (!empty($entry['ISPRACTICAL']) || $entry['SLOT_TYPE'] === 'PRACTICAL') {
+                                $subjName .= " (Pr)";
+                            }
+                            $teacherName = htmlspecialchars($entry['TEACHER_NAME']);
+
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $className . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $subjName . '</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $teacherName . '</Data></Cell>';
+                        } else {
+                            // Empty allotment
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                        }
+                    }
+
+                    echo '</Row>';
+                }
+                $srNo++;
+            }
+
+            echo '</Table>';
+            echo '</Worksheet>';
+
+            // =========================================================================
+            // --- 2. EXISTING DEPARTMENTAL & TEACHER WORKSHEETS (PRESERVED) ---
+            // =========================================================================
+            $deptRes = $conn->execute_query("SELECT DEPARTMENT_ID, SHORT_NAME, LONG_NAME FROM DEPARTMENT ORDER BY SHORT_NAME");
+            while ($dept = $deptRes->fetch_assoc()) {
+                $deptId = $dept['DEPARTMENT_ID'];
+                $deptName = htmlspecialchars($dept['SHORT_NAME']);
+
+                echo '<Worksheet ss:Name="' . $deptName . '">';
+                echo '<Table>';
+                echo '<Column ss:Width="120"/>'; // Time column
+                for ($i = 0; $i < 6; $i++) { echo '<Column ss:Width="130"/>'; } // Day columns
+
+                // --- DIVISION TIMETABLES ---
+                $divRes = $conn->execute_query("
+                    SELECT dv.DIVISION_ID, dv.NAME AS DIVISION_NAME, y.YEAR_NAME, p.SHORT_NAME AS PROGRAMME_NAME, 
+                           p.LONG_NAME AS PROGRAMME_FULL_NAME, cr.ROOM_NUMBER
+                    FROM DIVISION dv
+                    JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                    JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                    LEFT JOIN CLASSROOM cr ON dv.CLASSROOM_ID = cr.CLASSROOM_ID
+                    WHERE p.DEPARTMENT_ID = ?
+                    ORDER BY p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME
+                ", [$deptId]);
+
+                while ($div = $divRes->fetch_assoc()) {
+                    $schedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, 
+                               cr.ROOM_NUMBER, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        JOIN TEACHER tr ON tt.TEACHER_ID = tr.TEACHER_ID
+                        WHERE tt.DIVISION_ID = ?
+                    ", [$div['DIVISION_ID']]);
+
+                    $divSchedule = [];
+                    while ($r = $schedRes->fetch_assoc()) {
+                        $divSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $divSchedule, $weekdays);
+
+                    // Header Format in Excel Sheet
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">Class Time Table ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($div['PROGRAMME_FULL_NAME']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . ucwords(strtolower(htmlspecialchars($div['YEAR_NAME']))) . ' - ' . ucwords(strtolower(htmlspecialchars($meta['SEMESTER']))) . ' Semester (Div ' . htmlspecialchars($div['DIVISION_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($divSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $divSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['TEACHER_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>';
+                }
+
+                // --- TEACHER TIMETABLES ---
+                $tchrRes = $conn->execute_query("
+                    SELECT tr.TEACHER_ID, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME, d.LONG_NAME AS DEPARTMENT_LONG_NAME
+                    FROM TEACHER tr
+                    JOIN DEPARTMENT d ON tr.DEPARTMENT_ID = d.DEPARTMENT_ID
+                    WHERE tr.DEPARTMENT_ID = ?
+                    ORDER BY tr.FIRST_NAME
+                ", [$deptId]);
+
+                while ($tchr = $tchrRes->fetch_assoc()) {
+                    $tchrSchedRes = $conn->execute_query("
+                        SELECT tt.SLOT_ID, tt.WEEKDAY, c.SHORT_NAME AS COURSE_SHORT_NAME, dv.NAME AS DIVISION_NAME, p.SHORT_NAME AS PROGRAMME_NAME, cr.ROOM_NUMBER
+                        FROM TIMETABLE tt
+                        JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                        JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                        JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                        JOIN CLASSROOM cr ON tt.CLASSROOM_ID = cr.CLASSROOM_ID
+                        WHERE tt.TEACHER_ID = ?
+                    ", [$tchr['TEACHER_ID']]);
+
+                    $tchrSchedule = [];
+                    while ($r = $tchrSchedRes->fetch_assoc()) {
+                        $tchrSchedule[$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+                    }
+
+                    $processedSlots = processCompressedSlots($allTimeslots, $tchrSchedule, $weekdays);
+
+                    // Header Format for Teachers in Excel
+                    echo '<Row ss:Height="22"><Cell ss:MergeAcross="6" ss:StyleID="HeaderTitle"><Data ss:Type="String">KET\'s V. G. Vaze College of Arts, Science and Commerce (Autonomous)</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">TEACHER ALLOCATION TIMETABLE - A.Y: ' . htmlspecialchars($meta['ACADEMIC_YEAR']) . '</Data></Cell></Row>';
+                    echo '<Row ss:Height="18"><Cell ss:MergeAcross="6" ss:StyleID="SubHeader"><Data ss:Type="String">' . htmlspecialchars($tchr['TEACHER_NAME']) . ' (' . htmlspecialchars($tchr['DEPARTMENT_LONG_NAME']) . ')</Data></Cell></Row>';
+                    echo '<Row/>';
+
+                    // Table Headers
+                    echo '<Row ss:Height="20">';
+                    echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Time</Data></Cell>';
+                    foreach ($weekdays as $day) {
+                        echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+                    echo '</Row>';
+
+                    // Table Body
+                    foreach ($processedSlots as $slot) {
+                        $timeText = date("h:i a", strtotime($slot['START_TIME'])) . " - " . date("h:i a", strtotime($slot['END_TIME']));
+                        if ($slot['SLOT_TYPE'] === 'PRACTICAL' || !empty($slot['ISPRACTICAL'])) {
+                            $timeText .= "\n(Practical - 2hrs)";
+                        }
+
+                        echo '<Row ss:Height="45">';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $timeText . '</Data></Cell>';
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:MergeAcross="5" ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else {
+                            foreach ($weekdays as $day) {
+                                if (isset($tchrSchedule[$day][$slot['SLOT_ID']])) {
+                                    $entry = $tchrSchedule[$day][$slot['SLOT_ID']];
+                                    $cellContent = $entry['COURSE_SHORT_NAME'] . "\n" . $entry['PROGRAMME_NAME'] . " - Div " . $entry['DIVISION_NAME'] . "\n(Room: " . $entry['ROOM_NUMBER'] . ")";
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . htmlspecialchars($cellContent) . '</Data></Cell>';
+                                } else {
+                                    echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                                }
+                            }
+                        }
+                        echo '</Row>';
+                    }
+                    echo '<Row/><Row/>';
+                }
+
+                echo '</Table>';
+                echo '</Worksheet>';
+            }
+            /*
+            // =========================================================================
+            // --- 3. EXISTING CLASSROOM ALLOCATIONS WORKSHEET (PRESERVED) ---
+            // =========================================================================
+            echo '<Worksheet ss:Name="Classrooms">';
+            echo '<Table>';
+            echo '<Column ss:Width="120"/>'; // Room No
+            echo '<Column ss:Width="100"/>'; // Weekday
+
+            foreach ($allTimeslots as $slot) {
+                echo '<Column ss:Width="200"/>';
+            }
+
+            $clsRes = $conn->execute_query("
+                SELECT cr.CLASSROOM_ID, cr.ROOM_NUMBER
+                FROM CLASSROOM cr
+                ORDER BY cr.ROOM_NUMBER
+            ");
+
+            $clsSchedRes = $conn->execute_query("
+                SELECT tt.CLASSROOM_ID, tt.SLOT_ID, tt.WEEKDAY,
+                       c.SHORT_NAME AS COURSE_SHORT_NAME, y.YEAR_NAME,
+                       p.SHORT_NAME AS PROGRAMME_NAME, dv.NAME AS DIVISION_NAME
+                FROM TIMETABLE tt
+                JOIN COURSE c ON tt.COURSE_ID = c.COURSE_ID
+                JOIN DIVISION dv ON tt.DIVISION_ID = dv.DIVISION_ID
+                JOIN PROGRAMME p ON dv.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN YEAR y ON dv.YEAR_NUMBER = y.YEAR_NUMBER
+                WHERE tt.ACADEMIC_YEAR = ? AND tt.SEMESTER = ?
+            ", [$meta['ACADEMIC_YEAR'], $meta['SEMESTER']]);
+
+            $roomSchedules = [];
+            while ($r = $clsSchedRes->fetch_assoc()) {
+                $roomSchedules[$r['CLASSROOM_ID']][$r['WEEKDAY']][$r['SLOT_ID']] = $r;
+            }
+
+            // Table Header Row: TimeSlots
+            echo '<Row ss:Height="25">';
+            echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Room No</Data></Cell>';
+            echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">Weekday</Data></Cell>';
+            foreach ($allTimeslots as $slot) {
+                $timeRange = date("g:i", strtotime($slot['START_TIME'])) . " to " . date("g:i", strtotime($slot['END_TIME']));
+                if ($slot['SLOT_TYPE'] === 'BREAK') {
+                    $timeRange .= " (BREAK)";
+                }
+                echo '<Cell ss:StyleID="TableHeader"><Data ss:Type="String">' . htmlspecialchars($timeRange) . '</Data></Cell>';
+            }
+            echo '</Row>';
+
+            // Table Rows: Grouped by Classroom
+            while ($cr = $clsRes->fetch_assoc()) {
+                $classroomId = $cr['CLASSROOM_ID'];
+                $roomNumber = htmlspecialchars($cr['ROOM_NUMBER']);
+                $totalDays = count($weekdays);
+
+                foreach ($weekdays as $index => $day) {
+                    echo '<Row ss:Height="35">';
+
+                    if ($index === 0) {
+                        echo '<Cell ss:MergeDown="' . ($totalDays - 1) . '" ss:StyleID="TableCell"><Data ss:Type="String">' . $roomNumber . '</Data></Cell>';
+                        echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    } else {
+                        echo '<Cell ss:Index="2" ss:StyleID="TableCell"><Data ss:Type="String">' . $day . '</Data></Cell>';
+                    }
+
+                    foreach ($allTimeslots as $slot) {
+                        $slotId = $slot['SLOT_ID'];
+
+                        if ($slot['SLOT_TYPE'] === 'BREAK') {
+                            echo '<Cell ss:StyleID="BreakCell"><Data ss:Type="String">BREAK</Data></Cell>';
+                        } else if (isset($roomSchedules[$classroomId][$day][$slotId])) {
+                            $entry = $roomSchedules[$classroomId][$day][$slotId];
+                            $formattedDetail = htmlspecialchars($entry['COURSE_SHORT_NAME']) . '-' . 
+                                               str_replace(' ', '', ucwords(strtolower(htmlspecialchars($entry['YEAR_NAME'])))) . '-' . 
+                                               htmlspecialchars($entry['PROGRAMME_NAME']) . '-' . 
+                                               htmlspecialchars($entry['DIVISION_NAME']);
+
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">' . $formattedDetail . '</Data></Cell>';
+                        } else {
+                            echo '<Cell ss:StyleID="TableCell"><Data ss:Type="String">-</Data></Cell>';
+                        }
+                    }
+
+                    echo '</Row>';
+                }
+            }
+
+            echo '</Table>';
+            echo '</Worksheet>';
+            */
             echo '</Workbook>';
             exit;
         }

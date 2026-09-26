@@ -1,0 +1,513 @@
+/* 
+npx @tailwindcss/cli -i ./ATGS/timetableGenerationSystem/src/styleRaw.css -o ./ATGS/timetableGenerationSystem/src/style.css --watch
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@reference "tailwindcss";
+
+@theme {
+  --color-primary: #18181b;        /* Zinc 900 */
+  --color-primary-hover: #27272a;  /* Zinc 800 */
+  --color-secondary: #f4f4f5;      /* Zinc 100 */
+  --color-secondary-hover: #e4e4e7;/* Zinc 200 */
+  
+  --color-background: #fafafa;     /* Zinc 50 */
+  --color-surface: #ffffff;        /* Pure White */
+  --color-defaultText: #09090b;    /* Zinc 950 */
+  --color-mutedText: #71717a;      /* Zinc 500 */
+
+  --color-success-light: oklch(92.5% 0.084 155.995);
+  --color-success-dark: oklch(52.7% 0.154 150.069);
+  --color-info-light: oklch(88.2% 0.059 254.128);
+  --color-info-dark: oklch(48.8% 0.243 264.376);
+  --color-warning-light: oklch(94.5% 0.129 101.54);
+  --color-warning-dark: oklch(55.4% 0.135 66.442);
+  --color-error-light: oklch(88.5% 0.062 18.334);
+  --color-error-dark: oklch(50.5% 0.213 27.518);
+  
+  /* Monochromatic Feedback States */
+  --color-border-light: #e4e4e7;   /* Zinc 200 */
+  --color-border: #d4d4d8;         /* Zinc 300 */
+  --color-border-dark: #27272a;    /* Zinc 800 */
+
+  --font-monospace: "JetBrains Mono", monospace;
+  
+  --text-h1: 1.5rem;
+  --text-h2: 1.25rem;
+  --text-h3: 1.1rem;
+  --text-body1: 1rem;
+  --text-body2: 0.875rem;
+  --text-caption: 0.75rem;
+}
+
+/* ==========================================================================
+   GLOBAL BASE STYLES
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box !important;
+  font-family: var(--font-monospace);
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+html{
+  @apply text-[13px] lg:text-[14px] xl:text-[15px] [112rem]:text-[16px] [144rem]:text-[20px]
+}
+body {
+  @apply bg-zinc-100 text-zinc-900 min-h-screen flex justify-center items-center antialiased
+}
+
+.appBody {
+  @apply min-h-screen 2xl:min-h-0 2xl:h-[90vh] w-full [144rem]:w-[112rem] bg-white 2xl:rounded-2xl 2xl:shadow-2xl border-zinc-200 2xl:border flex flex-col overflow-hidden;
+}
+
+hr {
+  @apply border-zinc-200 my-6;
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITIES
+   ========================================================================== */
+.H1 { @apply text-xl font-bold tracking-tight text-zinc-900; }
+.H2 { @apply text-xl font-semibold tracking-tight text-zinc-800; }
+.H3 { @apply text-lg font-medium text-zinc-800; }
+.Body1 { @apply text-base text-zinc-700; }
+.Body2 { @apply text-sm text-zinc-600; }
+.Caption { @apply text-xs text-zinc-500 uppercase tracking-wider; }
+
+/* ==========================================================================
+   HEADER & NAVIGATION
+   ========================================================================== */
+header {
+  @apply flex flex-wrap items-center justify-between gap-4 px-8 py-4 bg-zinc-900 text-zinc-100 border-b border-zinc-800 shadow-sm;
+}
+
+header .user {
+  @apply text-sm font-semibold tracking-wide uppercase text-zinc-300 hover:text-white transition-colors cursor-default;
+}
+
+header .header-tag select {
+  @apply bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400;
+}
+
+header .header-menu {
+  @apply flex items-center gap-3;
+}
+
+header .header-menu select {
+  @apply bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase cursor-pointer hover:bg-zinc-700 focus:outline-none;
+}
+
+#MainContents {
+  @apply py-2 px-4.5
+}
+
+/* ==========================================================================
+   BUTTON SYSTEM & HOVER EFFECTS
+   ========================================================================== */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider cursor-pointer border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.primary {
+  @apply bg-zinc-900 text-white border-zinc-900 shadow-sm hover:bg-zinc-800 hover:shadow hover:-translate-y-0.5 active:translate-y-0 active:bg-black focus:ring-zinc-900;
+}
+
+.secondary {
+  @apply bg-zinc-100 text-zinc-900 border-zinc-300 hover:bg-zinc-200 hover:border-zinc-400 hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0 focus:ring-zinc-400;
+}
+
+.tertiary {
+  @apply bg-transparent text-zinc-700 border-transparent hover:text-black hover:bg-zinc-100 underline decoration-zinc-400 underline-offset-4 shadow-none;
+}
+
+.critical {
+  @apply bg-zinc-900 text-zinc-100 border-zinc-800 hover:bg-black hover:border-black hover:text-white focus:ring-zinc-900;
+}
+
+.ghost {
+  @apply bg-transparent border border-zinc-300 rounded-lg px-4 py-2 font-semibold text-xs uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 hover:text-black hover:border-zinc-400 hover:shadow-sm cursor-pointer transition-all;
+}
+
+/* ==========================================================================
+   INPUTS, DROPDOWNS & FORM CONTROL
+   ========================================================================== */
+input[type="text"],
+input[type="time"],
+input[type="password"],
+input[type="number"],
+.myInput,
+.dropdown {
+  @apply w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2 text-sm font-medium text-zinc-900 placeholder-zinc-400 uppercase transition-all shadow-xs hover:border-zinc-400 focus:outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900;
+}
+
+input[readonly],
+.dropdown[read-only] {
+  @apply bg-zinc-100 text-zinc-500 border-zinc-200 cursor-not-allowed hover:border-zinc-200;
+}
+
+input[type="checkbox"] {
+  @apply appearance-none h-4 w-4 rounded border border-zinc-400 bg-white checked:bg-zinc-900 checked:border-zinc-900 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1 transition-all cursor-pointer relative checked:after:content-['✓'] checked:after:text-white checked:after:text-xs checked:after:font-bold checked:after:absolute checked:after:top-[-2px] checked:after:left-[2px];
+}
+
+/* Segmented Control */
+.sgmnt-ctrls {
+  @apply inline-flex border border-zinc-300 rounded-lg p-1 bg-zinc-100 gap-1;
+}
+
+.sgmnt-ctrls .sgmnt-ctrl {
+  @apply px-4 py-1.5 rounded-md text-xs font-semibold uppercase text-zinc-600 cursor-pointer hover:text-zinc-900 hover:bg-zinc-200/60 transition-all;
+}
+
+.sgmnt-ctrls .active {
+  @apply bg-white text-zinc-900 shadow-xs font-bold border-zinc-200;
+}
+
+/* RANGE PICKER */
+.range-picker {
+  @apply flex flex-col gap-2 w-full p-2;
+}
+.range-slider {
+  @apply appearance-none w-full h-1.5 bg-zinc-200 rounded-full outline-none cursor-pointer accent-zinc-900 transition-colors hover:bg-zinc-300;
+}
+.range-slider::-webkit-slider-thumb {
+  @apply appearance-none h-4 w-4 bg-zinc-900 rounded-full transition-transform duration-150 hover:scale-125 active:scale-95;
+}
+.range-slider::-moz-range-thumb {
+  @apply h-4 w-4 bg-zinc-900 border-none rounded-full transition-transform duration-150 hover:scale-125 active:scale-95;
+}
+.range-labels {
+  @apply flex justify-between items-center text-xs font-semibold text-zinc-600 tracking-tight;
+}
+
+/* ==========================================================================
+   PROFESSIONAL CHIPS & STATUS BADGES
+   ========================================================================== */
+
+/* Base Chip Layout & Typography */
+.chip {
+  @apply inline-flex items-center justify-center px-3 py-1 rounded-full 
+         text-xs font-bold uppercase tracking-wide border-0 shadow-xs select-none;
+}
+
+.chip-green {
+  @apply bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400;
+}
+.chip-yellow {
+  @apply bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-100 hover:border-amber-400;
+}
+.chip-red {
+  @apply bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-100 hover:border-rose-400;
+}
+.chip-blue {
+  @apply bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-100 hover:border-sky-400;
+}
+
+
+
+
+/* ==========================================================================
+   FORM BLOCK (ADD / EDIT SECTIONS)
+   ========================================================================== */
+.none{
+  display: none;
+}
+#formInfoLine{
+  @apply fixed inset-0 z-50 bg-zinc-950/30 backdrop-blur-xs flex items-center justify-center p-4
+}
+#formInfoLine span{
+  @apply px-40 py-10 align-middle text-h2 font-bold rounded-2xl shadow-xs bg-white;
+}
+
+.addnew-block {
+  @apply bg-white border border-zinc-200 rounded-2xl py-8 px-10 max-w-4xl w-full mx-auto my-6 shadow-sm hover:shadow-md transition-shadow;
+  display: none;
+}
+
+.addnew-block .blockHeading {
+  @apply text-2xl font-extrabold uppercase tracking-wide text-zinc-900 text-center  pb-3 border-b border-zinc-100;
+}
+
+.addnew-block form {
+  @apply flex flex-col ;
+}
+
+.addnew-block fieldset {
+  @apply border border-zinc-200 rounded-lg p-5 m-3 flex flex-col gap-4 bg-zinc-50/50;
+}
+
+.addnew-block label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 mb-1 inline-block;
+}
+
+.addnew-block .btn-grp {
+  @apply flex justify-end gap-3 mt-4 pt-4 border-t border-zinc-100;
+}
+
+/* Timepicker input */
+.timePicker {
+  @apply flex flex-wrap sm:flex-nowrap items-end justify-center gap-4 bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+}
+.timePicker > p {
+  @apply flex flex-col gap-1.5 flex-1 min-w-[140px] m-0;
+}
+.timePicker label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 mb-0;
+}
+.timePicker .time-input {
+  @apply w-full text-center font-bold tracking-wider text-zinc-900 bg-white border border-zinc-300 rounded-md py-2 transition-all focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900;
+}
+.timePicker .time-input[readonly] {
+  @apply bg-zinc-100 text-zinc-500 border-zinc-200 cursor-not-allowed hover:border-zinc-200;
+}
+.timePicker .separator {
+  @apply text-lg font-black text-zinc-400 select-none pb-2 self-end sm:self-center;
+}
+#partTimeSection,
+#partTimeSection .timePicker{
+  display: none;
+}
+
+
+/* Checkbox Groups */
+.checkboxGroup {
+  @apply flex flex-wrap gap-4 items-center bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+}
+
+.checkboxGroup > div {
+  @apply flex items-center gap-2 hover:opacity-80 cursor-pointer;
+}
+
+.checkboxGroup label {
+  @apply text-xs font-semibold uppercase text-zinc-700 cursor-pointer mb-0;
+}
+/* ==========================================================================
+   RADIO BUTTONS
+   ========================================================================== */
+
+.radiobuttonGroup {
+  @apply flex flex-wrap gap-5 items-center bg-zinc-50 p-4 rounded-lg border border-zinc-200;
+}
+
+.radiobuttonGroup > div {
+  @apply flex items-center cursor-pointer;
+}
+
+input[type="radio"] {
+  @apply appearance-none m-0 h-4 w-4 rounded-full border border-zinc-400 bg-white
+         relative cursor-pointer 
+         focus:outline-none 
+         group-hover:border-zinc-600
+         checked:border-zinc-900 checked:bg-white;
+}
+
+input[type="radio"]:checked::after {
+  content: "";
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+         w-2 h-2 rounded-full bg-zinc-900;
+}
+.radiobuttonGroup label {
+  @apply text-xs font-bold uppercase tracking-wider text-zinc-600 
+         cursor-pointer transition-colors duration-200
+         group-hover:text-zinc-900 mb-0 p-1;
+}
+
+/* ==========================================================================
+   TABLE DESIGN & HOVER EFFECTS
+   ========================================================================== */
+.view-table {
+  @apply bg-white border border-zinc-200 rounded-2xl p-6 my-6 shadow-sm overflow-x-auto;
+}
+
+table {
+  @apply w-full border-collapse text-left;
+}
+
+table caption {
+  @apply text-lg font-bold text-zinc-900 text-left mb-4 uppercase tracking-wide border-b border-zinc-100 pb-2;
+}
+
+table thead {
+  @apply bg-zinc-100 border-b border-zinc-300;
+}
+
+table thead td, 
+table thead th {
+  @apply py-3.5 px-4 text-xs font-bold uppercase tracking-wider text-zinc-700 text-center border-b border-zinc-200;
+}
+
+table tbody tr {
+  @apply border-b border-zinc-200/80 transition-colors hover:bg-zinc-100/80;
+}
+
+table tbody tr:nth-child(even) {
+  @apply bg-zinc-50/50;
+}
+
+table tbody tr:hover {
+  @apply bg-zinc-100;
+}
+
+table td {
+  @apply px-4 py-3 text-body2 font-medium text-zinc-800 text-center align-middle;
+}
+
+table td button {
+  @apply shadow-xs px-3 py-1 mx-1 text-[11px];
+}
+
+#timetableGridTable{
+  @apply overflow-x-auto;
+}
+/* Specialized Timetable View Grid */
+.timetable-view-table table th,
+.timetable-view-table table td {
+  @apply border border-zinc-300 p-3;
+}
+
+.timetable-view-table table .course {
+  @apply text-sm font-bold text-zinc-900 uppercase;
+}
+
+.timetable-view-table table .break {
+  @apply bg-zinc-100 text-zinc-500 font-bold uppercase tracking-[6px] text-center text-xs py-4;
+}
+
+
+.dashboard-lists-container {
+  @apply flex flex-col xl:flex-row gap-4 w-full my-4;
+}
+.status-group {
+  @apply flex-1 rounded-2xl p-4 border border-zinc-200 shadow-xs flex flex-col gap-3;
+}
+
+.group-title {
+  @apply text-xs font-extrabold uppercase tracking-wider text-zinc-700 px-1 mb-1;
+}
+.group-ready {
+  @apply bg-emerald-50/60 border-emerald-200;
+}
+.group-ongoing {
+  @apply bg-amber-50/60 border-amber-200;
+}
+.group-pending {
+  @apply bg-rose-50/60 border-rose-200;
+}
+.status-list {
+  @apply flex flex-col gap-2.5;
+}
+
+.group-ongoing .status-list .list-item{
+  @apply flex-col! *:m-2
+}
+.list-item {
+  @apply bg-white border border-zinc-200/80 rounded-xl p-3.5 flex items-center justify-between shadow-xs hover:shadow-sm transition-all;
+}
+.item-data {
+  @apply flex items-center gap-3;
+}
+.item-count {
+  @apply text-xl font-black text-zinc-900;
+}
+.item-label {
+  @apply text-xs font-bold uppercase tracking-wide text-zinc-600;
+}
+
+.cards {
+  @apply flex flex-wrap gap-4 justify-between my-4;
+}
+
+.card {
+  @apply bg-white border border-zinc-200 rounded-2xl p-5 flex-1 min-w-[200px] relative overflow-hidden shadow-xs hover:shadow-md hover:border-zinc-300 transition-all;
+}
+
+.card .card-data .card-count {
+  @apply text-3xl font-black text-zinc-900 mb-1  transition-transform origin-left;
+}
+
+.card .card-data .card-label {
+  @apply text-xs font-bold text-zinc-500 uppercase tracking-wider;
+}
+
+.card .card-btn-grp .btn {
+  @apply absolute inset-x-0 bottom-0 rounded-none border-none bg-zinc-900/95 text-white opacity-0  transition-opacity py-2 text-xs uppercase font-bold backdrop-blur-xs;
+}
+
+.timetable-status {
+  @apply bg-zinc-900 text-white rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4 shadow-md my-4;
+}
+
+.timetable-status-label {
+  @apply text-2xl font-black tracking-tight uppercase text-white;
+}
+
+.timetable-status-caption {
+  @apply text-xs font-medium text-zinc-400 uppercase tracking-wide mt-1;
+}
+.timetable-view-table{
+  @apply h-auto
+}
+
+
+.tempPopup {
+  @apply fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs flex items-center justify-center p-4;
+}
+
+.dialog {
+  @apply bg-white border border-zinc-300 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all duration-150;
+}
+
+.dialog-heading {
+  @apply text-lg font-extrabold uppercase tracking-wide text-zinc-900 text-center mb-2;
+}
+
+.dialog-description {
+  @apply text-sm text-zinc-600 text-center mb-6 leading-relaxed;
+}
+
+.dialog-button-group {
+  @apply flex justify-center gap-3 pt-2;
+}
+
+
+
+
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 700px) {
+  header {
+    @apply items-stretch text-center;
+  }
+  
+  header .header-menu {
+    @apply justify-center flex-wrap 
+  }
+
+  .addnew-block {
+    @apply p-4 mx-2;
+  }
+
+  .timePicker {
+    @apply flex-col;
+  }
+
+  .checkboxGroup{
+    @apply flex flex-col items-start
+  }
+
+  .time-input {
+    @apply w-full;
+  }
+
+  .btn-grp {
+    @apply flex-col;
+  }
+  
+  .btn-grp .btn {
+    @apply w-full;
+  }
+}
