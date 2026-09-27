@@ -1,17 +1,15 @@
-<!-- <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button> -->
+<button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
 <div class="addnew-block" style="display: none;">
     <p class="blockHeading">Map Optional Courses To Division</p>
     <form id="form" onsubmit="" method="POST">
         <fieldset>
-            <fieldset disabled>
-                <div>
-                    <label for="optionGroup">Course Group</label>
-                    <select class="dropdown" name="optionGroup" id="optionGroup" required>
-                        <option value="" disabled selected>Select Course Group</option>
-                    </select>
-                </div>
-            </fieldset>
-            <fieldset id="divisionMappingSection">
+            <div>
+                <label for="optionGroup">Course Group</label>
+                <select class="dropdown" name="optionGroup" id="optionGroup" required disabled>
+                    <option value="" disabled selected>Select Course Group</option>
+                </select>
+            </div>
+            <fieldset id="divisionMappingSection" style="border: none; padding: 0; margin: 0;">
                 <!-- Dynamically populated division fields appear here -->
             </fieldset>
         </fieldset>
@@ -19,7 +17,7 @@
             <button class="secondary btn" id="sndyBtn" onclick="resetForm(); populateOptionalCourseGroup();" type="button">
                 Clear
             </button>
-            <button class="primary btn formSubmit" id="prmyBtn" onclick="map_course();" type="button" disabled="false">
+            <button class="primary btn formSubmit" id="prmyBtn" onclick="map_course();" type="button">
                 Map
             </button>
         </div>
@@ -51,8 +49,6 @@
 </div>
 
 <script>
-turnOff();
-
 applyValidityChecker();
 
 var form = document.getElementById('form');
@@ -61,7 +57,6 @@ async function populateOptionalCourseGroup() {
     const result = await getPrerequisits('optionalcoursemapper');
     const courses = result.responseBody.optionalcourses || [];
     
-    // Filter out valid optional pairs where ISOPTIONAL is true and has an associated pair
     const optionalCourses = courses.filter(c => c.ISOPTIONAL == true && c.OPTIONAL_ID != null);
     
     $('#optionGroup').data('optionalCourses', optionalCourses);
@@ -180,7 +175,6 @@ async function map_course() {
     })
     .always(function() {
         hideLoader(timer);
-        turnOff();
     });
 }
 
@@ -224,8 +218,6 @@ async function createOptionalCourseTable() {
         return;
     }
 
-    // Only use one row for each optional course pair.
-    // COURSE_ID < OPTIONAL_ID prevents A-B and B-A from appearing twice.
     const uniquePairs = courses.filter(course =>
         course.COURSE_ID &&
         course.OPTIONAL_ID &&
@@ -238,17 +230,12 @@ async function createOptionalCourseTable() {
     }
 
     uniquePairs.forEach((course, index) => {
+        const course1Division = course.MAPPED_DIVISION_NAME ?? null;
 
-        // Course 1 mapping
-        const course1Division =
-            course.MAPPED_DIVISION_NAME ?? null;
-
-        // Find the optional course (course 2)
         const optionalCourse = courses.find(
             c => String(c.COURSE_ID) === String(course.OPTIONAL_ID)
         );
 
-        // Course 2 information and mapping
         const course2Name =
             optionalCourse?.COURSE_SHORT_NAME ??
             optionalCourse?.COURSE_FULL_NAME ??
@@ -261,9 +248,7 @@ async function createOptionalCourseTable() {
             <div>
                 <strong>${course.COURSE_SHORT_NAME ?? course.COURSE_FULL_NAME ?? ''}</strong>
                 <br>
-                <small>
-                    Division: ${course1Division ?? 'N.A.'}
-                </small>
+                <small>Division: ${course1Division ?? 'N.A.'}</small>
             </div>
         `;
 
@@ -271,13 +256,10 @@ async function createOptionalCourseTable() {
             <div>
                 <strong>${course2Name}</strong>
                 <br>
-                <small>
-                    Division: ${course2Division ?? 'N.A.'}
-                </small>
+                <small>Division: ${course2Division ?? 'N.A.'}</small>
             </div>
         `;
 
-        // Both courses must have a division mapping
         const isAllocated =
             course1Division !== null &&
             course1Division !== '' &&
@@ -336,8 +318,6 @@ async function createOptionalCourseTable() {
     });
 }
 
-
-// Initializations on load
 populateOptionalCourseGroup();
 createOptionalCourseTable();
 </script>

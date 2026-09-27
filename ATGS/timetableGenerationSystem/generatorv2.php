@@ -81,6 +81,7 @@ function generateTimetable($semester = 'ODD', $academicYear = '2026-27') {
         $teacherAvail,                  // DB teacher availability lookup
         $overlappingSlots,              // Overlapping slot mapping matrix
         $state,                         // Reference to system state tracking array
+        $timeslots,                     // Pass $timeslots array for time preference filtering
         false                           // Debug flag
     );
 
@@ -105,10 +106,26 @@ function generateTimetable($semester = 'ODD', $academicYear = '2026-27') {
 /**
  * Returns available slot IDs for a division on a given day that don't overlap with existing assignments.
  */
-function getDivisionAvailableSlots($dId, $day, $candidateLectureSlots, $overlappingSlots, $state) {
+function getDivisionAvailableSlots($dId, $day, $candidateLectureSlots, $overlappingSlots, $state, $timeslots = [], $divisions = []) {
     $availableSlots = [];
 
+    $prefStartId = $divisions[$dId]['START_TIME_ID'] ?? null;
+    $prefEndId   = $divisions[$dId]['END_TIME_ID'] ?? null;
+
+    $prefStartTime = ($prefStartId && isset($timeslots[$prefStartId])) 
+        ? strtotime($timeslots[$prefStartId]['START_TIME']) : null;
+    $prefEndTime   = ($prefEndId && isset($timeslots[$prefEndId])) 
+        ? strtotime($timeslots[$prefEndId]['END_TIME']) : null;
+
     foreach ($candidateLectureSlots as $slotId) {
+        if (isset($timeslots[$slotId])) {
+            $slotStart = strtotime($timeslots[$slotId]['START_TIME']);
+            $slotEnd   = strtotime($timeslots[$slotId]['END_TIME']);
+
+            if ($prefStartTime !== null && $slotStart < $prefStartTime) continue;
+            if ($prefEndTime !== null && $slotEnd > $prefEndTime) continue;
+        }
+
         if (!isSlotOccupiedByDivision($dId, $day, $slotId, $overlappingSlots, $state)) {
             $availableSlots[] = $slotId;
         }
@@ -449,7 +466,7 @@ function selectClassroom($dId, $day, $slotId, $studentCount, $lectureHalls, $ove
 /**
  * REFACTORED COURSE ALLOCATION WITH DAILY TIME-WINDOW & RANDOMIZED TEACHER SELECTION
  */
-function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
+function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $timeslots = [], $debug = false) {
     debugLog("=== START TIME-WINDOW & RANDOMIZED COURSE ALLOCATION ===", $debug);
 
     $unassignedWorkload = [];
@@ -470,7 +487,7 @@ function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays,
             if (empty($unassignedWorkload[$dId])) continue;
 
             $assignedToday = 0;
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
+            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state, $timeslots, $divisions);
 
             foreach ($freeSlots as $slotId) {
                 if (empty($unassignedWorkload[$dId])) break;
@@ -529,7 +546,7 @@ function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays,
         foreach ($overflowDays as $day) {
             if (empty($unassignedWorkload[$dId])) break;
 
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
+            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state, $timeslots, $divisions);
 
             foreach ($freeSlots as $slotId) {
                 if (empty($unassignedWorkload[$dId])) break;
@@ -580,7 +597,22 @@ function allocateCoursesBalanced($divisions, $courses, $lectureSlots, $weekdays,
     // 4. FALLBACK PASS: Catch any remaining unallocated workloads across the week
     foreach ($divisions as $dId => $divData) {
         if (!empty($unassignedWorkload[$dId])) {
-            runFallbackAllocation($dId, $unassignedWorkload[$dId], $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, $state, $debug);
+            // Pass 2 / Fallback call inside allocateCoursesBalanced
+            if (!empty($unassignedWorkload[$dId])) {
+                runFallbackAllocation(
+                    $dId, 
+                    $unassignedWorkload[$dId], 
+                    $weekdays, 
+                    $lectureSlots, 
+                    $lectureHalls, 
+                    $teacherAvail, 
+                    $overlappingSlots, 
+                    $state, 
+                    $timeslots, 
+                    $divisions, 
+                    $debug
+                );
+            }
         }
     }
 
@@ -703,7 +735,7 @@ function allocateCoursesBalanced_dep($divisions, $courses, $lectureSlots, $weekd
     debugLog("=== END WORKLOAD-BALANCED LECTURE ALLOCATION ===", $debug);
 }
 
-function runFallbackAllocation($dId, &$unassignedLectures, $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $debug = false) {
+function runFallbackAllocation($dId, &$unassignedLectures, $weekdays, $lectureSlots, $lectureHalls, $teacherAvail, $overlappingSlots, &$state, $timeslots = [], $divisions = [], $debug = false) {
     debugLog("ENTER FALLBACK PASS: Div {$dId} has " . count($unassignedLectures) . " unallocated lectures.", $debug);
 
     foreach ($unassignedLectures as $lecIndex => $lec) {
@@ -714,7 +746,7 @@ function runFallbackAllocation($dId, &$unassignedLectures, $weekdays, $lectureSl
         foreach ($weekdays as $day) {
             if ($allocated) break;
 
-            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state);
+            $freeSlots = getDivisionAvailableSlots($dId, $day, $lectureSlots, $overlappingSlots, $state, $timeslots, $divisions);
 
             foreach ($freeSlots as $slotId) {
                 if ($allocated) break;

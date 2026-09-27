@@ -1,11 +1,11 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
-<div class="addnew-block">
+<div class="addnew-block" style="display: none;">
     <p class="blockHeading">Add New Teacher workload</p>
     <form id="form" onsubmit="" method="POST">
         <fieldset>
             <div>
                 <label>Department</label>
-                <select class="dropdown inp-w-base" name="departmentId" id="departmentId" required onchange="populateProgramme(this);populateTeacher(this)">
+                <select class="dropdown inp-w-base" name="departmentId" id="departmentId" required onchange="populateProgramme(this); populateTeacher(this)">
                     <option value="" disabled selected>Select Department</option>
                 </select>
             </div>
@@ -25,7 +25,7 @@
                     </div>
                     <div>
                         <label>Division</label>
-                        <select class="dropdown inp-w-base" name="divisionId" id="divisionId" disabled required onload="populateCourse(0)" onchange="populateCourse(0)">
+                        <select class="dropdown inp-w-base" name="divisionId" id="divisionId" disabled required onchange="populateCourse()">
                             <option value="" disabled selected>Select Division</option>
                         </select>
                     </div>
@@ -34,11 +34,11 @@
                     <label>Semester</label>
                     <div class="radiobuttonGroup">
                         <div>
-                            <input type="radio" name="isEven" id="odd" value="false" onchange="populateCourse(0)">
+                            <input type="radio" name="isEven" id="odd" value="false" checked onchange="populateCourse()">
                             <label for="odd">Odd</label>
                         </div>
                         <div>
-                            <input type="radio" name="isEven" id="even" value="true" onchange="populateCourse(1)">
+                            <input type="radio" name="isEven" id="even" value="true" onchange="populateCourse()">
                             <label for="even">Even</label>
                         </div>
                     </div>
@@ -69,14 +69,13 @@
             <button class="secondary btn" onclick="resetForm();" type="button">Clear</button>
             <button class="primary btn formSubmit" onclick="create_workload();" type="button">Map</button>
         </div>
-        
     </form>
 </div>
 <hr>
 <div class="view-table">
     <table>
         <caption>
-            Existing Programmmes
+            Existing Workloads
         </caption>
         <thead>
             <tr>
@@ -97,28 +96,29 @@
         </tbody>
     </table>
 </div>
+
 <script>
 applyValidityChecker();
+
 async function populateDepartment() {
-    // debugger;
     const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $(`#departmentId`);
+    const depts = minimalData.responseBody.departments || [];
+    const departmentSelect = $('#departmentId');
     departmentSelect.empty().append(`<option value='' disabled selected>Select Department</option>`);
-    await depts.forEach(dept => {
+    depts.forEach(dept => {
         departmentSelect.append(`
-            <option value=${dept.DEPARTMENT_ID}>
+            <option value="${dept.DEPARTMENT_ID}">
                 ${dept.LONG_NAME}
             </option>
         `);
     });
-    await departmentSelect.prop('disabled', false);
+    departmentSelect.prop('disabled', false);
 }
+
 async function populateProgramme(select) {
-    // debugger;
     const chosenDepartment = select.value;
     const minimalData = await getPrerequisits('programme');
-    const pgrms = minimalData.responseBody.programmes;
+    const pgrms = minimalData.responseBody.programmes || [];
     const programmeSelect = $('#programmeId');
     programmeSelect.empty().append('<option value="" disabled selected>Select Programme</option>');
     pgrms.forEach(pgrm => {
@@ -132,14 +132,14 @@ async function populateProgramme(select) {
     });
     programmeSelect.prop('disabled', false);
 }
+
 async function populateYear(select) {
-    // debugger;
     const chosenProgramme = select.value;
     const minimalData1 = await getPrerequisits('consists');
-    const consists = minimalData1.responseBody.consists;
+    const consists = minimalData1.responseBody.consists || [];
     const minimalData2 = await getPrerequisits('year');
-    const years = minimalData2.responseBody.years;
-    const yearSelect = $(`#yearId`);
+    const years = minimalData2.responseBody.years || [];
+    const yearSelect = $('#yearId');
     yearSelect.empty().append(`<option value='' disabled selected>Select Year</option>`);
     consists.forEach(consist => {
         if (consist.PROGRAMME_ID == chosenProgramme) {
@@ -155,12 +155,11 @@ async function populateYear(select) {
     });
     yearSelect.prop('disabled', false);
 }
+
 async function populateTeacher(select) {
-    // debugger;
     const chosenDepartment = select.value;
     const minimalData = await load_existing('teacher');
-
-    const tchrs = minimalData.responseBody;
+    const tchrs = minimalData.responseBody || [];
     const teacherSelect = $('#teacherId');
     teacherSelect.empty().append('<option value="" disabled selected>Select Teacher</option>');
     tchrs.forEach(tchr => {
@@ -174,60 +173,68 @@ async function populateTeacher(select) {
     });
     teacherSelect.prop('disabled', false);
 }
+
 async function populateDivision(select) {
-    
-        const chosenDepartment = $('#departmentId').val();
-        const chosenProgramme = $('#programmeId').val();
-        const chosenYear = $(select).val();
-        const result = await getPrerequisits('division');
-        const divisions = result?.responseBody?.divisions ?? [];
-        const divisionSelect = $('#divisionId');
-        divisionSelect.empty();
-        const filteredDivisions = divisions.filter(division =>
-            String(division.DEPARTMENT_ID) === String(chosenDepartment) &&
-            String(division.PROGRAMME_ID) === String(chosenProgramme) &&
-            String(division.YEAR_NUMBER) === String(chosenYear)
-        );
-        const divisionIds = filteredDivisions.map(
-            division => Number(division.DIVISION_ID)
-        );
+    const chosenDepartment = $('#departmentId').val();
+    const chosenProgramme = $('#programmeId').val();
+    const chosenYear = $(select).val();
+    const result = await getPrerequisits('division');
+    const divisions = result?.responseBody?.divisions ?? [];
+    const divisionSelect = $('#divisionId');
+    divisionSelect.empty();
+
+    const filteredDivisions = divisions.filter(division =>
+        String(division.DEPARTMENT_ID) === String(chosenDepartment) &&
+        String(division.PROGRAMME_ID) === String(chosenProgramme) &&
+        String(division.YEAR_NUMBER) === String(chosenYear)
+    );
+
+    const divisionIds = filteredDivisions.map(division => Number(division.DIVISION_ID));
+    divisionSelect.append(`
+        <option value='${JSON.stringify(divisionIds)}' selected>
+            All
+        </option>
+    `);
+
+    filteredDivisions.forEach(division => {
         divisionSelect.append(`
-            <option value='${JSON.stringify(divisionIds)}' selected>
-                All
+            <option value="${division.DIVISION_ID}">
+                ${division.DIVISION_NAME}
             </option>
         `);
-        filteredDivisions.forEach(division => {
-            divisionSelect.append(`
-                <option value="${division.DIVISION_ID}">
-                    ${division.DIVISION_NAME}
-                </option>
-            `);
-        });
-        divisionSelect.prop('disabled', false);
+    });
+
+    divisionSelect.prop('disabled', false);
+    populateCourse();
 }
-async function populateCourse(sem) {
+
+async function populateCourse() {
     const minimalData = await getPrerequisits('course');
-    const courses = minimalData.responseBody.courses;
+    const courses = minimalData.responseBody.courses || [];
     const programmeId = $('#programmeId').val();
     const yearId = $('#yearId').val();
-    const semester = sem == 1 ? 'EVEN' : 'ODD';
+    const isEven = $('#even').prop('checked');
+    const semester = isEven ? 'EVEN' : 'ODD';
+    
     const courseSelect = $('#courseId');
     courseSelect.empty().append('<option value="" disabled selected>Select Course</option>');
+
     courses.forEach(course => {
-        if(String(course.PROGRAMME_ID) === String(programmeId) &&
-        String(course.YEAR_NUMBER) === String(yearId) &&
-        String(course.SEMESTER).toUpperCase() === semester) {
+        if (String(course.PROGRAMME_ID) === String(programmeId) &&
+            String(course.YEAR_NUMBER) === String(yearId) &&
+            String(course.SEMESTER).toUpperCase() === semester) {
 
             courseSelect.append(`
                 <option value="${course.COURSE_ID}">
                     ${course.LONG_NAME} (${course.WEEKLY_LECTURES})
                 </option>
-            `);}
+            `);
+        }
     });
     courseSelect.prop('disabled', false);
 }
 
-populateDepartment()
+populateDepartment();
 
 var form = document.getElementById('form');
 
@@ -257,6 +264,9 @@ async function create_workload() {
         showInfoInline(
             xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.'
         );
+    })
+    .always(function() {
+        hideLoader(timer);
     });
 }
 
@@ -284,6 +294,9 @@ async function delete_workload(recordId) {
             xhr.responseJSON?.responseBody ?? 'An unexpected error occurred.'
         );
     })
+    .always(function() {
+        hideLoader(timer);
+    });
 }
 
 async function createWorkloadTable() {
@@ -317,7 +330,6 @@ async function createWorkloadTable() {
                     <td>${teach.COURSE_NAME ?? ''}</td>
                     <td>${teach.TEACHER_NAME ?? ''}</td>
                     <td>${teach.LECTURE_COUNT ?? 0}</td>
-
                     <td>
                         <button
                             class="btn primary"
@@ -337,7 +349,6 @@ async function createWorkloadTable() {
 
     } catch (error) {
         console.error('createWorkloadTable error:', error);
-
         $('.recordTable').html(`
             <tr>
                 <td colspan="10" style="text-align: center;">
@@ -349,6 +360,4 @@ async function createWorkloadTable() {
 }
 
 createWorkloadTable();
-
-toggleView();
 </script>

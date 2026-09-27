@@ -63,7 +63,7 @@ async function create_dashboard() {
     // timer = showLoader("Creating Dashboard");
     const dashboard = await get_dashboard();
     const formattedDashboard = dashboard?.responseBody;
-
+    checkTimetableAccess();
     const readyGroup = $('.group-ready .status-list');
     const ongoingGroup = $('.group-ongoing .status-list');
     const pendingGroup = $('.group-pending .status-list');

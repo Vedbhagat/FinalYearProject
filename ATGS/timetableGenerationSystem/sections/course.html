@@ -52,22 +52,31 @@
             </div>
         </fieldset>
         <fieldset>
-            <div>
-                <span><label for="lectureCount">Number of lectures in a week</label></span>
-                <input name="lectureCount" id="lectureCount" type="number" min="1" max="6">
-            </div>
-        </fieldset>
-        <fieldset>
-            <legend>Coures Type</legend>
             <div class="radiobuttonGroup">
                 <div>
-                    <input name="courseType" id="isLecture" type="radio" value=true checked>
-                    <span><label for="isLecture">Lecture</label></span>
+                    <input id="lectureHall" name="type" type="radio" value="LECTURE" checked>
+                    <label for="lectureHall">Lecture Hall</label>
                 </div>
-                <div style="color:gray">
-                    <input name="courseType" id="isPractical" type="radio" value=false>
-                    <span><label for="isPractical">Practical</label></span>
+                <div>
+                    <input id="itPrac" name="type" type="radio" value="IT PRACTICAL">
+                    <label for="itPrac">IT Pract</label>
                 </div>
+                <div>
+                    <input id="phyPrac" name="type" type="radio" value="PHYSICS PRACTICAL">
+                    <label for="phyPrac">Physics Pract</label>
+                </div>
+                <div>
+                    <input id="chemPrac" name="type" type="radio" value="CHEMISTRY PRACTICAL">
+                    <label for="chemPrac">Chemistry Pract</label>
+                </div>
+                <div>
+                    <input id="bioPrac" name="type" type="radio" value="BIOLOGY PRACTICAL">
+                    <label for="bioPrac">Biology Pract</label>
+                </div>
+            </div>
+            <div>
+                <span><label for="lectureCount">Number of lectures in a week</label></span>
+                <input name="lectureCount" id="lectureCount" type="number" min="1" max="6" required>
             </div>
         </fieldset>
         <fieldset>      
@@ -263,6 +272,8 @@ async function prefillUpdateform(recordId) {
     $('#courseId').val(parsedOldData.COURSE_ID);
     $('#fullname').val(parsedOldData.LONG_NAME);
     $('#shortname').val(parsedOldData.SHORT_NAME);
+    if(parsedOldData.SEMESTER == "ODD") $("#odd").prop("checked", true);
+    else if(parsedOldData.SEMESTER == "EVEN") $("#even").prop("checked", true);
     $('#lectureCount').val(parsedOldData.WEEKLY_LECTURES);
     if (Number(parsedOldData.ISPRACTICAL) === 1) {
         $('#isPractical').prop('checked', true);

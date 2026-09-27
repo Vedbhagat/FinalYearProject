@@ -94,7 +94,7 @@
 
 
 <script>
-let currentTimetableData = null;
+var currentTimetableData = null;
 let currentMetadata = null;
 
 // Initial Verification on Page Load
@@ -335,6 +335,8 @@ function confirmRegenerate() {
         dataType: 'json'
     }).done(function() {
         checkTimetableStatus();
+        $("#timetableGridBody").empty()
+        $("#tableHeaderRow").empty()
     });
 }
 

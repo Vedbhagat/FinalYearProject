@@ -27,50 +27,45 @@
                     </select>
                 </div>
                 <div>
-                    <label for="">Student Count</label>
-                    <input type="number" name="studentCount" id="studentCount" value="20" min="20" max="200" title="The Student count must be between 20 to 200" required>
+                    <label for="studentCount">Student Count</label>
+                    <input type="number" name="studentCount" id="studentCount" value="20" min="20" max="200" title="The Student count must be between 20 to 200" onchange="populateClassroom(-1)" required>
                 </div>
             </fieldset>
             <fieldset>
                 <legend>
                     Preferences
                     <span class="infoIcon" 
-                        title="Preferences are just the request to the system  &#10;and are completely optional.&#10;They may or may not get fulfilled based on the  &#10;available resources and allotment procedure."
+                        title="Preferences are just the request to the system &#10;and are completely optional.&#10;They may or may not get fulfilled based on the &#10;available resources and allotment procedure."
                     >
                         &#x1F6C8;
                     </span>
                 </legend>
                 <div>
-                    <select class="dropdown myInput" name="classroomId" id="classroomId" onload="populateClassroom(this)">
+                    <select class="dropdown myInput" name="classroomId" id="classroomId">
                         <option value="" disabled selected>Select Room Number</option>
                     </select>
                 </div>
                 <fieldset>
                     <div>
                         <input type="checkbox" name="prefTime" id="prefTime" value="true" onchange="$('#timesection').prop('hidden', !this.checked);$('#timesection').prop('disabled', !this.checked)">
-                        <label for="prefTime">have a prefered time?</label>
+                        <label for="prefTime">have a preferred time?</label>
                     </div>
                     <fieldset id="timesection" hidden disabled>
                         <div id="radiobuttonGroup" onchange="populateTimeBound(-1)">
                             <div>
-                                <input type="radio" name="isStartPref" id="startPref" value="true" checked>
+                                <input type="radio" name="isStartPref" id="startPref" value="1" checked>
                                 <label for="startPref">Start Time</label>
                             </div>
                             <div>
-                                <input type="radio" name="isStartPref" id="endPref" value="false">
+                                <input type="radio" name="isStartPref" id="endPref" value="0">
                                 <label for="endPref">End Time</label>
                             </div>
                         </div>
                         <div>
-                            <select name="timeBound" id="timeBound" class="dropdown myInput" onload="populateTimeBound(this)">
+                            <select name="timeBound" id="timeBound" class="dropdown myInput">
                                 <option disabled selected>Select time</option>
                             </select>
                         </div>
-                        <!-- <div class="timePicker">
-                            <p>
-                                <input type="time" class="time-input" name="timeBound" id="timeBound" value="00:00" min="07:00" max="20:00" step="900" required>
-                            </p>
-                        </div> -->
                     </fieldset>    
                 </fieldset>
             </fieldset>

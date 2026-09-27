@@ -1,121 +1,103 @@
 <button class="ghost" id="toggleform" onclick="toggleView();">Toggle Form</button>
 <div class="addnew-block" id="newTeacher">
     <p class="blockHeading">Add New Teacher</p>
-    <form id="form" onsubmit="" method="POST">
-        <fieldset hidden>
-            <div>
-                <label for="teacherId">Teacher Id</label>
-                <input type="text" name="teacherId" id="teacherId" placeholder="Auto Generated (Disabled)" readonly>
-            </div>
-        </fieldset>
+    <form id="form" onsubmit="return false;" method="POST">
+        <input type="hidden" name="teacherId" id="teacherId">
+        
         <fieldset>
             <div>
+                <label for="departmentDropdown">*Department</label>
                 <select class="dropdown myInput" name="departmentDropdown" id="departmentDropdown" disabled required>
                     <option value="" disabled selected>Select Department</option>
                 </select>
             </div>
         </fieldset>
+        
         <fieldset>
             <div>
-                <label for="fname">*Teacher FirstName</label>
-                <input id="fname" type="text" name="fname" placeholder="John" required pattern="^[A-Za-z]+$"  title="Only Characters are allowed">
+                <label for="fname">*Teacher First Name</label>
+                <input id="fname" type="text" name="fname" placeholder="John" required pattern="^[A-Za-z\s.]+$" title="Only letters are allowed">
             </div>
             <div>
-                <label for="lname">*Techer LastName</label>
-                <input id="lname" type="text" name="lname" placeholder="Doe" required pattern="^[A-Za-z]+$"  title="Only Characters are allowed">
+                <label for="lname">*Teacher Last Name</label>
+                <input id="lname" type="text" name="lname" placeholder="Doe" required pattern="^[A-Za-z\s.]+$" title="Only letters are allowed">
             </div>
         </fieldset>
+        
         <fieldset>
             <div>
                 <input name="isPartTime" id="isPartTime" type="checkbox" onchange="togglePartTimeSection()">
-                <span><label for="isPartTime">Part Time</label></span>
+                <span><label for="isPartTime">Part Time Teacher</label></span>
             </div>
-            <div id="partTimeSection"></div> 
+            <div id="partTimeSection" style="display:none;"></div> 
         </fieldset>
+        
         <div class="btn-grp">
-            <button class="secondary btn" id="sndyBtn" onclick="resetForm();" type="button">Clear</button>
+            <button class="secondary btn" id="sndyBtn" onclick="cancelPrefilledUpdateform();" type="button">Clear</button>
             <button class="primary btn formSubmit" id="prmyBtn" onclick="add_teacher();" type="button">Create</button>
         </div>
     </form>
 </div>
+
 <hr>
+
 <div class="view-table">
     <table>
-        <caption>
-            Existing Teachers
-        </caption>
+        <caption>Existing Teachers</caption>
         <thead>
             <tr>
-                <td >Sr No</td>
-                <td >UID</td>
-                <td >Department</td>
-                <td >Teacher name</td>
-                <td >Part Time</td>
-                <td >Actions</td>
+                <td>Sr No</td>
+                <td>UID</td>
+                <td>Department</td>
+                <td>Teacher Name</td>
+                <td>Part Time</td>
+                <td>Actions</td>
             </tr>
         </thead>
-        <tbody class="recordTable">
-        </tbody>
+        <tbody class="recordTable"></tbody>
     </table>
 </div>
-<script>
 
+<script>
 applyValidityChecker();
-function togglePartTimeSection(){
-    if($('#isPartTime').is(':checked')){
-        $('#partTimeSection').attr('disabled', false);
-        $('#partTimeSection').attr('hidden', false);
-        $('#partTimeSection').css('display', 'block');
-    }
-    else{
-        $('#partTimeSection').attr('disabled', true);
-        $('#partTimeSection').attr('hidden', true);
-        $('#partTimeSection').css('display', 'none');
+
+function togglePartTimeSection() {
+    if ($('#isPartTime').is(':checked')) {
+        $('#partTimeSection').show();
+    } else {
+        $('#partTimeSection').hide();
     }
 }
-function togglePartTimeDay(event){
-    const fieldset = event.target.closest('fieldset');
-    const timepicker = fieldset.querySelector('.timePicker');
-    timepicker.style.display = event.target.checked ? "flex" : "none";
+
+function togglePartTimeDay(event) {
+    const fieldset = $(event.target).closest('fieldset');
+    const timepicker = fieldset.find('.timePicker');
+    if (event.target.checked) {
+        timepicker.css('display', 'flex');
+    } else {
+        timepicker.hide();
+    }
 }
+
 async function makePartTimeDay() {
     const result = await getPrerequisits("timeslot");
-    const days = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday"
-    ];
-    
-    const data = await result.responseBody.timeslots;
-    // const data = result.responseBody.slots;
-    // console.log(data)
-    const punchInOptions = await data
-        .map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`)
-        .join("");
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const data = result.responseBody?.timeslots || [];
 
-    const punchOutOptions = await data
-        .map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`)
-        .join("");
+    const punchInOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`).join("");
+    const punchOutOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`).join("");
 
     const container = $("#partTimeSection");
     container.html("");
+
     days.forEach(day => {
-        
         const id = day.toLowerCase();
         container.append(`
             <fieldset>
                 <div>
-                    <input
-                        type="checkbox"
-                        id="${id}"
-                        name="${id}"
-                        onchange="togglePartTimeDay(event)">
+                    <input type="checkbox" id="${id}" name="${id}" onchange="togglePartTimeDay(event)">
                     <label for="${id}">${day}</label>
                 </div>
-
                 <div class="timePicker" style="display:none">
                     <p>
                         <label>Punch In</label>
@@ -124,9 +106,7 @@ async function makePartTimeDay() {
                             ${punchInOptions}
                         </select>
                     </p>
-
                     <span class="separator">-</span>
-
                     <p>
                         <label>Punch Out</label>
                         <select name="punchOut_${id}" id="punchOut_${id}" class="dropdown myInput">
@@ -146,10 +126,8 @@ function makePunchOutTime(select) {
     const punchOut = $(`#punchOut_${day}`);
 
     punchOut.val("");
-
     punchOut.find("option").each(function () {
         const endSlot = parseInt($(this).val());
-
         if (!isNaN(endSlot)) {
             $(this).prop("disabled", endSlot < startSlot);
         }
@@ -158,34 +136,31 @@ function makePunchOutTime(select) {
 
 async function extractDepartment() {
     const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
+    const depts = minimalData.responseBody?.departments || [];
     const departmentSelect = $('#departmentDropdown');
-    await depts.forEach(dept => {
-        departmentSelect.append(`
-            <option value=${dept.DEPARTMENT_ID}>
-                ${dept.LONG_NAME}
-            </option>
-        `);
+    
+    departmentSelect.find('option:not(:first)').remove();
+    depts.forEach(dept => {
+        departmentSelect.append(`<option value="${dept.DEPARTMENT_ID}">${dept.LONG_NAME}</option>`);
     });
-    await departmentSelect.prop('disabled', false);
+    departmentSelect.prop('disabled', false);
 }
-
 
 makePartTimeDay();
 extractDepartment();
 
-
-var form = document.getElementById('form');
+const form = document.getElementById('form');
 
 async function add_teacher() {
-    console.log("Adding new Teacher");
-    if(!form.checkValidity()){
+    if (!form.checkValidity()) {
         form.reportValidity();
         return;
-    };
+    }
+
     const formData = new FormData(form);
     formData.append('formCategory', 'teacher');
     formData.append('formType', 'add_teacher');
+
     timer = showLoader("Adding new Teacher");
     $.ajax({
         url: 'api.php',
@@ -197,138 +172,175 @@ async function add_teacher() {
     })
     .done(function(result) {
         showInfoInline(result.responseBody);
-        form.reset();
+        cancelPrefilledUpdateform();
         createTeacherTable();
     })
-    .fail(function(xhr, status, error) {   
-        if (xhr.responseJSON && xhr.responseJSON.responseBody) {
-            showInfoInline(xhr.responseJSON.responseBody);
-        } else {
-            showInfoInline("An unexpected error occurred.");
-        }
+    .fail(function(xhr) {   
+        const msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
+        showInfoInline(msg);
     })
     .always(function() {
         hideLoader(timer);
     });
 }
 
-async function get_one_teacher(teacherId){
+async function get_one_teacher(teacherId) {
     const formData = new FormData();
-    formData.append("formCategory","teacher");
-    formData.append("formType","get_one_teacher");
-    formData.append("teacherId",teacherId);
+    formData.append("formCategory", "teacher");
+    formData.append("formType", "get_one_teacher");
+    formData.append("teacherId", teacherId);
+
     timer = showLoader("Fetching Teacher");
     return await $.ajax({
-        url:"api.php",
-        type:"POST",
-        data:formData,
-        processData:false,
-        contentType:false
-    })
-    .always(function() {
+        url: "api.php",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    }).always(function() {
         hideLoader(timer);
     });
 }
 
-async function prefillUpdateform(recordId){
-    var oldData = await get_one_teacher(recordId);
-    var parsedOldData = await oldData.responseBody;
+async function prefillUpdateform(recordId) {
+    const oldData = await get_one_teacher(recordId);
+    if (!oldData.responseBody) return;
+
+    const data = oldData.responseBody;
     turnOn();
-    $('#teacherId').val(parsedOldData.TEACHER_ID);
-    $('#departmentDropdown').val(parsedOldData.DEPARTMENT_ID);
-    $('#fname').val(parsedOldData.FIRST_NAME);
-    $('#lname').val(parsedOldData.LAST_NAME);
-    $('#isPartTime').prop('checked', parsedOldData.ISPARTTIME == 1);
+
+    $('#teacherId').val(data.TEACHER_ID);
+    $('#departmentDropdown').val(data.DEPARTMENT_ID);
+    $('#fname').val(data.FIRST_NAME);
+    $('#lname').val(data.LAST_NAME);
+
+    const isPartTime = (data.ISPARTTIME == 1);
+    $('#isPartTime').prop('checked', isPartTime);
     togglePartTimeSection();
-    $('#prmyBtn').text('Update');
-    $('#prmyBtn').attr('data-recordId',parsedOldData.TEACHER_ID);
-    $('#prmyBtn').attr('onclick','update_teacher('+recordId+')');
-    $('#sndyBtn').attr('onclick','cancelPrefilledUpdateform()');
+
+    // Prefill Part-Time Availability slots
+    if (isPartTime && data.availability) {
+        Object.keys(data.availability).forEach(day => {
+            const avail = data.availability[day];
+            const checkbox = $(`#${day}`);
+            if (checkbox.length) {
+                checkbox.prop('checked', true);
+                checkbox.prop('checked', true).trigger('change');
+                $(`#punchIn_${day}`).val(avail.START_SLOT).trigger('change');
+                $(`#punchOut_${day}`).val(avail.END_SLOT);
+            }
+        });
+    }
+
+    $('#prmyBtn').text('Update').attr('onclick', 'update_teacher()');
+    $('#sndyBtn').attr('onclick', 'cancelPrefilledUpdateform()');
     showInfoInline("Update Form Ready");
 }
 
-function cancelPrefilledUpdateform(){
+function cancelPrefilledUpdateform() {
     form.reset();
     $('#teacherId').val("");
-    $('#prmyBtn').text("Create");
-    $('#prmyBtn').attr("onclick","add_teacher()");
-    $('#sndyBtn').attr("onclick","resetForm()");
+    $('#prmyBtn').text("Create").attr("onclick", "add_teacher()");
+    $('#sndyBtn').attr("onclick", "cancelPrefilledUpdateform()");
+
+    $('#partTimeSection fieldset').each(function() {
+        $(this).find('input[type="checkbox"]').prop('checked', false);
+        $(this).find('.timePicker').hide();$(this).find('select').val('');
+    });
     togglePartTimeSection();
 }
 
-async function update_teacher(){
+async function update_teacher() {
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
     const formData = new FormData(form);
-    formData.append("formCategory","teacher");
-    formData.append("formType","update_teacher");
+    formData.append("formCategory", "teacher");
+    formData.append("formType", "update_teacher");
+
     timer = showLoader("Updating Teacher");
     $.ajax({
-        url:"api.php",
-        type:"POST",
-        data:formData,
-        processData:false,
-        contentType:false,
-        dataType:"json"
+        url: "api.php",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json"
     })
-    .done(function(result){
+    .done(function(result) {
         cancelPrefilledUpdateform();
         showInfoInline(result.responseBody);
         createTeacherTable();
     })
-    .fail(function(xhr){
-        if(xhr.responseJSON) showInfoInline(xhr.responseJSON.responseBody);
-        else showInfoInline("Unexpected Error");
+    .fail(function(xhr) {
+        const msg = xhr.responseJSON?.responseBody || "Unexpected Error";
+        showInfoInline(msg);
     })
     .always(function() {
         hideLoader(timer);
     });
 }
 
-async function delete_teacher(recordId){
+async function delete_teacher(recordId) {
     const formData = new FormData();
-    formData.append("formCategory","teacher");
-    formData.append("formType","delete_teacher");
-    formData.append("teacherId",recordId);
+    formData.append("formCategory", "teacher");
+    formData.append("formType", "delete_teacher");
+    formData.append("teacherId", recordId);
+
     timer = showLoader("Deleting Teacher");
-    const result = await $.ajax({
-        url:"api.php",
-        type:"POST",
-        data:formData,
-        processData:false,
-        contentType:false
-    })
-    .always(function() {
+    try {
+        const result = await $.ajax({
+            url: "api.php",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: "json"
+        });
+        showInfoInline(result.responseBody);
+        createTeacherTable();
+    } catch(xhr) {
+        const msg = xhr.responseJSON?.responseBody || "Deletion failed";
+        showInfoInline(msg);
+    } finally {
         hideLoader(timer);
-    });
-    showInfoInline(result.responseBody);
-    createTeacherTable();
+    }
 }
 
-async function createTeacherTable(){
-    const slots = await load_existing('teacher');
-    const depts = await getPrerequisits('department');
-    const deptsParsed = await depts.responseBody.departments;
-    var count = 1;
-    $('.recordTable').html('');
-    (slots.responseBody).forEach(element => {
-        const currDept = deptsParsed.find(
-            department => department.DEPARTMENT_ID == element[1]
-        )?.SHORT_NAME ?? '';
-        var template =
-            `<tr>
+async function createTeacherTable() {
+    const teacherRes = await load_existing('teacher');
+    const deptRes = await getPrerequisits('department');
+
+    const teachers = teacherRes.responseBody || [];
+    const depts = deptRes.responseBody?.departments || [];
+
+    const tableBody = $('.recordTable');
+    tableBody.empty();
+
+    let count = 1;
+    teachers.forEach(element => {
+        const deptName = depts.find(d => d.DEPARTMENT_ID == element[1])?.SHORT_NAME || 'N/A';
+        const isPartTime = element[4] == 1 ? "Yes" : "No";
+
+        const row = `
+            <tr>
                 <td>${count++}</td>
                 <td>${element[0]}</td>
-                <td>${currDept}</td>
-                <td>${element[2] + " " + element[3]}</td>
-                <td>${(element[4])?"Yes" : "No"}</td>
+                <td>${deptName}</td>
+                <td>${element[2]} ${element[3]}</td>
+                <td>${isPartTime}</td>
                 <td>
-                    <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
-                    <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_teacher);">Delete</button>
+                    <button class="btn primary" onclick="prefillUpdateform(${element[0]});">Update</button>
+                    <button class="btn secondary" onclick="confirmDeleteDialog('Delete Teacher?','Confirm deletion of teacher record.',${element[0]},delete_teacher);">Delete</button>
                 </td>
-            </tr>`;
-        $('.recordTable').append('<tr>'+template+'</tr>');
+            </tr>
+        `;
+        tableBody.append(row);
     });
 }
 
 createTeacherTable();
-
 </script>

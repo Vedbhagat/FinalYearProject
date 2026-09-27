@@ -33,7 +33,6 @@
         <thead>
             <tr>
                 <td >Sr No</td>
-                <td >UID</td>
                 <td >Department Fullname</td>
                 <td >Department Shortname</td>
                 <td >Actions</td>
@@ -191,9 +190,8 @@ async function createDepartmentTable(){
         var template =
             `<tr>
                 <td>${count++}</td>
-                <td>${element[0]}</td>
+                <td>${element[1]}</td>
                 <td>${element[2]}</td>
-                <td>${element[3]}</td>
                 <td>
                     <button class="btn primary" data-recordId="${element[0]}" onclick="prefillUpdateform(${element[0]});">update</button>
                     <button class="btn secondary" data-recordId="${element[0]}" onclick="confirmDeleteDialog('Delete ?','confirm the delete operations',${element[0]},delete_department);">Delete</button>

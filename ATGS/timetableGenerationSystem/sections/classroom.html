@@ -23,7 +23,31 @@
             </div>
         </fieldset>
         <fieldset>
-            <p>Classroom Availability</p>
+            <div class="radiobuttonGroup">
+                <div>
+                    <input id="lectureHall" name="roomType" type="radio" value="LECTURE HALL" checked>
+                    <label for="lectureHall">Lecture Hall</label>
+                </div>
+                <div>
+                    <input id="itLab" name="roomType" type="radio" value="IT LAB">
+                    <label for="itLab">IT Lab</label>
+                </div>
+                <div>
+                    <input id="phyLab" name="roomType" type="radio" value="PHYSICS LAB">
+                    <label for="phyLab">Biology Lab</label>
+                </div>
+                <div>
+                    <input id="chemLab" name="roomType" type="radio" value="CHEMISTRY LAB">
+                    <label for="chemLab">Physics Lab</label>
+                </div>
+                <div>
+                    <input id="bioLab" name="roomType" type="radio" value="BIOLOGY LAB">
+                    <label for="bioLab">Chemistry Lab</label>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset>
+            <legend>Classroom Availability</legend>
             <div class="timePicker">
                 <p>
                     <label>From:</label>
@@ -51,7 +75,6 @@
         <thead>
             <tr>
                 <td>Sr No</td>
-                <td>Room Id</td>
                 <td>Floor</td>
                 <td>Room</td>
                 <td>Type</td>
@@ -78,6 +101,23 @@ async function prefillUpdateform(recordId){
     $('#floor').val( parsedOldData.FLOOR_NUMBER);
     $('#room').val(parsedOldData.ROOM_NUMBER);
     $('#capacity').val(parsedOldData.CAPACITY);
+    if(parsedOldData.CATEGORY == 'LECTURE HALL'){
+        $('#lectureHall').prop('checked', true);
+    }
+    else if(parsedOldData.CATEGORY == 'BIOLOGY LAB'){
+        $('#bioLab').prop('checked', true);
+    }
+    else if(parsedOldData.CATEGORY == 'IT LAB'){
+        $('#itLab').prop('checked', true);
+    }
+    else if(parsedOldData.CATEGORY == 'CHEMISTRY LAB'){   
+        $('#chemLab').prop('checked', true);
+    }
+    else if(parsedOldData.CATEGORY == 'PHYSICS LAB'){
+        $('#phyLab').prop('checked', true);
+    }
+    $('#startTime').val(parsedOldData.START_TIME);
+    $('#endTime').val(parsedOldData.END_TIME);
     $('#capacity').focus();
     $('#prmyBtn').text('Update');
     $('#prmyBtn').attr('data-recordId',parsedOldData.CLASSROOM_ID);
@@ -102,10 +142,9 @@ async function update_classroom(recordId){
         return;
     };
     const formData = new FormData(form);
-    console.log(formData);
     formData.append('formCategory','classroom');
     formData.append('formType','update_classroom');
-    timer =showLoader("Updating Classroom");
+    timer = showLoader("Updating Classroom");
     $.ajax({
         url: 'api.php',
         type: 'POST',
@@ -163,7 +202,6 @@ async function createClassroomTable(){
         var template =
             `<tr>
                 <td>${count++}</td>
-                <td>${element[0]}</td>
                 <td>${element[1]}</td>
                 <td>${element[2]}</td>
                 <td>${(element[6])}</td>

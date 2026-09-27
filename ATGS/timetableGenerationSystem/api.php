@@ -49,15 +49,13 @@ function validateTimeslot($startTime, $endTime, $slotType, $slotId = null) {
     $parsedEndTime = (new DateTime($endTime))->getTimestamp();
 
     $minTime = (new DateTime('07:00'))->getTimestamp();
-    $maxTime = (new DateTime('21:00'))->getTimestamp();
-    if($parsedStartTime<$minTime || $parsedEndTime>$maxTime){
+    $maxTime = (new DateTime('20:00'))->getTimestamp();
+    if($parsedStartTime < $minTime || $parsedEndTime > $maxTime){
         return 2;
     }
     switch($slotType){
         case 'lecture':
             if($parsedEndTime - $parsedStartTime != 60*60){// 1 hour lecture
-                echo ($parsedEndTime - $parsedStartTime)." ";
-                echo ($parsedStartTime - $parsedEndTime)." ";
                 return 3;
             }
             break;
@@ -74,7 +72,7 @@ function validateTimeslot($startTime, $endTime, $slotType, $slotId = null) {
         default:
             break;
     }
-    if ($parsedStartTime > $parsedEndTime) {
+    if ($parsedStartTime >= $parsedEndTime) {
         return 4; // Inverted timeslot
     }else {
         $query = "SELECT slot_Id, start_time, end_time, slot_type FROM TIMESLOT WHERE ? < end_Time AND ? > start_Time AND SLOT_ID != ? AND SLOT_TYPE = ? LIMIT 1";
@@ -91,12 +89,9 @@ function isValidName(string $str){
 }
 function validateClassroom($floor,$room,$capacity,$startTime,$endTime){
     global $conn;
-    if($capacity<20 && $capacity>200) return 2; //too small or too large classroom
+    if($capacity<20 || $capacity>200) return 2; //too small or too large classroom
 
-    $query = 'SELECT CLASSROOM_ID FROM CLASSROOM WHERE FLOOR_NUMBER = ?';
-    $result = $conn->execute_query($query,[$floor]);
-    if($result->num_rows>20) return 3; //Too many rooms at a floor
-    if ( ((new DateTime($startTime))->getTimestamp()) > ((new DateTime($endTime))->getTimestamp()) ) return 4; //Inverted Availability
+    if ( ((new DateTime($startTime))->getTimestamp()) >= ((new DateTime($endTime))->getTimestamp()) ) return 4; //Inverted Availability
 
 
     // $query = 'SELECT * FROM CLASSROOM WHERE ROOM_NUMBER = ?';
@@ -175,6 +170,109 @@ function updateCounts($connection) {
     file_put_contents($file,json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),);
     return $data;
 }
+function manageModuleView($connection, $sequence, $action) {
+    // Map sequence number to module view definition
+    $views = [
+        4 => [
+            'name' => 'VIEW_MINIMAL_PROGRAMME',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_PROGRAMME AS
+                       SELECT p.DEPARTMENT_ID, p.PROGRAMME_ID, p.LONG_NAME, p.SHORT_NAME, COUNT(c.PROGRAMME_ID) AS DURATION
+                       FROM PROGRAMME p
+                       LEFT JOIN CONSISTS c ON p.PROGRAMME_ID = c.PROGRAMME_ID
+                       GROUP BY p.DEPARTMENT_ID, p.PROGRAMME_ID, p.LONG_NAME, p.SHORT_NAME
+                       ORDER BY p.LONG_NAME"
+        ],
+        5 => [
+            'name' => 'VIEW_MINIMAL_COURSE',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_COURSE AS
+                       SELECT c.COURSE_ID, c.PROGRAMME_ID, p.DEPARTMENT_ID, p.SHORT_NAME AS PROGRAMME_NAME,
+                              d.SHORT_NAME AS DEPARTMENT_NAME, c.LONG_NAME, c.SHORT_NAME, c.WEEKLY_LECTURES,
+                              c.ISPRACTICAL, c.ISOPTIONAL, c.YEAR_NUMBER, c.SEMESTER, c.OPTIONAL_ID
+                       FROM COURSE c
+                       LEFT JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                       LEFT JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                       ORDER BY p.DEPARTMENT_ID, PROGRAMME_NAME, c.YEAR_NUMBER, c.SEMESTER"
+        ],
+        6 => [
+            'name' => 'VIEW_MINIMAL_OPTIONALCOURSE',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_OPTIONALCOURSE AS
+                       SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_SHORT_NAME, p.PROGRAMME_ID,
+                              p.SHORT_NAME AS PROGRAMME_SHORT_NAME, y.YEAR_NUMBER, y.YEAR_NAME, c.COURSE_ID,
+                              c.SEMESTER, c.LONG_NAME AS COURSE_FULL_NAME, c.SHORT_NAME AS COURSE_SHORT_NAME,
+                              c.ISOPTIONAL, c.OPTIONAL_ID, op.SHORT_NAME AS OPTIONAL_COURSE_NAME, c.ISPRACTICAL, c.WEEKLY_LECTURES
+                       FROM COURSE c
+                       LEFT JOIN COURSE op ON op.COURSE_ID = c.OPTIONAL_ID
+                       LEFT JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                       LEFT JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                       LEFT JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                       WHERE c.ISOPTIONAL = TRUE AND (c.OPTIONAL_ID IS NULL OR c.COURSE_ID < c.OPTIONAL_ID)
+                       ORDER BY d.DEPARTMENT_ID, p.PROGRAMME_ID, y.YEAR_NUMBER, c.SEMESTER"
+        ],
+        7 => [
+            'name' => 'VIEW_MINIMAL_DIVISION',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_DIVISION AS
+                       SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_NAME, p.PROGRAMME_ID,
+                              p.SHORT_NAME AS PROGRAMME_NAME, y.YEAR_NUMBER, y.YEAR_NAME, dv.DIVISION_ID,
+                              dv.NAME AS DIVISION_NAME, dv.STUDENT_COUNT, dv.CLASSROOM_ID, dv.START_TIME_ID, dv.END_TIME_ID
+                       FROM DEPARTMENT AS d
+                       JOIN PROGRAMME AS p ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                       JOIN CONSISTS AS c ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                       JOIN YEAR AS y ON y.YEAR_NUMBER = c.YEAR_NUMBER
+                       LEFT JOIN DIVISION AS dv ON dv.PROGRAMME_ID = c.PROGRAMME_ID AND dv.YEAR_NUMBER = c.YEAR_NUMBER
+                       ORDER BY dv.STUDENT_COUNT, d.SHORT_NAME, p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME"
+        ],
+        8 => [
+            'name' => 'VIEW_MINIMAL_OPTIONALCOURSEMAPPER',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_OPTIONALCOURSEMAPPER AS
+                       SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_SHORT_NAME, p.PROGRAMME_ID,
+                              p.SHORT_NAME AS PROGRAMME_SHORT_NAME, y.YEAR_NUMBER, y.YEAR_NAME, c.COURSE_ID,
+                              c.SEMESTER, c.LONG_NAME AS COURSE_FULL_NAME, c.SHORT_NAME AS COURSE_SHORT_NAME,
+                              c.ISOPTIONAL, c.OPTIONAL_ID, op.SHORT_NAME AS OPTIONAL_COURSE_NAME, c.ISPRACTICAL,
+                              c.WEEKLY_LECTURES, ob.DIVISION_ID AS MAPPED_DIVISION_ID, dv.NAME AS MAPPED_DIVISION_NAME
+                       FROM COURSE c
+                       LEFT JOIN COURSE op ON op.COURSE_ID = c.OPTIONAL_ID
+                       LEFT JOIN OPTED_BY ob ON ob.COURSE_ID = c.COURSE_ID
+                       LEFT JOIN DIVISION dv ON dv.DIVISION_ID = ob.DIVISION_ID
+                       JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                       JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                       JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                       WHERE c.ISOPTIONAL = TRUE AND c.OPTIONAL_ID IS NOT NULL
+                       ORDER BY d.DEPARTMENT_ID, p.PROGRAMME_ID, y.YEAR_NUMBER, c.SEMESTER, c.COURSE_ID"
+        ],
+        9 => [
+            'name' => 'VIEW_MINIMAL_WORKLOAD',
+            'sql'  => "CREATE OR REPLACE VIEW VIEW_MINIMAL_WORKLOAD AS
+                       SELECT t.WORKLOAD_ID, t.TEACHER_ID, t.COURSE_ID, t.DIVISION_ID, d.DEPARTMENT_ID,
+                              d.SHORT_NAME AS DEPARTMENT_NAME, p.PROGRAMME_ID, p.SHORT_NAME AS PROGRAMME_NAME,
+                              y.YEAR_NUMBER, y.YEAR_NAME, dv.NAME AS DIVISION_NAME, c.SEMESTER, c.LONG_NAME AS COURSE_NAME,
+                              c.SHORT_NAME AS COURSE_SHORT_NAME, t.LECTURE_COUNT, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                       FROM TEACHES t
+                       INNER JOIN TEACHER tr ON t.TEACHER_ID = tr.TEACHER_ID
+                       INNER JOIN COURSE c ON t.COURSE_ID = c.COURSE_ID
+                       INNER JOIN DIVISION dv ON t.DIVISION_ID = dv.DIVISION_ID
+                       INNER JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                       INNER JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                       INNER JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                       ORDER BY d.LONG_NAME, p.LONG_NAME, y.YEAR_NUMBER, dv.NAME, c.SEMESTER, c.LONG_NAME, TEACHER_NAME"
+        ]
+    ];
+
+    if (!isset($views[$sequence])) {
+        return;
+    }
+
+    $viewName = $views[$sequence]['name'];
+    
+    if ($action === 'create') {
+        $connection->query($views[$sequence]['sql']);
+    } elseif ($action === 'drop') {
+        $connection->query("DROP VIEW IF EXISTS {$viewName}");
+    }
+}
+function isViewExists($connection, $viewName) {
+    $result = $connection->query("SHOW TABLES LIKE '{$viewName}'");
+    return ($result && $result->num_rows > 0);
+}
 function isLockable($connection,$sequence){
     if($sequence == 0){
         $result = $connection->execute_query("SELECT COUNT(*) AS count FROM TIMESLOT");
@@ -247,11 +345,32 @@ function isLockable($connection,$sequence){
         return ($result->fetch_assoc()['count'] == 0);
     }
     elseif($sequence == 9){
+        $file = "lockData.json";
+        $data = json_decode(file_get_contents($file), true) ?? [];
+        foreach ($data as $module) {
+            if ($module['sequence'] < 9 && empty($module['isLocked'])) {
+                return false;
+            }
+        }
         return true;
     }
     return false;
 }
-
+function arePrecedingModulesLocked() {
+    $file = "lockData.json";
+    if (!file_exists($file)) return false;
+    $data = json_decode(file_get_contents($file), true) ?? [];
+    
+    foreach ($data as $module) {
+        // Check sequences 0 through 9 (all modules prior to Timetable generation)
+        if (isset($module['sequence']) && $module['sequence'] <= 9) {
+            if (empty($module['isLocked'])) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 
 try {
@@ -265,18 +384,17 @@ try {
             while($row = mysqli_fetch_assoc($result)) {$response['departments'][] = $row;}
         }
         elseif ($formtype == 'programme') {
-            $sql = "
-                SELECT p.DEPARTMENT_ID, p.PROGRAMME_ID, p.LONG_NAME, p.SHORT_NAME, COUNT(c.PROGRAMME_ID) AS DURATION
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_PROGRAMME') 
+                ? "SELECT * FROM VIEW_MINIMAL_PROGRAMME" 
+                : "SELECT p.DEPARTMENT_ID, p.PROGRAMME_ID, p.LONG_NAME, p.SHORT_NAME, COUNT(c.PROGRAMME_ID) AS DURATION
                 FROM PROGRAMME p
                 LEFT JOIN CONSISTS c ON p.PROGRAMME_ID = c.PROGRAMME_ID
                 GROUP BY p.DEPARTMENT_ID, p.PROGRAMME_ID, p.LONG_NAME, p.SHORT_NAME
-                ORDER BY p.LONG_NAME
-            ";
+                ORDER BY p.LONG_NAME";
+
             $result = mysqli_query($conn, $sql);
             $response['programmes'] = [];
-            while ($row = mysqli_fetch_assoc($result)) {
-                $response['programmes'][] = $row;
-            }
+            while ($row = mysqli_fetch_assoc($result)) { $response['programmes'][] = $row; }
         }
         elseif($formtype == 'classroom'){
             $sql = "SELECT CLASSROOM_ID, ROOM_NUMBER, CAPACITY FROM CLASSROOM ORDER BY ROOM_NUMBER";
@@ -302,253 +420,84 @@ try {
             $response['consists'] = [];
             while($row = mysqli_fetch_assoc($result)) {$response['consists'][] = $row;}
         }
-        elseif($formtype == 'course'){
-            $sql = 
-            "
-                SELECT
-                    c.COURSE_ID,
-                    c.PROGRAMME_ID,
-                    p.DEPARTMENT_ID,
-                    p.SHORT_NAME AS PROGRAMME_NAME,
-                    d.SHORT_NAME AS DEPARTMENT_NAME,
-                    c.LONG_NAME,
-                    c.SHORT_NAME,
-                    c.WEEKLY_LECTURES,
-                    c.ISPRACTICAL,
-                    c.ISOPTIONAL,
-                    c.YEAR_NUMBER,
-                    c.SEMESTER,
-                    c.OPTIONAL_ID
-                
+        elseif ($formtype == 'course') {
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_COURSE') 
+                ? "SELECT * FROM VIEW_MINIMAL_COURSE" 
+                : "SELECT c.COURSE_ID, c.PROGRAMME_ID, p.DEPARTMENT_ID, p.SHORT_NAME AS PROGRAMME_NAME, d.SHORT_NAME AS DEPARTMENT_NAME, c.LONG_NAME, c.SHORT_NAME, c.WEEKLY_LECTURES, c.ISPRACTICAL, c.ISOPTIONAL, c.YEAR_NUMBER, c.SEMESTER, c.OPTIONAL_ID
                 FROM COURSE c
-                LEFT JOIN PROGRAMME p
-                    ON c.PROGRAMME_ID = p.PROGRAMME_ID
-                LEFT JOIN DEPARTMENT d
-                    ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-                ORDER BY p.DEPARTMENT_ID, PROGRAMME_NAME, c.YEAR_NUMBER, c.SEMESTER
-            ";
+                LEFT JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                LEFT JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                ORDER BY p.DEPARTMENT_ID, PROGRAMME_NAME, c.YEAR_NUMBER, c.SEMESTER";
+
             $result = mysqli_query($conn, $sql);
             $response['courses'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['courses'][] = $row;}
+            while ($row = mysqli_fetch_assoc($result)) { $response['courses'][] = $row; }
         }
-        elseif($formtype == 'optionalcourse'){
-            $sql = "SELECT
-                d.DEPARTMENT_ID,
-                d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
-                p.PROGRAMME_ID,
-                p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
-                y.YEAR_NUMBER,
-                y.YEAR_NAME,
-                c.COURSE_ID,
-                c.SEMESTER,
-                c.LONG_NAME AS COURSE_FULL_NAME,
-                c.SHORT_NAME AS COURSE_SHORT_NAME,
-                c.ISOPTIONAL,
-                c.OPTIONAL_ID,
-                op.SHORT_NAME AS OPTIONAL_COURSE_NAME,
-                c.ISPRACTICAL,
-                c.WEEKLY_LECTURES
+        elseif ($formtype == 'optionalcourse') {
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_OPTIONALCOURSE') 
+                ? "SELECT * FROM VIEW_MINIMAL_OPTIONALCOURSE" 
+                : "SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_SHORT_NAME, p.PROGRAMME_ID, p.SHORT_NAME AS PROGRAMME_SHORT_NAME, y.YEAR_NUMBER, y.YEAR_NAME, c.COURSE_ID, c.SEMESTER, c.LONG_NAME AS COURSE_FULL_NAME, c.SHORT_NAME AS COURSE_SHORT_NAME, c.ISOPTIONAL, c.OPTIONAL_ID, op.SHORT_NAME AS OPTIONAL_COURSE_NAME, c.ISPRACTICAL, c.WEEKLY_LECTURES
+                FROM COURSE c
+                LEFT JOIN COURSE op ON op.COURSE_ID = c.OPTIONAL_ID
+                LEFT JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                LEFT JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                LEFT JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                WHERE c.ISOPTIONAL = TRUE AND (c.OPTIONAL_ID IS NULL OR c.COURSE_ID < c.OPTIONAL_ID)
+                ORDER BY d.DEPARTMENT_ID, p.PROGRAMME_ID, y.YEAR_NUMBER, c.SEMESTER";
 
-            FROM COURSE c
-
-            LEFT JOIN COURSE op
-                ON op.COURSE_ID = c.OPTIONAL_ID
-
-            JOIN PROGRAMME p
-                ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-            JOIN DEPARTMENT d
-                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-            JOIN YEAR y
-                ON c.YEAR_NUMBER = y.YEAR_NUMBER
-
-            WHERE c.ISOPTIONAL = TRUE
-            AND (
-                c.OPTIONAL_ID IS NULL
-                OR c.COURSE_ID < c.OPTIONAL_ID
-            )
-
-            ORDER BY
-                d.DEPARTMENT_ID,
-                p.PROGRAMME_ID,
-                y.YEAR_NUMBER,
-                c.SEMESTER;";
             $result = mysqli_query($conn, $sql);
             $response['optionalcourses'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['optionalcourses'][] = $row;}
+            while ($row = mysqli_fetch_assoc($result)) { $response['optionalcourses'][] = $row; }
         }
-        elseif($formtype == 'division'){
-            $sql = '
-                SELECT 
-                    d.DEPARTMENT_ID,
-                    d.SHORT_NAME AS DEPARTMENT_NAME,
-
-                    p.PROGRAMME_ID,
-                    p.SHORT_NAME AS PROGRAMME_NAME,
-
-                    y.YEAR_NUMBER,
-                    y.YEAR_NAME,
-
-                    dv.DIVISION_ID,
-                    dv.NAME AS DIVISION_NAME,
-                    dv.STUDENT_COUNT,
-                    dv.CLASSROOM_ID,
-                    dv.START_TIME_ID,
-                    dv.END_TIME_ID
-
+        elseif ($formtype == 'division') {
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_DIVISION') 
+                ? "SELECT * FROM VIEW_MINIMAL_DIVISION" 
+                : "SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_NAME, p.PROGRAMME_ID, p.SHORT_NAME AS PROGRAMME_NAME, y.YEAR_NUMBER, y.YEAR_NAME, dv.DIVISION_ID, dv.NAME AS DIVISION_NAME, dv.STUDENT_COUNT, dv.CLASSROOM_ID, dv.START_TIME_ID, dv.END_TIME_ID
                 FROM DEPARTMENT AS d
+                JOIN PROGRAMME AS p ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                JOIN CONSISTS AS c ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN YEAR AS y ON y.YEAR_NUMBER = c.YEAR_NUMBER
+                LEFT JOIN DIVISION AS dv ON dv.PROGRAMME_ID = c.PROGRAMME_ID AND dv.YEAR_NUMBER = c.YEAR_NUMBER
+                ORDER BY dv.STUDENT_COUNT, d.SHORT_NAME, p.SHORT_NAME, y.YEAR_NUMBER, dv.NAME";
 
-                JOIN PROGRAMME AS p
-                    ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-                JOIN CONSISTS AS c
-                    ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-                JOIN YEAR AS y
-                    ON y.YEAR_NUMBER = c.YEAR_NUMBER
-
-                LEFT JOIN DIVISION AS dv
-                    ON dv.PROGRAMME_ID = c.PROGRAMME_ID
-                    AND dv.YEAR_NUMBER = c.YEAR_NUMBER
-
-                ORDER BY
-                    dv.STUDENT_COUNT,
-                    d.SHORT_NAME,
-                    p.SHORT_NAME,
-                    y.YEAR_NUMBER,
-                    dv.NAME;
-            ';
             $result = mysqli_query($conn, $sql);
             $response['divisions'] = [];
-            while($row = mysqli_fetch_assoc($result)) {$response['divisions'][] = $row;}
+            while ($row = mysqli_fetch_assoc($result)) { $response['divisions'][] = $row; }
         }
-        elseif($formtype == 'optionalcoursemapper') {
-
-            $sql = "SELECT
-                d.DEPARTMENT_ID,
-                d.SHORT_NAME AS DEPARTMENT_SHORT_NAME,
-
-                p.PROGRAMME_ID,
-                p.SHORT_NAME AS PROGRAMME_SHORT_NAME,
-
-                y.YEAR_NUMBER,
-                y.YEAR_NAME,
-
-                c.COURSE_ID,
-                c.SEMESTER,
-                c.LONG_NAME AS COURSE_FULL_NAME,
-                c.SHORT_NAME AS COURSE_SHORT_NAME,
-                c.ISOPTIONAL,
-                c.OPTIONAL_ID,
-
-                op.SHORT_NAME AS OPTIONAL_COURSE_NAME,
-
-                c.ISPRACTICAL,
-                c.WEEKLY_LECTURES,
-
-                ob.DIVISION_ID AS MAPPED_DIVISION_ID,
-                dv.NAME AS MAPPED_DIVISION_NAME
-
-            FROM COURSE c
-
-            LEFT JOIN COURSE op
-                ON op.COURSE_ID = c.OPTIONAL_ID
-
-            LEFT JOIN OPTED_BY ob
-                ON ob.COURSE_ID = c.COURSE_ID
-
-            LEFT JOIN DIVISION dv
-                ON dv.DIVISION_ID = ob.DIVISION_ID
-
-            JOIN PROGRAMME p
-                ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-            JOIN DEPARTMENT d
-                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-            JOIN YEAR y
-                ON c.YEAR_NUMBER = y.YEAR_NUMBER
-
-            WHERE c.ISOPTIONAL = TRUE
-              AND c.OPTIONAL_ID IS NOT NULL
-
-            ORDER BY
-                d.DEPARTMENT_ID,
-                p.PROGRAMME_ID,
-                y.YEAR_NUMBER,
-                c.SEMESTER,
-                c.COURSE_ID;";
+        elseif ($formtype == 'optionalcoursemapper') {
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_OPTIONALCOURSEMAPPER') 
+                ? "SELECT * FROM VIEW_MINIMAL_OPTIONALCOURSEMAPPER" 
+                : "SELECT d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_SHORT_NAME, p.PROGRAMME_ID, p.SHORT_NAME AS PROGRAMME_SHORT_NAME, y.YEAR_NUMBER, y.YEAR_NAME, c.COURSE_ID, c.SEMESTER, c.LONG_NAME AS COURSE_FULL_NAME, c.SHORT_NAME AS COURSE_SHORT_NAME, c.ISOPTIONAL, c.OPTIONAL_ID, op.SHORT_NAME AS OPTIONAL_COURSE_NAME, c.ISPRACTICAL, c.WEEKLY_LECTURES, ob.DIVISION_ID AS MAPPED_DIVISION_ID, dv.NAME AS MAPPED_DIVISION_NAME
+                FROM COURSE c
+                LEFT JOIN COURSE op ON op.COURSE_ID = c.OPTIONAL_ID
+                LEFT JOIN OPTED_BY ob ON ob.COURSE_ID = c.COURSE_ID
+                LEFT JOIN DIVISION dv ON dv.DIVISION_ID = ob.DIVISION_ID
+                JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                WHERE c.ISOPTIONAL = TRUE AND c.OPTIONAL_ID IS NOT NULL
+                ORDER BY d.DEPARTMENT_ID, p.PROGRAMME_ID, y.YEAR_NUMBER, c.SEMESTER, c.COURSE_ID";
 
             $result = mysqli_query($conn, $sql);
-
             $response['optionalcourses'] = [];
-
-            while($row = mysqli_fetch_assoc($result)) {
-                $response['optionalcourses'][] = $row;
-            }
+            while ($row = mysqli_fetch_assoc($result)) { $response['optionalcourses'][] = $row; }
         }
-        elseif($formtype == 'workload') {
-            $sql = "SELECT
-                t.WORKLOAD_ID,
-                t.TEACHER_ID,
-                t.COURSE_ID,
-                t.DIVISION_ID,
-
-                d.DEPARTMENT_ID,
-                d.SHORT_NAME AS DEPARTMENT_NAME,
-
-                p.PROGRAMME_ID,
-                p.SHORT_NAME AS PROGRAMME_NAME,
-
-                y.YEAR_NUMBER,
-                y.YEAR_NAME,
-
-                dv.NAME AS DIVISION_NAME,
-
-                c.SEMESTER,
-                c.LONG_NAME AS COURSE_NAME,
-                c.SHORT_NAME AS COURSE_SHORT_NAME,
-
-                t.LECTURE_COUNT,
-
-                CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
-
-            FROM TEACHES t
-
-            INNER JOIN TEACHER tr
-                ON t.TEACHER_ID = tr.TEACHER_ID
-
-            INNER JOIN COURSE c
-                ON t.COURSE_ID = c.COURSE_ID
-
-            INNER JOIN DIVISION dv
-                ON t.DIVISION_ID = dv.DIVISION_ID
-
-            INNER JOIN PROGRAMME p
-                ON c.PROGRAMME_ID = p.PROGRAMME_ID
-
-            INNER JOIN DEPARTMENT d
-                ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
-
-            INNER JOIN YEAR y
-                ON c.YEAR_NUMBER = y.YEAR_NUMBER
-
-            ORDER BY
-                d.LONG_NAME,
-                p.LONG_NAME,
-                y.YEAR_NUMBER,
-                dv.NAME,
-                c.SEMESTER,
-                c.LONG_NAME,
-                TEACHER_NAME;
-            ";
+        elseif ($formtype == 'workload') {
+            $sql = isViewExists($conn, 'VIEW_MINIMAL_WORKLOAD') 
+                ? "SELECT * FROM VIEW_MINIMAL_WORKLOAD" 
+                : "SELECT t.WORKLOAD_ID, t.TEACHER_ID, t.COURSE_ID, t.DIVISION_ID, d.DEPARTMENT_ID, d.SHORT_NAME AS DEPARTMENT_NAME, p.PROGRAMME_ID, p.SHORT_NAME AS PROGRAMME_NAME, y.YEAR_NUMBER, y.YEAR_NAME, dv.NAME AS DIVISION_NAME, c.SEMESTER, c.LONG_NAME AS COURSE_NAME, c.SHORT_NAME AS COURSE_SHORT_NAME, t.LECTURE_COUNT, CONCAT(tr.FIRST_NAME, ' ', tr.LAST_NAME) AS TEACHER_NAME
+                FROM TEACHES t
+                INNER JOIN TEACHER tr ON t.TEACHER_ID = tr.TEACHER_ID
+                INNER JOIN COURSE c ON t.COURSE_ID = c.COURSE_ID
+                INNER JOIN DIVISION dv ON t.DIVISION_ID = dv.DIVISION_ID
+                INNER JOIN PROGRAMME p ON c.PROGRAMME_ID = p.PROGRAMME_ID
+                INNER JOIN DEPARTMENT d ON p.DEPARTMENT_ID = d.DEPARTMENT_ID
+                INNER JOIN YEAR y ON c.YEAR_NUMBER = y.YEAR_NUMBER
+                ORDER BY d.LONG_NAME, p.LONG_NAME, y.YEAR_NUMBER, dv.NAME, c.SEMESTER, c.LONG_NAME, TEACHER_NAME";
 
             $result = mysqli_query($conn, $sql);
             $response['teaches'] = [];
-            while($row = mysqli_fetch_assoc($result)) {
-                $response['teaches'][] = $row;
-            }
+            while ($row = mysqli_fetch_assoc($result)) { $response['teaches'][] = $row; }
         }
         
         header('Content-Type: application/json');
@@ -570,23 +519,26 @@ try {
         }
         elseif($formtype == 'lock_module'){
             $sequence = $_POST['sequence'];
-            if(isLockable($conn, $sequence)){
+            if (isLockable($conn, $sequence)) {
                 foreach ($data as $key => $value) {
                     if ($value['sequence'] == ($sequence)) {
-                        if($data[$key]['isOngoing'] == true && $data[$key]['isLocked'] == false){
+                        if ($data[$key]['isOngoing'] == true && $data[$key]['isLocked'] == false) {
                             $data[$key]['isLocked'] = true;
                             $data[$key]['isReady'] = true;
                             $data[$key]['isOngoing'] = false;
+                            $data[$key]['viewReady'] = true; // Update flag in JSON
+
+                            // Create view when locked
+                            manageModuleView($conn, $sequence, 'create');
                         }
-                    }
-                    elseif($value['sequence'] == ($sequence+1)){
+                    } elseif ($value['sequence'] == ($sequence + 1)) {
                         $data[$key]['isLocked'] = false;
                         $data[$key]['isOngoing'] = true;
                         $data[$key]['isReady'] = false;
                     }
                 }
                 file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));      
-                sendJsonResponse(200,"Module locked","The module was LOCKED successfully"); 
+                sendJsonResponse(200, "Module locked", "The module was LOCKED successfully"); 
             }
             else{
                 if($sequence == 0){
@@ -625,24 +577,28 @@ try {
             }
                 
         }
-        elseif($formtype == 'unlock_module'){
+        elseif ($formtype == 'unlock_module') {
             $sequence = $_POST['sequence'];
-            $totalData = count($data);
             foreach ($data as $key => $value) {
                 if ($value['sequence'] == ($sequence)) {
                     $data[$key]['isLocked'] = false;
                     $data[$key]['isReady'] = false;
                     $data[$key]['isOngoing'] = true;
-                }
-                elseif ($value['sequence'] > ($sequence)){
+                    $data[$key]['viewReady'] = false;
+
+                    manageModuleView($conn, $sequence, 'drop');
+                } elseif ($value['sequence'] > ($sequence)) {
                     $data[$key]['isLocked'] = true;
                     $data[$key]['isReady'] = false;
                     $data[$key]['isOngoing'] = false;
                     $data[$key]['isPending'] = true;
+                    $data[$key]['viewReady'] = false;
+
+                    manageModuleView($conn, $value['sequence'], 'drop');
                 }
             }
             file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));           
-            sendJsonResponse(200,"Module unlocked","Module UNLOCKED");    
+            sendJsonResponse(200, "Module unlocked", "Module UNLOCKED");    
         }
     }
     elseif($formCategory == 'timeslot'){
@@ -698,13 +654,15 @@ try {
                     sendJsonResponse(400, 'Try again', "Couldn't update timeslot");
                 }
             } elseif ($isValid === 2) {
-                sendJsonResponse(422, 'Inverted Timeslot', 'The Start Time is greater than the End Time.');
+                sendJsonResponse(422, 'Timeslot OutOfBound', 'The timeslot must be between 07:00 AM to 08:00 PM.');
             } elseif ($isValid === 3) {
-                sendJsonResponse(409, 'Overlapping Timeslot', 'The timeslot overlaps with an existing record.');
+                sendJsonResponse(422, 'Mismatched SlotType', 'The timeslot does not match the slot type.');
             } elseif ($isValid === 4) {
-                sendJsonResponse(422, 'Too Small Slot', 'Timeslot must be at least 15 minutes.');
+                sendJsonResponse(422, 'Inverted Timeslot', 'The Start Time is greater than the End Time.');
+            } elseif ($isValid === 5) {
+                sendJsonResponse(409, 'Overlapping Timeslot', 'The timeslot overlaps with an existing record.');
             } else {
-                sendJsonResponse(400, 'Invalid Input', 'Entered values are not valid.');
+                sendJsonResponse(400, 'Invalid Input', 'Start Time or End Time is invalid.');
             }
         }
         elseif($formtype == 'delete_timeslot'){
@@ -731,12 +689,12 @@ try {
             $capacity = $_POST['capacity'] ?? '';
             $startTime = $_POST['startTime'] ?? '';
             $endTime = $_POST['endTime'] ?? '';
-            $roomType = ($_POST['roomType'])? 'LAB':'LECTURE_HALL';
+            $roomType = ($_POST['roomType']) ?? '';
 
             $isValid = validateClassroom($floor, $room, $capacity, $startTime, $endTime);
             if ($isValid === 1) {
-                $query = "INSERT INTO CLASSROOM(FLOOR_NUMBER, ROOM_NUMBER, CAPACITY, START_TIME, END_TIME) VALUES(?, ?, ?, ?, ?)";
-                $result = $conn->execute_query($query, [$floor, $room, $capacity, $startTime, $endTime]);
+                $query = "INSERT INTO CLASSROOM(FLOOR_NUMBER, ROOM_NUMBER, CAPACITY, START_TIME, END_TIME, CATEGORY) VALUES(?, ?, ?, ?, ?, ?)";
+                $result = $conn->execute_query($query, [$floor, $room, $capacity, $startTime, $endTime, $roomType]);
                 if (mysqli_affected_rows($conn) > 0) {
                     sendJsonResponse(201, 'Created', 'Classroom created successfully');
                 } else {
@@ -769,11 +727,12 @@ try {
             $capacity = $_POST['capacity'] ?? '';
             $startTime = $_POST['startTime'] ?? '';
             $endTime = $_POST['endTime'] ?? '';
+            $roomType = ($_POST['roomType']) ?? '';
             
             $isValid = validateClassroom($floor, $room, $capacity, $startTime, $endTime);
             if ($isValid === 1) {
-                $query = "UPDATE CLASSROOM SET FLOOR_NUMBER = ?, ROOM_NUMBER = ?, CAPACITY = ?, START_TIME = ?, END_TIME = ? WHERE CLASSROOM_ID = ?";
-                $result = $conn->execute_query($query, [$floor, $room, $capacity, $startTime, $endTime, $classroomId]);
+                $query = "UPDATE CLASSROOM SET FLOOR_NUMBER = ?, ROOM_NUMBER = ?, CAPACITY = ?, START_TIME = ?, END_TIME = ?, CATEGORY = ? WHERE CLASSROOM_ID = ?";
+                $result = $conn->execute_query($query, [$floor, $room, $capacity, $startTime, $endTime, $roomType, $classroomId]);
                 if (mysqli_affected_rows($conn) > 0) {
                     sendJsonResponse(200, 'Updated', 'Classroom updated successfully');
                 } else {
@@ -786,7 +745,7 @@ try {
             } elseif ($isValid === 4) {
                 sendJsonResponse(422, 'Inverted Availability','The entered Availability is Invalid');
             } else {
-                sendJsonResponse(429, 'Invalid Classroom', 'Entered values are not valid');
+                sendJsonResponse(400, 'Invalid Classroom', 'Entered values are not valid');
             }
         }
         elseif($formtype == 'delete_classroom'){
@@ -867,132 +826,151 @@ try {
             $fname      = trim($_POST['fname'] ?? '');
             $lname      = trim($_POST['lname'] ?? '');
             $isPartTime = isset($_POST['isPartTime']) ? 1 : 0;
+
             if (empty($deptId) || empty($fname) || empty($lname)) {
                 sendJsonResponse(400, "Bad Request", "All required fields are mandatory.");
             }
             if (!isValidName($fname) || !isValidName($lname)) {
-                sendJsonResponse(400, "Bad Request", "Invalid teacher name.");
+                sendJsonResponse(422, "Invalid Input", "Teacher name contains invalid characters.");
             }
+
             $days = [
-                'monday'    => 'MONDAY', 'tuesday'   => 'TUESDAY', 'wednesday' => 'WEDNESDAY',
-                'thursday'  => 'THURSDAY', 'friday'    => 'FRIDAY', 'saturday'  => 'SATURDAY'
+                'monday'    => 'MONDAY',    'tuesday'  => 'TUESDAY', 
+                'wednesday' => 'WEDNESDAY', 'thursday' => 'THURSDAY', 
+                'friday'    => 'FRIDAY',    'saturday' => 'SATURDAY'
             ];
+
             mysqli_begin_transaction($conn);
             try {
-                // Insert Teacher
+                // Insert Teacher record
                 $query = "INSERT INTO TEACHER (DEPARTMENT_ID, FIRST_NAME, LAST_NAME, ISPARTTIME) VALUES (?, ?, ?, ?)";
                 $conn->execute_query($query, [$deptId, strtoupper($fname), strtoupper($lname), $isPartTime]);
                 $teacherId = mysqli_insert_id($conn);
-                if (!$teacherId) { sendJsonResponse(500, 'Try again', "Couldn't create Teacher"); }
-                // PART TIME TEACHER
-                if ($isPartTime) {
 
+                if (!$teacherId) { 
+                    throw new Exception("Couldn't create Teacher record."); 
+                }
+
+                // Handle Part-Time Teacher Availability
+                if ($isPartTime) {
                     foreach ($days as $dayKey => $weekday) {
                         if (!isset($_POST[$dayKey])) { continue; }
 
-                        $startSlot = (int)$_POST["punchIn_$dayKey"];
-                        $endSlot   = (int)$_POST["punchOut_$dayKey"];
+                        $startSlot = (int)($_POST["punchIn_$dayKey"] ?? 0);
+                        $endSlot   = (int)($_POST["punchOut_$dayKey"] ?? 0);
 
-                        if ($startSlot > $endSlot) { sendJsonResponse(422,"$weekday : Punch In must be before Punch Out."); }
+                        if ($startSlot > $endSlot) { 
+                            throw new Exception("$weekday: Punch In slot must be before Punch Out slot."); 
+                        }
 
-                        // Fetch actual slot ids
                         $slotResult = $conn->execute_query(
-                            "SELECT DISTINCT SLOT_ID
-                            FROM TIMESLOT
-                            WHERE SLOT_ID BETWEEN ? AND ?
-                            ORDER BY SLOT_ID",
+                            "SELECT SLOT_ID FROM TIMESLOT WHERE SLOT_ID BETWEEN ? AND ? ORDER BY SLOT_ID",
                             [$startSlot, $endSlot]
                         );
 
                         while ($slot = $slotResult->fetch_assoc()) {
                             $conn->execute_query(
-                                "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?,?,?,'AVAILABLE')",
+                                "INSERT INTO AVAILABILITY (TEACHER_ID, SLOT_ID, WEEKDAY, STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
                                 [$teacherId, $slot['SLOT_ID'], $weekday]
                             );
                         }
                     }
-                }
-                // FULL TIME TEACHER
+                } 
+                // Full-Time Teacher Availability (All slots available)
                 else {
                     $slotResult = $conn->execute_query("SELECT SLOT_ID FROM TIMESLOT ORDER BY SLOT_ID");
                     $slots = [];
-                    while ($row = $slotResult->fetch_assoc()) {$slots[] = $row['SLOT_ID'];}
+                    while ($row = $slotResult->fetch_assoc()) { $slots[] = $row['SLOT_ID']; }
+
                     foreach ($days as $weekday) {
                         foreach ($slots as $slotId) {
                             $conn->execute_query(
-                                "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?,?,?,'AVAILABLE')",
+                                "INSERT INTO AVAILABILITY (TEACHER_ID, SLOT_ID, WEEKDAY, STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
                                 [$teacherId, $slotId, $weekday]
                             );
                         }
                     }
                 }
+
                 mysqli_commit($conn);
-                sendJsonResponse(201,"Created","Teacher created successfully.");
+                sendJsonResponse(201, "Created", "Teacher created successfully.");
 
             } catch (Exception $e) {
-
                 mysqli_rollback($conn);
-                sendJsonResponse(
-                    500,
-                    "Server Error"
-                );
-
+                sendJsonResponse(500, "Creation Failed", $e->getMessage());
             }
-
         }
+
         elseif($formtype == 'get_one_teacher'){ 
-            $teacherId = $_POST['teacherId'];
-            $query = "SELECT * FROM TEACHER WHERE TEACHER_ID = ?;";
-            $result = $conn->execute_query($query,[$teacherId]);
-            if($result->num_rows>0){
-                sendJsonResponse(200,"Teacher found.",$result->fetch_assoc());
-                exit;
+            $teacherId = $_POST['teacherId'] ?? null;
+            if (!$teacherId) {
+                sendJsonResponse(400, "Bad Request", "Teacher ID is required.");
             }
-            sendJsonResponse(404,"Teacher not found.");
-        }
-        elseif ($formtype == 'update_teacher') {
 
+            $query = "SELECT * FROM TEACHER WHERE TEACHER_ID = ?;";
+            $result = $conn->execute_query($query, [$teacherId]);
+
+            if ($result && $result->num_rows > 0) {
+                $teacher = $result->fetch_assoc();
+
+                // Fetch existing Availability if teacher is Part-Time
+                $teacher['availability'] = [];
+                if ($teacher['ISPARTTIME']) {
+                    $availQuery = "
+                        SELECT WEEKDAY, MIN(SLOT_ID) as START_SLOT, MAX(SLOT_ID) as END_SLOT 
+                        FROM AVAILABILITY 
+                        WHERE TEACHER_ID = ? 
+                        GROUP BY WEEKDAY";
+                    $availRes = $conn->execute_query($availQuery, [$teacherId]);
+                    while ($row = $availRes->fetch_assoc()) {
+                        $teacher['availability'][strtolower($row['WEEKDAY'])] = $row;
+                    }
+                }
+
+                sendJsonResponse(200, "Teacher found.", $teacher);
+            }
+            sendJsonResponse(404, "Teacher not found.");
+        }
+
+        elseif ($formtype == 'update_teacher') {
             $teacherId  = $_POST['teacherId'] ?? '';
             $deptId     = $_POST['departmentDropdown'] ?? '';
             $fname      = trim($_POST['fname'] ?? '');
             $lname      = trim($_POST['lname'] ?? '');
             $isPartTime = isset($_POST['isPartTime']) ? 1 : 0;
+
             if (empty($teacherId) || empty($deptId) || empty($fname) || empty($lname)) {
                 sendJsonResponse(400, "Bad Request", "All required fields are mandatory.");
-                exit;
             }
             if (!isValidName($fname) || !isValidName($lname)) {
-                sendJsonResponse(400, "Bad Request", "Invalid teacher name.");
-                exit;
+                sendJsonResponse(422, "Invalid Input", "Teacher name contains invalid characters.");
             }
+
             $days = [
-                'monday'=>'MONDAY','tuesday'=>'TUESDAY','wednesday'=>'WEDNESDAY',
-                'thursday'=>'THURSDAY','friday'=>'FRIDAY','saturday'=>'SATURDAY'
+                'monday' => 'MONDAY', 'tuesday' => 'TUESDAY', 'wednesday' => 'WEDNESDAY',
+                'thursday' => 'THURSDAY', 'friday' => 'FRIDAY', 'saturday' => 'SATURDAY'
             ];
+
             mysqli_begin_transaction($conn);
             try {
-                $result = $conn->execute_query(
-                    "SELECT TEACHER_ID FROM TEACHER WHERE TEACHER_ID = ?",
-                    [$teacherId]
-                );
-                if ($result->num_rows == 0) {
-                    throw new Exception("Teacher not found.");
-                }
                 $conn->execute_query(
-                    "UPDATE TEACHER SET DEPARTMENT_ID=?, FIRST_NAME=?, LAST_NAME=?, ISPARTTIME=? WHERE TEACHER_ID=?",
+                    "UPDATE TEACHER SET DEPARTMENT_ID = ?, FIRST_NAME = ?, LAST_NAME = ?, ISPARTTIME = ? WHERE TEACHER_ID = ?",
                     [$deptId, strtoupper($fname), strtoupper($lname), $isPartTime, $teacherId]
                 );
-                $conn->execute_query(
-                    "DELETE FROM AVAILABILITY WHERE TEACHER_ID=?",
-                    [$teacherId]
-                );
+
+                // Clear previous availability records
+                $conn->execute_query("DELETE FROM AVAILABILITY WHERE TEACHER_ID = ?", [$teacherId]);
+
                 if ($isPartTime) {
                     foreach ($days as $key => $weekday) {
                         if (!isset($_POST[$key])) continue;
 
                         $start = (int)($_POST["punchIn_$key"] ?? 0);
                         $end   = (int)($_POST["punchOut_$key"] ?? 0);
-                        if ($start > $end) throw new Exception("$weekday: Punch In must be before Punch Out.");
+
+                        if ($start > $end) {
+                            throw new Exception("$weekday: Punch In slot must be before Punch Out slot.");
+                        }
 
                         $slots = $conn->execute_query(
                             "SELECT SLOT_ID FROM TIMESLOT WHERE SLOT_ID BETWEEN ? AND ? ORDER BY SLOT_ID",
@@ -1001,7 +979,7 @@ try {
 
                         while ($row = $slots->fetch_assoc()) {
                             $conn->execute_query(
-                                "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?,?,?,'AVAILABLE')",
+                                "INSERT INTO AVAILABILITY (TEACHER_ID, SLOT_ID, WEEKDAY, STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
                                 [$teacherId, $row['SLOT_ID'], $weekday]
                             );
                         }
@@ -1011,227 +989,251 @@ try {
                     while ($row = $slots->fetch_assoc()) {
                         foreach ($days as $weekday) {
                             $conn->execute_query(
-                                "INSERT INTO AVAILABILITY (TEACHER_ID,SLOT_ID,WEEKDAY,STATUS) VALUES (?,?,?,'AVAILABLE')",
+                                "INSERT INTO AVAILABILITY (TEACHER_ID, SLOT_ID, WEEKDAY, STATUS) VALUES (?, ?, ?, 'AVAILABLE')",
                                 [$teacherId, $row['SLOT_ID'], $weekday]
                             );
                         }
                     }
                 }
+
                 mysqli_commit($conn);
                 sendJsonResponse(200, "Updated", "Teacher updated successfully.");
-                exit;
-                
+
             } catch (Exception $e) {
                 mysqli_rollback($conn);
-                sendJsonResponse(500, "Server Error", $e->getMessage());
-                exit;
+                sendJsonResponse(500, "Update Error", $e->getMessage());
             }
         }
+
         elseif($formtype == 'delete_teacher'){
-            $teacherId = $_POST['teacherId'];
-            $query = "DELETE FROM TEACHER WHERE TEACHER_ID = ?";
-            $result = $conn->execute_query($query,[$teacherId]);
-            if (mysqli_affected_rows($conn)>0 ){
-                sendJsonResponse(200,'Deleted','Teacher deleted succesfully');
-            }else{
-                sendJsonResponse(400,'Try again',"Couldn't update timeslot");
+            $teacherId = $_POST['teacherId'] ?? null;
+            if (!$teacherId) {
+                sendJsonResponse(400, "Bad Request", "Teacher ID is required.");
+            }
+
+            try {
+                $query = "DELETE FROM TEACHER WHERE TEACHER_ID = ?";
+                $result = $conn->execute_query($query, [$teacherId]);
+                if (mysqli_affected_rows($conn) > 0) {
+                    sendJsonResponse(200, 'Deleted', 'Teacher deleted successfully');
+                } else {
+                    sendJsonResponse(404, 'Not Found', "Teacher record not found.");
+                }
+            } catch (mysqli_sql_exception $e) {
+                sendJsonResponse(409, 'Delete Failed', 'Cannot delete teacher because they are currently assigned to active workload or timetable allotments.');
             }
         }
     }      
     elseif($formCategory == 'programme') {
         if ($formtype == 'add_programme') {
-            $departmentId = $_POST['departmentId'] ?? '';
-            $fullname     = strtoupper(trim($_POST['fullname'] ?? ''));
-            $shortname    = strtoupper(trim($_POST['shortname'] ?? ''));
-            $duration     = (int)($_POST['duration'] ?? 0);
+            $departmentId   = $_POST['departmentId'] ?? '';
+            $fullname       = strtoupper(trim($_POST['fullname'] ?? ''));
+            $shortname      = strtoupper(trim($_POST['shortname'] ?? ''));
+            $duration       = (int)($_POST['duration'] ?? 0);
+            
             $divisionCounts = [
-                1 => (int)($_POST['division1'] ?? 0),
-                2 => (int)($_POST['division2'] ?? 0),
-                3 => (int)($_POST['division3'] ?? 0),
-                4 => (int)($_POST['division4'] ?? 0),
-                5 => (int)($_POST['division5'] ?? 0)
+                1 => (int)($_POST['division1'] ?? 1),
+                2 => (int)($_POST['division2'] ?? 1),
+                3 => (int)($_POST['division3'] ?? 1),
+                4 => (int)($_POST['division4'] ?? 1),
+                5 => (int)($_POST['division5'] ?? 1)
             ];
             $divisionCodes = ['A', 'B', 'C', 'D', 'E'];
+
             $isValid = validateProgramme($fullname, $shortname);
             if ($isValid === 2) {
-                sendJsonResponse( 422, 'Contains Special Characters', 'The programme name contains invalid character.' );
+                sendJsonResponse(422, 'Invalid Name', 'Programme name contains invalid characters.');
             }
             if ($isValid !== 1) {
-                sendJsonResponse( 429, 'Invalid Programme', 'Entered values are not valid' );
+                sendJsonResponse(400, 'Invalid Programme', 'Entered values are not valid.');
             }
             if ($duration < 1 || $duration > 5) {
-                sendJsonResponse( 422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.'  );
+                sendJsonResponse(422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.');
             }
+
             for ($i = 1; $i <= $duration; $i++) {
                 if ($divisionCounts[$i] < 1 || $divisionCounts[$i] > 5) {
-                    sendJsonResponse( 422, 'Invalid Division Count', "Invalid division count for year $i." );
+                    sendJsonResponse(422, 'Invalid Division Count', "Invalid division count for Year $i.");
                 }
             }
-            $totalDivisionCount = array_sum(
-                array_slice($divisionCounts, 0, $duration, true)
-            );
+
+            $totalDivisionCount = array_sum(array_slice($divisionCounts, 0, $duration, true));
+
             mysqli_begin_transaction($conn);
-            $query = "INSERT INTO PROGRAMME (DEPARTMENT_ID, LONG_NAME, SHORT_NAME, DIVISION_COUNT) VALUES (?, ?, ?, ?)";
-            $result = $conn->execute_query(
-                $query,[ $departmentId, $fullname, $shortname, $totalDivisionCount ]
-            );
-            if (!$result || mysqli_affected_rows($conn) != 1) {
-                mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
-            }
-            $programmeId = mysqli_insert_id($conn);
-            for ($year = 1; $year <= $duration; $year++) {
-                $result = $conn->execute_query(
-                    "INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)",
-                    [ $year, $programmeId ]
-                );
+            try {
+                $query = "INSERT INTO PROGRAMME (DEPARTMENT_ID, LONG_NAME, SHORT_NAME, DIVISION_COUNT) VALUES (?, ?, ?, ?)";
+                $result = $conn->execute_query($query, [$departmentId, $fullname, $shortname, $totalDivisionCount]);
+                
                 if (!$result || mysqli_affected_rows($conn) != 1) {
-                    mysqli_rollback($conn);
-                    sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
+                    throw new Exception("Couldn't create Programme record.");
                 }
-                for ($j = 0; $j < $divisionCounts[$year]; $j++) {
-                    $result = $conn->execute_query(
-                        "INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)",
-                        [ $year, $divisionCodes[$j], $programmeId ]
+
+                $programmeId = mysqli_insert_id($conn);
+
+                for ($year = 1; $year <= $duration; $year++) {
+                    $resConsists = $conn->execute_query(
+                        "INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)",
+                        [$year, $programmeId]
                     );
-                    if (!$result || mysqli_affected_rows($conn) != 1) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't create Programme" );
+                    if (!$resConsists) {
+                        throw new Exception("Couldn't assign year duration.");
+                    }
+
+                    for ($j = 0; $j < $divisionCounts[$year]; $j++) {
+                        $resDiv = $conn->execute_query(
+                            "INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)",
+                            [$year, $divisionCodes[$j], $programmeId]
+                        );
+                        if (!$resDiv) {
+                            throw new Exception("Couldn't create divisions.");
+                        }
                     }
                 }
+
+                mysqli_commit($conn);
+                sendJsonResponse(201, 'Created', 'Programme created successfully');
+
+            } catch (Exception $e) {
+                mysqli_rollback($conn);
+                sendJsonResponse(500, 'Creation Failed', $e->getMessage());
             }
-            mysqli_commit($conn);
-            sendJsonResponse( 201, 'Created', 'Programme created successfully');
         }
+
         elseif ($formtype == 'get_one_programme') {
             $programmeId = $_POST['programmeId'] ?? '';
+            if (!$programmeId) {
+                sendJsonResponse(400, 'Bad Request', 'Programme ID is required.');
+            }
+
             $result = $conn->execute_query(
                 "SELECT PROGRAMME_ID, DEPARTMENT_ID, LONG_NAME, SHORT_NAME FROM PROGRAMME WHERE PROGRAMME_ID = ?",
                 [$programmeId]
             );
-            if ($result->num_rows == 0) {
-                sendJsonResponse( 404, 'Programme not found.' );
+
+            if (!$result || $result->num_rows == 0) {
+                sendJsonResponse(404, 'Not Found', 'Programme not found.');
             }
+
             $data = $result->fetch_assoc();
-            $result = $conn->execute_query(
+
+            $resDuration = $conn->execute_query(
                 "SELECT COUNT(*) AS DURATION FROM CONSISTS WHERE PROGRAMME_ID = ?",
                 [$programmeId]
             );
-            $data['DURATION'] = (int)$result->fetch_assoc()['DURATION'];
-            $result = $conn->execute_query(
+            $data['DURATION'] = (int)($resDuration->fetch_assoc()['DURATION'] ?? 0);
+
+            $resDivs = $conn->execute_query(
                 "SELECT YEAR_NUMBER, COUNT(*) AS DIVISION_COUNT FROM DIVISION WHERE PROGRAMME_ID = ? GROUP BY YEAR_NUMBER ORDER BY YEAR_NUMBER",
                 [$programmeId]
             );
+
             $data['DIVISIONS'] = [];
-            while ($row = $result->fetch_assoc()) {
+            while ($row = $resDivs->fetch_assoc()) {
                 $data['DIVISIONS'][(int)$row['YEAR_NUMBER']] = (int)$row['DIVISION_COUNT'];
             }
-            sendJsonResponse(200,'Programme found.',$data);
+
+            sendJsonResponse(200, 'Programme found.', $data);
         }
+
         elseif ($formtype == 'update_programme') {
-            $programmeId = $_POST['programmeId'] ?? '';
-            $departmentId = $_POST['departmentId'] ?? '';
-            $fullname = strtoupper( trim($_POST['fullname'] ?? '') );
-            $shortname = strtoupper( trim($_POST['shortname'] ?? '') );
-            $duration = (int)( $_POST['duration'] ?? 0 );
+            $programmeId    = $_POST['programmeId'] ?? '';
+            $departmentId   = $_POST['departmentId'] ?? '';
+            $fullname       = strtoupper(trim($_POST['fullname'] ?? ''));
+            $shortname      = strtoupper(trim($_POST['shortname'] ?? ''));
+            $duration       = (int)($_POST['duration'] ?? 0);
+
+            if (!$programmeId) {
+                sendJsonResponse(400, 'Bad Request', 'Programme ID is required.');
+            }
+
             $divisionCounts = [
-                1 => (int)($_POST['division1'] ?? 0),
-                2 => (int)($_POST['division2'] ?? 0),
-                3 => (int)($_POST['division3'] ?? 0),
-                4 => (int)($_POST['division4'] ?? 0),
-                5 => (int)($_POST['division5'] ?? 0)
+                1 => (int)($_POST['division1'] ?? 1),
+                2 => (int)($_POST['division2'] ?? 1),
+                3 => (int)($_POST['division3'] ?? 1),
+                4 => (int)($_POST['division4'] ?? 1),
+                5 => (int)($_POST['division5'] ?? 1)
             ];
-            $divisionCodes = [ 'A', 'B', 'C', 'D', 'E' ];
-            $isValid = validateProgramme( $fullname, $shortname );
+            $divisionCodes = ['A', 'B', 'C', 'D', 'E'];
+
+            $isValid = validateProgramme($fullname, $shortname);
             if ($isValid === 2) {
-                sendJsonResponse( 422, 'Contains Special Characters', 'The programme name contains invalid character.');
+                sendJsonResponse(422, 'Invalid Name', 'Programme name contains invalid characters.');
             }
             if ($isValid !== 1) {
-                sendJsonResponse( 429, 'Invalid Programme', 'Entered values are not valid');
+                sendJsonResponse(400, 'Invalid Programme', 'Entered values are not valid.');
             }
             if ($duration < 1 || $duration > 5) {
-                sendJsonResponse( 422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.');
+                sendJsonResponse(422, 'Invalid Duration', 'Programme duration must be between 1 and 5 years.');
             }
+
             for ($i = 1; $i <= $duration; $i++) {
-                if (
-                    $divisionCounts[$i] < 1 ||
-                    $divisionCounts[$i] > 5
-                ) {
-                    sendJsonResponse(422,'Invalid Division Count',"Invalid division count for year $i."
-                    );
+                if ($divisionCounts[$i] < 1 || $divisionCounts[$i] > 5) {
+                    sendJsonResponse(422, 'Invalid Division Count', "Invalid division count for Year $i.");
                 }
             }
-            $result = $conn->execute_query(
-                "SELECT PROGRAMME_ID FROM PROGRAMME WHERE PROGRAMME_ID = ?",
-                [$programmeId]
-            );
-            if ($result->num_rows == 0) {
-                sendJsonResponse(404,'Programme not found.');
-            }
-            $totalDivisionCount = array_sum(
-                array_slice($divisionCounts, 0, $duration, true)
-            );
+
+            $totalDivisionCount = array_sum(array_slice($divisionCounts, 0, $duration, true));
+
             mysqli_begin_transaction($conn);
-            $result = $conn->execute_query(
-                "UPDATE PROGRAMME SET DEPARTMENT_ID = ?, LONG_NAME = ?, SHORT_NAME = ?, DIVISION_COUNT = ? WHERE PROGRAMME_ID = ?", 
-                [ $departmentId, $fullname, $shortname, $totalDivisionCount, $programmeId ]
-            );
-            if (!$result) {
-                mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
-            }
-            for ($year = 1; $year <= $duration; $year++) {
-                $result = $conn->execute_query( "SELECT YEAR_NUMBER FROM CONSISTS WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ?", [ $year, $programmeId ] );
-                if ($result->num_rows == 0) {
-                    $result = $conn->execute_query( "INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)", [ $year, $programmeId ] );
-                    if (!$result) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
-                    }
+            try {
+                $resProg = $conn->execute_query(
+                    "UPDATE PROGRAMME SET DEPARTMENT_ID = ?, LONG_NAME = ?, SHORT_NAME = ?, DIVISION_COUNT = ? WHERE PROGRAMME_ID = ?", 
+                    [$departmentId, $fullname, $shortname, $totalDivisionCount, $programmeId]
+                );
+
+                if (!$resProg) {
+                    throw new Exception("Couldn't update Programme basic details.");
                 }
-                for ( $j = 0; $j < $divisionCounts[$year]; $j++ ) {
-                    $code = $divisionCodes[$j];
-                    $result = $conn->execute_query("SELECT DIVISION_ID FROM DIVISION WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ? AND NAME = ?", [ $year, $programmeId, $code ]);
-                    if ($result->num_rows == 0) {
-                        $result = $conn->execute_query( "INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)", [ $year, $code, $programmeId ] );
-                        if (!$result) {
-                            mysqli_rollback($conn);
-                            sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
+
+                for ($year = 1; $year <= $duration; $year++) {
+                    $checkConsists = $conn->execute_query("SELECT YEAR_NUMBER FROM CONSISTS WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ?", [$year, $programmeId]);
+                    if ($checkConsists->num_rows == 0) {
+                        $conn->execute_query("INSERT INTO CONSISTS (YEAR_NUMBER, PROGRAMME_ID) VALUES (?, ?)", [$year, $programmeId]);
+                    }
+
+                    for ($j = 0; $j < $divisionCounts[$year]; $j++) {
+                        $code = $divisionCodes[$j];
+                        $checkDiv = $conn->execute_query("SELECT DIVISION_ID FROM DIVISION WHERE YEAR_NUMBER = ? AND PROGRAMME_ID = ? AND NAME = ?", [$year, $programmeId, $code]);
+                        if ($checkDiv->num_rows == 0) {
+                            $conn->execute_query("INSERT INTO DIVISION (YEAR_NUMBER, NAME, PROGRAMME_ID) VALUES (?, ?, ?)", [$year, $code, $programmeId]);
                         }
                     }
-                }
-                if ($divisionCounts[$year] < 5) {
-                    $deleteFrom = $divisionCodes[$divisionCounts[$year]];
-                    $result = $conn->execute_query("DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER = ? AND NAME >= ?", [ $programmeId, $year, $deleteFrom ]);
-                    if (!$result) {
-                        mysqli_rollback($conn);
-                        sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
+
+                    // Trim extra divisions if count reduced
+                    if ($divisionCounts[$year] < 5) {
+                        $deleteFrom = $divisionCodes[$divisionCounts[$year]];
+                        $conn->execute_query("DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER = ? AND NAME >= ?", [$programmeId, $year, $deleteFrom]);
                     }
                 }
-            }
-            $result = $conn->execute_query( "DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?", [ $programmeId, $duration ] );
-            if (!$result) {
+
+                // Delete trimmed years
+                $conn->execute_query("DELETE FROM DIVISION WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?", [$programmeId, $duration]);
+                $conn->execute_query("DELETE FROM CONSISTS WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?", [$programmeId, $duration]);
+
+                mysqli_commit($conn);
+                sendJsonResponse(200, 'Updated', 'Programme updated successfully');
+
+            } catch (Exception $e) {
                 mysqli_rollback($conn);
-                sendJsonResponse( 400, 'Try again', "Couldn't update Programme" );
+                sendJsonResponse(500, 'Update Failed', $e->getMessage());
             }
-            $result = $conn->execute_query(
-                "DELETE FROM CONSISTS WHERE PROGRAMME_ID = ? AND YEAR_NUMBER > ?",
-                [ $programmeId, $duration ]
-            );
-            if (!$result) {
-                mysqli_rollback($conn);
-                sendJsonResponse(400,'Try again',"Couldn't update Programme");
-            }
-            mysqli_commit($conn);
-            sendJsonResponse( 200, 'Updated', 'Programme updated successfully');
         }
+
         elseif ($formtype == 'delete_programme') {
             $programmeId = $_POST['programmeId'] ?? '';
-            $result = $conn->execute_query( "DELETE FROM PROGRAMME WHERE PROGRAMME_ID = ?", [$programmeId]);
-            if ($result && mysqli_affected_rows($conn) > 0) {
-                sendJsonResponse( 200, 'Deleted', 'Programme deleted successfully');
-            } else {
-                sendJsonResponse( 400, 'Try again', "Couldn't delete Programme");
+            if (!$programmeId) {
+                sendJsonResponse(400, 'Bad Request', 'Programme ID is required.');
+            }
+
+            try {
+                $result = $conn->execute_query("DELETE FROM PROGRAMME WHERE PROGRAMME_ID = ?", [$programmeId]);
+                if ($result && mysqli_affected_rows($conn) > 0) {
+                    sendJsonResponse(200, 'Deleted', 'Programme deleted successfully');
+                } else {
+                    sendJsonResponse(404, 'Not Found', 'Programme record not found or already deleted.');
+                }
+            } catch (mysqli_sql_exception $e) {
+                sendJsonResponse(409, 'Delete Failed', 'Cannot delete programme because courses or active timetable entries are assigned to it.');
             }
         }
     }
@@ -1242,15 +1244,17 @@ try {
             $yearId = $_POST['yearId'] ?? '';
             $fullname = strtoupper($_POST['fullname'] ?? '');
             $shortname = strtoupper($_POST['shortname'] ?? '');
-            $weeklyLectures = strtoupper($_POST['lectureCount'] ?? 0);
-            $semester = ($_POST['isEven'] =='true')? "EVEN" : "ODD";
-            $isPractical = ($_POST['courseType'] =='false')? true : false;
-            $isOptional = ($_POST['isOptional'] ?? false =='true')? true : false;
-            $optionalCourseId = $_POST['optionalCourseId'] ?? null;
+            $weeklyLectures = (int)($_POST['lectureCount'] ?? 0);
+            $semester = ($_POST['isEven'] === 'true') ? "EVEN" : "ODD";
+            $courseType = $_POST['type'] ?? 'LECTURE';
+            $isPractical = (strpos($courseType, 'PRACTICAL') !== false) ? 1 : 0;
+            $isOptional = (($_POST['isOptional'] ?? 'false') === 'true') ? 1 : 0;
+            $optionalCourseId = !empty($_POST['optionalCourseId']) ? $_POST['optionalCourseId'] : null;
+
             $isValid = validateCourse($fullname, $shortname);
             if ($isValid === 1) {
-                $query = "INSERT INTO COURSE(PROGRAMME_ID, YEAR_NUMBER, LONG_NAME, SHORT_NAME, SEMESTER, WEEKLY_LECTURES, ISPRACTICAL, ISOPTIONAL) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
-                $result = $conn->execute_query($query, [$programmeId, $yearId, $fullname, $shortname, $semester, $weeklyLectures, $isPractical, $isOptional]);
+                $query = "INSERT INTO COURSE(PROGRAMME_ID, YEAR_NUMBER, TYPE, SEMESTER, LONG_NAME, SHORT_NAME, WEEKLY_LECTURES, ISPRACTICAL, ISOPTIONAL, OPTIONAL_ID) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $result = $conn->execute_query($query, [$programmeId, $yearId, $courseType, $semester, $fullname, $shortname, $weeklyLectures, $isPractical, $isOptional, $optionalCourseId]);
                 if (mysqli_affected_rows($conn) > 0) {
                     sendJsonResponse(201, 'Created', 'Course created successfully');
                 } else {
@@ -1293,24 +1297,27 @@ try {
         }
         elseif($formtype == 'update_course') {
             $courseId = $_POST['courseId'] ?? '';
-            $departmentId = $_POST['departmentId'] ?? '';
             $programmeId = $_POST['programmeId'] ?? '';
             $yearId = $_POST['yearId'] ?? '';
             $fullname = strtoupper($_POST['fullname'] ?? '');
             $shortname = strtoupper($_POST['shortname'] ?? '');
-            $semester = ($_POST['isEven'] =='true')? "EVEN" : "ODD";
-            $weeklyLectures = strtoupper($_POST['lectureCount'] ?? 0);
-            $isPractical = ($_POST['courseType'] =='false')? true : false;
-            $isOptional = ($_POST['isOptional'] ?? false =='true')? true : false;
-            $optionalCourseId = $_POST['optionalCourseId'] ?? null;
+            $semester = ($_POST['isEven'] === 'true') ? "EVEN" : "ODD";
+            $weeklyLectures = (int)($_POST['lectureCount'] ?? 0);
+            $courseType = $_POST['type'] ?? 'LECTURE';
+            $isPractical = (strpos($courseType, 'PRACTICAL') !== false) ? 1 : 0;
+            $isOptional = (($_POST['isOptional'] ?? 'false') === 'true') ? 1 : 0;
+            $optionalCourseId = !empty($_POST['optionalCourseId']) ? $_POST['optionalCourseId'] : null;
+
             $isValid = validateCourse($fullname, $shortname);
             
             if ($isValid === 1) {
-                $query = "UPDATE COURSE SET PROGRAMME_ID = ?, YEAR_NUMBER = ?, LONG_NAME = ?, SHORT_NAME = ?, SEMESTER = ?, WEEKLY_LECTURES = ?, ISPRACTICAL = ?, ISOPTIONAL = ? WHERE COURSE_ID = ?";
-                $result = $conn->execute_query($query, [ $programmeId, $yearId, $fullname, $shortname, $semester, $weeklyLectures, $isPractical, $isOptional, $courseId]);
-                if ($result) {sendJsonResponse(200, 'Updated', 'Course updated successfully');
-                }else {sendJsonResponse(400, 'Try again', "Couldn't update course");}
-
+                $query = "UPDATE COURSE SET PROGRAMME_ID = ?, YEAR_NUMBER = ?, TYPE = ?, SEMESTER = ?, LONG_NAME = ?, SHORT_NAME = ?, WEEKLY_LECTURES = ?, ISPRACTICAL = ?, ISOPTIONAL = ?, OPTIONAL_ID = ? WHERE COURSE_ID = ?";
+                $result = $conn->execute_query($query, [$programmeId, $yearId, $courseType, $semester, $fullname, $shortname, $weeklyLectures, $isPractical, $isOptional, $optionalCourseId, $courseId]);
+                if ($result) {
+                    sendJsonResponse(200, 'Updated', 'Course updated successfully');
+                } else {
+                    sendJsonResponse(400, 'Try again', "Couldn't update course");
+                }
             }elseif ($isValid === 2) {
                 sendJsonResponse(422, 'Contains Special Characters', 'The course name contains invalid character.');
             } else {
@@ -1332,65 +1339,66 @@ try {
         if ($formtype == 'map_course') {
             $course1 = (int) $_POST['course1'];
             $course2 = (int) $_POST['course2'];
-            $query = "
-                UPDATE COURSE
-                SET OPTIONAL_ID = ?
-                WHERE COURSE_ID = ?
-            ";
-            $conn->execute_query($query, [$course2, $course1]);
-            $query = "
-                UPDATE COURSE
-                SET OPTIONAL_ID = ?
-                WHERE COURSE_ID = ?
-            ";
-            $conn->execute_query($query, [$course1, $course2]);
-            sendJsonResponse(200, 'Mapped', 'Courses mapped successfully');
+
+            $conn->begin_transaction();
+            try {
+                $query = "UPDATE COURSE SET OPTIONAL_ID = ? WHERE COURSE_ID = ?";
+                $conn->execute_query($query, [$course2, $course1]);
+                $conn->execute_query($query, [$course1, $course2]);
+
+                $conn->commit();
+                sendJsonResponse(200, 'Mapped', 'Courses mapped successfully');
+            } catch (Exception $e) {
+                $conn->rollback();
+                sendJsonResponse(500, 'Mapping Failed', 'Could not map optional courses.');
+            }
         } elseif($formtype == 'unmap_course') {
             $mainCourse = (int) $_POST['mainCourse'];
-            // Find the course that is mapped to this course
-            $query = "SELECT COURSE_ID FROM COURSE WHERE OPTIONAL_ID = ?";
-            $result = $conn->execute_query($query, [$mainCourse]);
 
+            // Find the paired optional course ID
+            $query = "SELECT OPTIONAL_ID FROM COURSE WHERE COURSE_ID = ?";
+            $result = $conn->execute_query($query, [$mainCourse]);
             $row = $result->fetch_assoc();
-            if ($row) {
-                $sideCourse = (int) $row['COURSE_ID'];
+
+            if ($row && !empty($row['OPTIONAL_ID'])) {
+                $sideCourse = (int) $row['OPTIONAL_ID'];
+                $updateQuery = "UPDATE COURSE SET OPTIONAL_ID = NULL WHERE COURSE_ID IN (?, ?)";
+                $conn->execute_query($updateQuery, [$mainCourse, $sideCourse]);
+                sendJsonResponse(200, 'Unmapped', 'Course unmapped successfully');
+            } else {
+                // If single mapping entry exists without reciprocal reference
                 $query = "UPDATE COURSE SET OPTIONAL_ID = NULL WHERE COURSE_ID = ?";
-                $conn->execute_query($query, [$sideCourse]);
                 $conn->execute_query($query, [$mainCourse]);
-                sendJsonResponse(200,'Unmapped','Course unmapped succesfully');
+                sendJsonResponse(200, 'Unmapped', 'Course unmapped successfully');
             }
         }
     }
     elseif($formCategory == 'division'){
         if($formtype == 'add_divisionDetails'){
             $divisionId = $_POST['divisionId'] ?? '';
-            $studCount = $_POST['studentCount'] ?? '';
-            $classroomId = $_POST['classroomId'] ?? null;
-            $hasPrefTime = $_POST['prefTime'] ?? false;
-            $isStartPref = isset($_POST['isStartPref']) ? (int)$_POST['isStartPref'] ?? 0 : null;
-            $timeBound = $_POST['timeBound'] ?? null;
-            $query = "";
-            if($hasPrefTime){
-                $query = "UPDATE DIVISION SET STUDENT_COUNT = NULL, CLASSROOM_ID = NULL, START_TIME_ID = NULL, END_TIME_ID = NULL WHERE DIVISION_ID = ?";
-                $result = $conn->execute_query($query,[$divisionId]);
-                if($isStartPref == 1){
-                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = ? WHERE DIVISION_ID = ?";
-                    $result = $conn->execute_query($query,[$studCount,$classroomId,$timeBound,$divisionId]);
+            $studCount = $_POST['studentCount'] ?? null;
+            $classroomId = !empty($_POST['classroomId']) ? $_POST['classroomId'] : null;
+            $hasPrefTime = isset($_POST['prefTime']) && $_POST['prefTime'] === 'true';
+            $isStartPref = isset($_POST['isStartPref']) ? (int)$_POST['isStartPref'] : 1;
+            $timeBound = !empty($_POST['timeBound']) ? $_POST['timeBound'] : null;
+
+            if($hasPrefTime && $timeBound !== null){
+                if($isStartPref === 1){
+                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = ?, END_TIME_ID = NULL WHERE DIVISION_ID = ?";
+                    $result = $conn->execute_query($query, [$studCount, $classroomId, $timeBound, $divisionId]);
+                } else {
+                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = NULL, END_TIME_ID = ? WHERE DIVISION_ID = ?";
+                    $result = $conn->execute_query($query, [$studCount, $classroomId, $timeBound, $divisionId]);
                 }
-                else{
-                    $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, END_TIME_ID = ? WHERE DIVISION_ID = ?";
-                    $result = $conn->execute_query($query,[$studCount,$classroomId,$timeBound,$divisionId]);
-                }
+            } else {
+                $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ?, START_TIME_ID = NULL, END_TIME_ID = NULL WHERE DIVISION_ID = ?";
+                $result = $conn->execute_query($query, [$studCount, $classroomId, $divisionId]);
             }
-            else{
-                $query = "UPDATE DIVISION SET STUDENT_COUNT = ?, CLASSROOM_ID = ? WHERE DIVISION_ID = ?";
-                $result = $conn->execute_query($query,[$studCount,$classroomId,$divisionId]);
-            }
+
             if($result){
-                sendJsonResponse(200,'Details saved',"The division details were saved successfully");
-            }
-            else{
-                sendJsonResponse(500,'Details were not saved',"Error in saving division details");
+                sendJsonResponse(200, 'Details saved', "The division details were saved successfully");
+            } else {
+                sendJsonResponse(500, 'Details were not saved', "Error in saving division details");
             }
         }
         elseif($formtype == 'delete_divisionDetails'){
@@ -1413,37 +1421,36 @@ try {
             $division1 = (int) $_POST['division1'];
             $division2 = (int) $_POST['division2'];
 
-            $query = "
-                INSERT INTO OPTED_BY (COURSE_ID,DIVISION_ID) VALUES(?,?);
-            ";
+            $query = "INSERT INTO OPTED_BY (COURSE_ID, DIVISION_ID) VALUES (?, ?) ON DUPLICATE KEY UPDATE DIVISION_ID = VALUES(DIVISION_ID)";
             $conn->begin_transaction();
-            $result = $conn->execute_query($query, [$course1, $division1]);
-            if($result){
-                $result = $conn->execute_query($query, [$course2, $division2]);
-                if($result){
-                    $conn->commit();
-                    sendJsonResponse(200,"Course Mapped to Division","Courses were succesfully mapped to divisions");
-                }else{
-                    $conn->rollback();
-                    sendJsonResponse(400,"Error in mapping", "Mapping was unsuccesfull");
-                }
-            }else{
+            try {
+                $conn->execute_query($query, [$course1, $division1]);
+                $conn->execute_query($query, [$course2, $division2]);
+                $conn->commit();
+                sendJsonResponse(200, "Course Mapped to Division", "Courses were successfully mapped to divisions");
+            } catch (Exception $e) {
                 $conn->rollback();
-                sendJsonResponse(400,"Error in mapping", "Mapping was unsuccesfull");
+                sendJsonResponse(400, "Error in mapping", "Mapping was unsuccessful");
             }
-            
         } elseif($formtype == 'unmap_course') {
-            $courseId1 = $_POST['courseId1'];
+            $courseId1 = (int) $_POST['courseId1'];
             $query = "SELECT OPTIONAL_ID FROM COURSE WHERE COURSE_ID = ?";
             $result = $conn->execute_query($query, [$courseId1]);
-            $courseId2 = ($result->fetch_assoc())['OPTIONAL_ID'];
+            $row = $result->fetch_assoc();
+            $courseId2 = $row ? (int) $row['OPTIONAL_ID'] : 0;
 
-            $query = "DELETE FROM OPTED_BY WHERE COURSE_ID = ? OR COURSE_ID = ?";
-            $result = $conn->execute_query($query, [$courseId1, $courseId2]);
+            if ($courseId2 > 0) {
+                $query = "DELETE FROM OPTED_BY WHERE COURSE_ID IN (?, ?)";
+                $result = $conn->execute_query($query, [$courseId1, $courseId2]);
+            } else {
+                $query = "DELETE FROM OPTED_BY WHERE COURSE_ID = ?";
+                $result = $conn->execute_query($query, [$courseId1]);
+            }
+
             if ($result) {
-                sendJsonResponse(200,'Unmapped','Course unmapped succesfully');
-            }else{
-                sendJsonResponse(400,'Failed','Course unmapped Failed');
+                sendJsonResponse(200, 'Unmapped', 'Course unmapped successfully');
+            } else {
+                sendJsonResponse(400, 'Failed', 'Course unmapping failed');
             }
         }
     }
@@ -1451,68 +1458,76 @@ try {
         if($formtype == "create_workload"){
             $teacherId = (int) ($_POST['teacherId'] ?? 0);
             $courseId = (int) ($_POST['courseId'] ?? 0);
-            $divisionId = $_POST['divisionId'] ?? '';
+            $divisionRaw = $_POST['divisionId'] ?? '';
             $lectureCount = (int) ($_POST['lectureCount'] ?? 0);
-            if($lectureCount < 0){
+
+            if($lectureCount <= 0){
                 sendJsonResponse(
                     400,
                     'Invalid Lecture Count',
-                    'Lecture count cannot be negative.'
+                    'Lecture count must be greater than zero.'
                 );
                 exit;
             }
-            $divisionIds = json_decode($divisionId, true);
-            if(!is_array($divisionIds)){
-                $divisionIds = [(int)$divisionId];
+
+            // Safely parse division array payload
+            $divisionIds = json_decode($divisionRaw, true);
+            if (!is_array($divisionIds)) {
+                $divisionIds = [(int)$divisionRaw];
             }
+
             $query = "
-                INSERT INTO TEACHES
-                    (TEACHER_ID, COURSE_ID, DIVISION_ID, LECTURE_COUNT)
+                INSERT INTO TEACHES (TEACHER_ID, COURSE_ID, DIVISION_ID, LECTURE_COUNT)
                 VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE LECTURE_COUNT = VALUES(LECTURE_COUNT)
             ";
+
             $conn->begin_transaction();
             try {
-                foreach($divisionIds as $divisionId){
-                    $divisionId = (int)$divisionId;
-                    $conn->execute_query(
-                        $query,
-                        [$teacherId, $courseId, $divisionId, $lectureCount]
-                    );
+                foreach($divisionIds as $divId){
+                    $divId = (int)$divId;
+                    if ($divId > 0) {
+                        $conn->execute_query(
+                            $query,
+                            [$teacherId, $courseId, $divId, $lectureCount]
+                        );
+                    }
                 }
                 $conn->commit();
                 sendJsonResponse(
                     200,
                     'Workload Created',
-                    'Workload created successfully.'
+                    'Workload assigned successfully.'
                 );
             } catch(mysqli_sql_exception $e) {
-
                 $conn->rollback();
-
                 sendJsonResponse(
                     500,
                     'Creation Failed',
-                    'Unable to create workload.'
+                    'Unable to create workload assignment.'
                 );
             }
         }
         elseif($formtype == 'delete_workload'){
             $workloadId = (int) ($_POST['workloadId'] ?? 0);
             if($workloadId <= 0){
-                sendJsonResponse(400,'Invalid Data','Invalid workload ID.');
+                sendJsonResponse(400, 'Invalid Data', 'Invalid workload ID.');
                 exit;
             }
             $query = "DELETE FROM TEACHES WHERE WORKLOAD_ID = ?";
             $result = $conn->execute_query($query, [$workloadId]);
 
-            if($result && $conn->affected_rows == 1){
-                sendJsonResponse(200,'Deleted','Workload deleted successfully.');
+            if($result && $conn->affected_rows >= 1){
+                sendJsonResponse(200, 'Deleted', 'Workload deleted successfully.');
             }else{
-                sendJsonResponse(500,'Delete Failed','Unable to delete workload.');
+                sendJsonResponse(500, 'Delete Failed', 'Unable to delete workload.');
             }
         }
     }
     elseif($formCategory == "timetable"){
+        if (!arePrecedingModulesLocked()) {
+            sendJsonResponse(403, "Access Denied", "Timetable generation is locked until all preceding modules are locked.");
+        }
         if ($formtype == 'check_status') {
             $result = $conn->execute_query("SELECT COUNT(*) AS total, ACADEMIC_YEAR, SEMESTER FROM TIMETABLE GROUP BY ACADEMIC_YEAR, SEMESTER LIMIT 1");
             if ($result && $row = $result->fetch_assoc()) {

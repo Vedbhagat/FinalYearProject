@@ -178,7 +178,7 @@ input[type="checkbox"] {
    FORM BLOCK & FIELDSETS
    ========================================================================== */
 .addnew-block {
-  @apply bg-white border border-slate-200 rounded-xl p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto my-4 shadow-2xs;
+  @apply bg-white border border-slate-200 rounded-xl p-4 sm:p-6 lg:p-8 max-w-[52rem] w-full mx-auto my-4 shadow-2xs;
 }
 
 .addnew-block .blockHeading {
@@ -466,11 +466,25 @@ table td button {
 }
 
 #formInfoLine {
-  @apply fixed inset-0 z-50 bg-slate-950/30 backdrop-blur-xs flex items-center justify-center p-4;
+  @apply fixed bottom-5 right-5 z-[10000] m-0 p-0 pointer-events-none;
+  width: auto;
+  height: auto;
 }
 
 #formInfoLine span {
-  @apply px-6 sm:px-10 py-3.5 sm:py-4 text-xs sm:text-sm font-bold rounded-xl shadow-lg bg-slate-900 text-white text-center border border-slate-700 max-w-[90vw] break-words;
+  @apply inline-flex items-center gap-2 px-4 py-3 text-xs font-semibold rounded-lg shadow-xl bg-slate-900 text-white text-left border border-slate-700 max-w-[360px] min-w-[220px] break-words pointer-events-auto;
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .tempPopup {
