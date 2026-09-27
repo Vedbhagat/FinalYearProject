@@ -663,17 +663,12 @@ function expandWorkload($conn, $rawWorkloads, $semester) {
 
     foreach ($rawWorkloads as $wl) {
         $isPractical = $wl['is_practical'];
-        $unitsCount  = $isPractical ? (int)ceil($wl['lecture_count'] / 2) : $wl['lecture_count'];
+        $unitsCount = (int)$wl['lecture_count'];
 
-        $targetDivisions = [];
-        if (!$wl['is_optional'] && isset($yearProgrammeDivisions[$wl['year_number']][$wl['programme_id']])) {
-            $targetDivisions = $yearProgrammeDivisions[$wl['year_number']][$wl['programme_id']];
-        } else {
-            $targetDivisions[] = [
-                'division_id'   => $wl['division_id'],
-                'student_count' => $wl['student_count']
-            ];
-        }
+        $targetDivisions = [[
+            'division_id'   => $wl['division_id'],
+            'student_count' => $wl['student_count']
+        ]];
 
         foreach ($targetDivisions as $target) {
             for ($i = 0; $i < $unitsCount; $i++) {

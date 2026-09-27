@@ -100,7 +100,7 @@
     },
     {
         "sequence": 9,
-        "dataCount": 23,
+        "dataCount": 22,
         "label": "Workload",
         "module": "teacherWorkload",
         "isLocked": true,
