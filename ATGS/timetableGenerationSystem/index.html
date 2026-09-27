@@ -89,7 +89,11 @@
                     if(oldBtnState != btn.prop("disabled")) showInfoInline("Timetable module Unlocked");
                 } else {
                     btn.prop('disabled', true).css({ 'opacity': '0.5', 'pointer-events': 'none' });
-                    if(oldBtnState != btn.prop("disabled")) showInfoInline("Timetable module Locked");
+                    if(oldBtnState != btn.prop("disabled")){
+                        showInfoInline("Timetable module Locked");
+                        
+                    }
+
                 }
             }
         });

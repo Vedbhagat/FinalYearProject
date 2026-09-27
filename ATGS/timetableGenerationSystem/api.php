@@ -349,7 +349,7 @@ function isLockable($connection,$sequence){
         $data = json_decode(file_get_contents($file), true) ?? [];
         foreach ($data as $module) {
             if ($module['sequence'] < 9 && empty($module['isLocked'])) {
-                return false;
+                return false; // Cannot lock sequence 9 if any prior module is unlocked
             }
         }
         return true;
@@ -1526,6 +1526,7 @@ try {
     }
     elseif($formCategory == "timetable"){
         if (!arePrecedingModulesLocked()) {
+            header("Refresh:0");
             sendJsonResponse(403, "Access Denied", "Timetable generation is locked until all preceding modules are locked.");
         }
         if ($formtype == 'check_status') {

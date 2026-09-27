@@ -12,7 +12,7 @@
     },
     {
         "sequence": 1,
-        "dataCount": 6,
+        "dataCount": 4,
         "label": "Classroom",
         "module": "classroom",
         "isLocked": true,

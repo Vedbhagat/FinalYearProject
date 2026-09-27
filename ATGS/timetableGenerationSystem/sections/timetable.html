@@ -95,14 +95,14 @@
 
 <script>
 var currentTimetableData = null;
-let currentMetadata = null;
+var currentMetadata = null;
 
 // Initial Verification on Page Load
 async function checkTimetableStatus() {
     const formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'check_status');
-
+    
     try {
         const res = await $.ajax({
             url: 'api.php',
@@ -116,6 +116,7 @@ async function checkTimetableStatus() {
         if (res.responseBody && res.responseBody.exists) {
             $('#generateSection').hide();
             $('#viewSection').show();
+            showInfoInline("Existing timetable found");
             await loadTimetableData();
         } else {
             $('#viewSection').hide();
