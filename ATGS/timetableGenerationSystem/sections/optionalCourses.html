@@ -58,18 +58,18 @@
 applyValidityChecker();
 
 async function populateOptionalCourse() {
-    const minimalData = await getPrerequisits('optionalcourse');
-    const crses = minimalData.responseBody.optionalcourses;
+    var minimalData = await getPrerequisits('optionalcourse');
+    var crses = minimalData.responseBody.optionalcourses;
 
     // Only optional courses that are not mapped yet
-    const optionalCourses = crses.filter(
+    var optionalCourses = crses.filter(
         crse => crse.ISOPTIONAL == true && crse.OPTIONAL_ID == null
     );
 
     // Store the courses so the change event can use them
     $('#course1').data('optionalCourses', optionalCourses);
 
-    const options = optionalCourses
+    var options = optionalCourses
         .map(crse => `
             <option value="${crse.COURSE_ID}">
                 ${crse.DEPARTMENT_SHORT_NAME} -
@@ -96,10 +96,10 @@ async function populateOptionalCourse() {
 
 // When course1 changes
 $('#course1').on('change', function () {
-    const selectedCourseId = $(this).val();
-    const optionalCourses = $(this).data('optionalCourses') || [];
+    var selectedCourseId = $(this).val();
+    var optionalCourses = $(this).data('optionalCourses') || [];
 
-    const selectedCourse = optionalCourses.find(
+    var selectedCourse = optionalCourses.find(
         crse => String(crse.COURSE_ID) === String(selectedCourseId)
     );
 
@@ -110,7 +110,7 @@ $('#course1').on('change', function () {
         return;
     }
 
-    const matchingCourses = optionalCourses.filter(crse =>
+    var matchingCourses = optionalCourses.filter(crse =>
         String(crse.DEPARTMENT_ID) === String(selectedCourse.DEPARTMENT_ID) &&
         String(crse.PROGRAMME_ID) === String(selectedCourse.PROGRAMME_ID) &&
         String(crse.YEAR_NUMBER) === String(selectedCourse.YEAR_NUMBER) &&
@@ -118,7 +118,7 @@ $('#course1').on('change', function () {
         String(crse.COURSE_ID) !== String(selectedCourse.COURSE_ID)
     );
 
-    const options = matchingCourses
+    var options = matchingCourses
         .map(crse => `
             <option value="${crse.COURSE_ID}">
                 ${crse.DEPARTMENT_SHORT_NAME} -
@@ -148,7 +148,7 @@ async function map_course() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'map_course');
     timer = showLoader("Mapping Course");
@@ -177,7 +177,7 @@ async function map_course() {
 }
 
 async function unmap_course(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'unmap_course');
     formData.append('mainCourse', recordId);
@@ -207,17 +207,17 @@ async function unmap_course(recordId) {
 }
 
 async function createOptionalCourseTable() {
-    const result = await getPrerequisits('optionalcourse');
-    let courses = result.responseBody.optionalcourses;
+    var result = await getPrerequisits('optionalcourse');
+    let courses = await result.responseBody.optionalcourses;
     
-    const tbody = $('.recordTable');
+    var tbody = $('.recordTable');
     tbody.empty();
     if (!courses || courses.length === 0) {
         tbody.append(`<tr><td colspan="9">No courses found.</td></tr>`);
         return;
     }
 
-    courses.forEach((course, index) => {
+    await courses.forEach((course, index) => {
         tbody.append(`
             <tr>
                 <td>${index + 1}</td>

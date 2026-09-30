@@ -24,10 +24,10 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `availability`
+-- Table structure for table `AVAILABILITY`
 --
 
-CREATE TABLE `availability` (
+CREATE TABLE `AVAILABILITY` (
   `TEACHER_ID` int(11) NOT NULL,
   `SLOT_ID` int(11) NOT NULL,
   `WEEKDAY` enum('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY') NOT NULL,
@@ -35,10 +35,10 @@ CREATE TABLE `availability` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `availability`
+-- Dumping data for table `AVAILABILITY`
 --
 
-INSERT INTO `availability` (`TEACHER_ID`, `SLOT_ID`, `WEEKDAY`, `STATUS`) VALUES
+INSERT INTO `AVAILABILITY` (`TEACHER_ID`, `SLOT_ID`, `WEEKDAY`, `STATUS`) VALUES
 (1, 1, 'MONDAY', 'AVAILABLE'),
 (1, 1, 'TUESDAY', 'AVAILABLE'),
 (1, 1, 'WEDNESDAY', 'AVAILABLE'),
@@ -435,10 +435,10 @@ INSERT INTO `availability` (`TEACHER_ID`, `SLOT_ID`, `WEEKDAY`, `STATUS`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `classroom`
+-- Table structure for table `CLASSROOM`
 --
 
-CREATE TABLE `classroom` (
+CREATE TABLE `CLASSROOM` (
   `CLASSROOM_ID` int(11) NOT NULL,
   `FLOOR_NUMBER` varchar(15) NOT NULL,
   `ROOM_NUMBER` varchar(15) NOT NULL,
@@ -449,10 +449,10 @@ CREATE TABLE `classroom` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `classroom`
+-- Dumping data for table `CLASSROOM`
 --
 
-INSERT INTO `classroom` (`CLASSROOM_ID`, `FLOOR_NUMBER`, `ROOM_NUMBER`, `CAPACITY`, `START_TIME`, `END_TIME`, `CATEGORY`) VALUES
+INSERT INTO `CLASSROOM` (`CLASSROOM_ID`, `FLOOR_NUMBER`, `ROOM_NUMBER`, `CAPACITY`, `START_TIME`, `END_TIME`, `CATEGORY`) VALUES
 (1, 'First Floor', 'IT Lab 02', 200, '07:00:00', '12:00:00', 'IT LAB'),
 (2, 'First Floor', 'IT Lab 01', 60, '07:00:00', '12:00:00', 'IT LAB'),
 (3, 'First Floor', 'E-Leaning Lab', 20, '07:00:00', '12:00:00', 'IT LAB'),
@@ -463,28 +463,28 @@ INSERT INTO `classroom` (`CLASSROOM_ID`, `FLOOR_NUMBER`, `ROOM_NUMBER`, `CAPACIT
 -- --------------------------------------------------------
 
 --
--- Table structure for table `consists`
+-- Table structure for table `CONSISTS`
 --
 
-CREATE TABLE `consists` (
+CREATE TABLE `CONSISTS` (
   `YEAR_NUMBER` int(11) NOT NULL,
   `PROGRAMME_ID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `consists`
+-- Dumping data for table `CONSISTS`
 --
 
-INSERT INTO `consists` (`YEAR_NUMBER`, `PROGRAMME_ID`) VALUES
+INSERT INTO `CONSISTS` (`YEAR_NUMBER`, `PROGRAMME_ID`) VALUES
 (1, 1);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `course`
+-- Table structure for table `COURSE`
 --
 
-CREATE TABLE `course` (
+CREATE TABLE `COURSE` (
   `COURSE_ID` int(11) NOT NULL,
   `OPTIONAL_ID` int(11) DEFAULT NULL,
   `YEAR_NUMBER` int(11) DEFAULT NULL,
@@ -499,10 +499,10 @@ CREATE TABLE `course` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `course`
+-- Dumping data for table `COURSE`
 --
 
-INSERT INTO `course` (`COURSE_ID`, `OPTIONAL_ID`, `YEAR_NUMBER`, `PROGRAMME_ID`, `TYPE`, `SEMESTER`, `LONG_NAME`, `SHORT_NAME`, `WEEKLY_LECTURES`, `ISPRACTICAL`, `ISOPTIONAL`) VALUES
+INSERT INTO `COURSE` (`COURSE_ID`, `OPTIONAL_ID`, `YEAR_NUMBER`, `PROGRAMME_ID`, `TYPE`, `SEMESTER`, `LONG_NAME`, `SHORT_NAME`, `WEEKLY_LECTURES`, `ISPRACTICAL`, `ISOPTIONAL`) VALUES
 (24, NULL, 1, 1, 'LECTURE', 'ODD', 'Principles of Programming Languages using C', 'C Programming', 2, 0, 0),
 (25, NULL, 1, 1, 'LECTURE', 'ODD', 'Microprocessor Architecture with 8085', 'Microprocessor', 2, 0, 0),
 (26, NULL, 1, 1, 'IT PRACTICAL', 'ODD', 'Principles of Programming Languages using C and Microprocessor ', 'C and 8085 Prac', 1, 1, 0),
@@ -524,29 +524,29 @@ INSERT INTO `course` (`COURSE_ID`, `OPTIONAL_ID`, `YEAR_NUMBER`, `PROGRAMME_ID`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `department`
+-- Table structure for table `DEPARTMENT`
 --
 
-CREATE TABLE `department` (
+CREATE TABLE `DEPARTMENT` (
   `DEPARTMENT_ID` int(11) NOT NULL,
   `LONG_NAME` varchar(63) NOT NULL,
   `SHORT_NAME` varchar(31) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `department`
+-- Dumping data for table `DEPARTMENT`
 --
 
-INSERT INTO `department` (`DEPARTMENT_ID`, `LONG_NAME`, `SHORT_NAME`) VALUES
+INSERT INTO `DEPARTMENT` (`DEPARTMENT_ID`, `LONG_NAME`, `SHORT_NAME`) VALUES
 (1, 'INFORMATION TECHNOLOGY', 'I.T.');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `division`
+-- Table structure for table `DIVISION`
 --
 
-CREATE TABLE `division` (
+CREATE TABLE `DIVISISON` (
   `DIVISION_ID` int(11) NOT NULL,
   `YEAR_NUMBER` int(11) DEFAULT NULL,
   `PROGRAMME_ID` int(11) DEFAULT NULL,
@@ -558,29 +558,29 @@ CREATE TABLE `division` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `division`
+-- Dumping data for table `DIVISION`
 --
 
-INSERT INTO `division` (`DIVISION_ID`, `YEAR_NUMBER`, `PROGRAMME_ID`, `NAME`, `STUDENT_COUNT`, `START_TIME_ID`, `END_TIME_ID`, `CLASSROOM_ID`) VALUES
+INSERT INTO `DIVISISON` (`DIVISION_ID`, `YEAR_NUMBER`, `PROGRAMME_ID`, `NAME`, `STUDENT_COUNT`, `START_TIME_ID`, `END_TIME_ID`, `CLASSROOM_ID`) VALUES
 (1, 1, 1, 'A', 60, NULL, NULL, NULL),
 (4, 1, 1, 'B', 60, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `opted_by`
+-- Table structure for table `OPTED_BY`
 --
 
-CREATE TABLE `opted_by` (
+CREATE TABLE `OPTED_BY` (
   `COURSE_ID` int(11) NOT NULL,
   `DIVISION_ID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `opted_by`
+-- Dumping data for table `OPTED_BY`
 --
 
-INSERT INTO `opted_by` (`COURSE_ID`, `DIVISION_ID`) VALUES
+INSERT INTO `OPTED_BY` (`COURSE_ID`, `DIVISION_ID`) VALUES
 (4, 1),
 (5, 4),
 (15, 1),
@@ -591,10 +591,10 @@ INSERT INTO `opted_by` (`COURSE_ID`, `DIVISION_ID`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `programme`
+-- Table structure for table `PROGRAMME`
 --
 
-CREATE TABLE `programme` (
+CREATE TABLE `PROGRAMME` (
   `PROGRAMME_ID` int(11) NOT NULL,
   `DEPARTMENT_ID` int(11) DEFAULT NULL,
   `LONG_NAME` varchar(63) NOT NULL,
@@ -603,19 +603,19 @@ CREATE TABLE `programme` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `programme`
+-- Dumping data for table `PROGRAMME`
 --
 
-INSERT INTO `programme` (`PROGRAMME_ID`, `DEPARTMENT_ID`, `LONG_NAME`, `SHORT_NAME`, `DIVISION_COUNT`) VALUES
+INSERT INTO `PROGRAMME` (`PROGRAMME_ID`, `DEPARTMENT_ID`, `LONG_NAME`, `SHORT_NAME`, `DIVISION_COUNT`) VALUES
 (1, 1, 'BACHELOR OF SCIENCE IN INFORMATION TECHNLOGY', 'B.SC.I.T.', 2);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `teacher`
+-- Table structure for table `TEACHER`
 --
 
-CREATE TABLE `teacher` (
+CREATE TABLE `TEACHER` (
   `TEACHER_ID` int(11) NOT NULL,
   `DEPARTMENT_ID` int(11) NOT NULL,
   `FIRST_NAME` varchar(15) NOT NULL,
@@ -624,10 +624,10 @@ CREATE TABLE `teacher` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `teacher`
+-- Dumping data for table `TEACHER`
 --
 
-INSERT INTO `teacher` (`TEACHER_ID`, `DEPARTMENT_ID`, `FIRST_NAME`, `LAST_NAME`, `ISPARTTIME`) VALUES
+INSERT INTO `TEACHER` (`TEACHER_ID`, `DEPARTMENT_ID`, `FIRST_NAME`, `LAST_NAME`, `ISPARTTIME`) VALUES
 (1, 1, 'POURNIMA', 'BHANGALE', 0),
 (2, 1, 'RAKHEE', 'RANE', 0),
 (3, 1, 'NANDA', 'RUPNAR', 0),
@@ -638,10 +638,10 @@ INSERT INTO `teacher` (`TEACHER_ID`, `DEPARTMENT_ID`, `FIRST_NAME`, `LAST_NAME`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `teaches`
+-- Table structure for table `TEACHES`
 --
 
-CREATE TABLE `teaches` (
+CREATE TABLE `TEACHES` (
   `WORKLOAD_ID` int(11) NOT NULL,
   `TEACHER_ID` int(11) DEFAULT NULL,
   `COURSE_ID` int(11) DEFAULT NULL,
@@ -650,10 +650,10 @@ CREATE TABLE `teaches` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `teaches`
+-- Dumping data for table `TEACHES`
 --
 
-INSERT INTO `teaches` (`WORKLOAD_ID`, `TEACHER_ID`, `COURSE_ID`, `DIVISION_ID`, `LECTURE_COUNT`) VALUES
+INSERT INTO `TEACHES` (`WORKLOAD_ID`, `TEACHER_ID`, `COURSE_ID`, `DIVISION_ID`, `LECTURE_COUNT`) VALUES
 (14, 2, 9, 1, 2),
 (15, 2, 9, 4, 2),
 (28, 3, 10, 1, 2),
@@ -680,10 +680,10 @@ INSERT INTO `teaches` (`WORKLOAD_ID`, `TEACHER_ID`, `COURSE_ID`, `DIVISION_ID`, 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `timeslot`
+-- Table structure for table `TIMESLOT`
 --
 
-CREATE TABLE `timeslot` (
+CREATE TABLE `TIMESLOT` (
   `SLOT_ID` int(11) NOT NULL,
   `START_TIME` time NOT NULL,
   `END_TIME` time NOT NULL,
@@ -691,10 +691,10 @@ CREATE TABLE `timeslot` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `timeslot`
+-- Dumping data for table `TIMESLOT`
 --
 
-INSERT INTO `timeslot` (`SLOT_ID`, `START_TIME`, `END_TIME`, `SLOT_TYPE`) VALUES
+INSERT INTO `TIMESLOT` (`SLOT_ID`, `START_TIME`, `END_TIME`, `SLOT_TYPE`) VALUES
 (1, '07:00:00', '08:00:00', 'LECTURE'),
 (2, '07:00:00', '09:00:00', 'PRACTICAL'),
 (3, '08:00:00', '09:00:00', 'LECTURE'),
@@ -715,10 +715,10 @@ INSERT INTO `timeslot` (`SLOT_ID`, `START_TIME`, `END_TIME`, `SLOT_TYPE`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `timetable`
+-- Table structure for table `TIMETABLE`
 --
 
-CREATE TABLE `timetable` (
+CREATE TABLE `TIMETABLE` (
   `ALLOTMENT_ID` int(11) NOT NULL,
   `COURSE_ID` int(11) DEFAULT NULL,
   `DIVISION_ID` int(11) DEFAULT NULL,
@@ -731,10 +731,10 @@ CREATE TABLE `timetable` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
--- Dumping data for table `timetable`
+-- Dumping data for table `TIMETABLE`
 --
 
-INSERT INTO `timetable` (`ALLOTMENT_ID`, `COURSE_ID`, `DIVISION_ID`, `CLASSROOM_ID`, `SLOT_ID`, `WEEKDAY`, `TEACHER_ID`, `ACADEMIC_YEAR`, `SEMESTER`) VALUES
+INSERT INTO `TIMETABLE` (`ALLOTMENT_ID`, `COURSE_ID`, `DIVISION_ID`, `CLASSROOM_ID`, `SLOT_ID`, `WEEKDAY`, `TEACHER_ID`, `ACADEMIC_YEAR`, `SEMESTER`) VALUES
 (39, 24, 1, 2, 10, 'FRIDAY', 2, '2026-27', 'ODD'),
 (17, 24, 1, 2, 14, 'MONDAY', 2, '2026-27', 'ODD'),
 (20, 24, 1, 5, 7, 'TUESDAY', 2, '2026-27', 'ODD'),
@@ -790,7 +790,7 @@ INSERT INTO `timetable` (`ALLOTMENT_ID`, `COURSE_ID`, `DIVISION_ID`, `CLASSROOM_
 -- Table structure for table `user`
 --
 
-CREATE TABLE `user` (
+CREATE TABLE `USER` (
   `USERNAME` varchar(31) NOT NULL,
   `PASSWORD` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
@@ -799,7 +799,7 @@ CREATE TABLE `user` (
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`USERNAME`, `PASSWORD`) VALUES
+INSERT INTO `USER` (`USERNAME`, `PASSWORD`) VALUES
 ('TC', '$2y$10$C1D.XFTBxcy2bsq35VcQDOqqD0tkYe2zLdwzZxNyMWfv9EVdbRH62');
 
 -- --------------------------------------------------------
@@ -808,7 +808,7 @@ INSERT INTO `user` (`USERNAME`, `PASSWORD`) VALUES
 -- Table structure for table `weekday`
 --
 
-CREATE TABLE `weekday` (
+CREATE TABLE `WEEKDAY` (
   `WEEKDAY` enum('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
@@ -816,7 +816,7 @@ CREATE TABLE `weekday` (
 -- Dumping data for table `weekday`
 --
 
-INSERT INTO `weekday` (`WEEKDAY`) VALUES
+INSERT INTO `WEEKDAY` (`WEEKDAY`) VALUES
 ('MONDAY'),
 ('TUESDAY'),
 ('WEDNESDAY'),
@@ -830,7 +830,7 @@ INSERT INTO `weekday` (`WEEKDAY`) VALUES
 -- Table structure for table `year`
 --
 
-CREATE TABLE `year` (
+CREATE TABLE `YEAR` (
   `YEAR_NUMBER` int(11) NOT NULL,
   `YEAR_NAME` enum('FIRST YEAR','SECOND YEAR','THIRD YEAR','FOURTH YEAR','FIFTH YEAR') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
@@ -839,7 +839,7 @@ CREATE TABLE `year` (
 -- Dumping data for table `year`
 --
 
-INSERT INTO `year` (`YEAR_NUMBER`, `YEAR_NAME`) VALUES
+INSERT INTO `YEAR` (`YEAR_NUMBER`, `YEAR_NAME`) VALUES
 (1, 'FIRST YEAR'),
 (2, 'SECOND YEAR'),
 (3, 'THIRD YEAR'),
@@ -851,47 +851,47 @@ INSERT INTO `year` (`YEAR_NUMBER`, `YEAR_NAME`) VALUES
 --
 
 --
--- Indexes for table `availability`
+-- Indexes for table `AVAILABILITY`
 --
-ALTER TABLE `availability`
+ALTER TABLE `AVAILABILITY`
   ADD PRIMARY KEY (`TEACHER_ID`,`SLOT_ID`,`WEEKDAY`),
   ADD UNIQUE KEY `TEACHER_ID` (`TEACHER_ID`,`SLOT_ID`,`WEEKDAY`),
   ADD KEY `fk_slotId_avlbtTbl` (`SLOT_ID`),
   ADD KEY `fk_wkdy_avlbtTbl` (`WEEKDAY`);
 
 --
--- Indexes for table `classroom`
+-- Indexes for table `CLASSROOM`
 --
-ALTER TABLE `classroom`
+ALTER TABLE `CLASSROOM`
   ADD PRIMARY KEY (`CLASSROOM_ID`),
   ADD UNIQUE KEY `ROOM_NUMBER` (`ROOM_NUMBER`);
 
 --
--- Indexes for table `consists`
+-- Indexes for table `CONSISTS`
 --
-ALTER TABLE `consists`
+ALTER TABLE `CONSISTS`
   ADD PRIMARY KEY (`YEAR_NUMBER`,`PROGRAMME_ID`),
   ADD KEY `fk_pgrmId_cnstTbl` (`PROGRAMME_ID`);
 
 --
--- Indexes for table `course`
+-- Indexes for table `COURSE`
 --
-ALTER TABLE `course`
+ALTER TABLE `COURSE`
   ADD PRIMARY KEY (`COURSE_ID`),
   ADD KEY `fk_pgrmId_crseTbl` (`PROGRAMME_ID`),
   ADD KEY `fk_yearId_crseTbl` (`YEAR_NUMBER`),
   ADD KEY `fk_opnlId_crseTbl` (`OPTIONAL_ID`);
 
 --
--- Indexes for table `department`
+-- Indexes for table `DEPARTMENT`
 --
-ALTER TABLE `department`
+ALTER TABLE `DEPARTMENT`
   ADD PRIMARY KEY (`DEPARTMENT_ID`);
 
 --
--- Indexes for table `division`
+-- Indexes for table `DIVISION`
 --
-ALTER TABLE `division`
+ALTER TABLE `DIVISION`
   ADD PRIMARY KEY (`DIVISION_ID`),
   ADD UNIQUE KEY `NAME` (`NAME`,`YEAR_NUMBER`,`PROGRAMME_ID`),
   ADD KEY `fk_yrId_dvsnTbl` (`YEAR_NUMBER`),
@@ -901,45 +901,45 @@ ALTER TABLE `division`
   ADD KEY `fk_eTmeId_dvsnTbl` (`END_TIME_ID`);
 
 --
--- Indexes for table `opted_by`
+-- Indexes for table `OPTED_BY`
 --
-ALTER TABLE `opted_by`
+ALTER TABLE `OPTED_BY`
   ADD PRIMARY KEY (`COURSE_ID`,`DIVISION_ID`),
   ADD KEY `fk_dvsnId_optdByTbl` (`DIVISION_ID`);
 
 --
--- Indexes for table `programme`
+-- Indexes for table `PROGRAMME`
 --
-ALTER TABLE `programme`
+ALTER TABLE `PROGRAMME`
   ADD PRIMARY KEY (`PROGRAMME_ID`),
   ADD KEY `fk_deptId_pgrmTbl` (`DEPARTMENT_ID`);
 
 --
--- Indexes for table `teacher`
+-- Indexes for table `TEACHER`
 --
-ALTER TABLE `teacher`
+ALTER TABLE `TEACHER`
   ADD PRIMARY KEY (`TEACHER_ID`),
   ADD KEY `fk_deptId_tchrTbl` (`DEPARTMENT_ID`);
 
 --
--- Indexes for table `teaches`
+-- Indexes for table `TEACHES`
 --
-ALTER TABLE `teaches`
+ALTER TABLE `TEACHES`
   ADD PRIMARY KEY (`WORKLOAD_ID`),
   ADD UNIQUE KEY `TEACHER_ID` (`TEACHER_ID`,`COURSE_ID`,`DIVISION_ID`),
   ADD KEY `fk_crseId_tchsTbl` (`COURSE_ID`),
   ADD KEY `fk_dvsn_tchsTbl` (`DIVISION_ID`);
 
 --
--- Indexes for table `timeslot`
+-- Indexes for table `TIMESLOT`
 --
-ALTER TABLE `timeslot`
+ALTER TABLE `TIMESLOT`
   ADD PRIMARY KEY (`SLOT_ID`);
 
 --
--- Indexes for table `timetable`
+-- Indexes for table `TIMETABLE`
 --
-ALTER TABLE `timetable`
+ALTER TABLE `TIMETABLE`
   ADD PRIMARY KEY (`ALLOTMENT_ID`),
   ADD UNIQUE KEY `COURSE_ID` (`COURSE_ID`,`DIVISION_ID`,`CLASSROOM_ID`,`SLOT_ID`,`WEEKDAY`,`TEACHER_ID`,`ACADEMIC_YEAR`,`SEMESTER`),
   ADD KEY `fk_dvsnId_tTbl` (`DIVISION_ID`),
@@ -951,19 +951,19 @@ ALTER TABLE `timetable`
 --
 -- Indexes for table `user`
 --
-ALTER TABLE `user`
+ALTER TABLE `USER`
   ADD PRIMARY KEY (`USERNAME`);
 
 --
 -- Indexes for table `weekday`
 --
-ALTER TABLE `weekday`
+ALTER TABLE `WEEKDAY`
   ADD PRIMARY KEY (`WEEKDAY`);
 
 --
 -- Indexes for table `year`
 --
-ALTER TABLE `year`
+ALTER TABLE `YEAR`
   ADD PRIMARY KEY (`YEAR_NUMBER`);
 
 --
@@ -971,57 +971,57 @@ ALTER TABLE `year`
 --
 
 --
--- AUTO_INCREMENT for table `classroom`
+-- AUTO_INCREMENT for table `CLASSROOM`
 --
-ALTER TABLE `classroom`
+ALTER TABLE `CLASSROOM`
   MODIFY `CLASSROOM_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT for table `course`
+-- AUTO_INCREMENT for table `COURSE`
 --
-ALTER TABLE `course`
+ALTER TABLE `COURSE`
   MODIFY `COURSE_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
--- AUTO_INCREMENT for table `department`
+-- AUTO_INCREMENT for table `DEPARTMENT`
 --
-ALTER TABLE `department`
+ALTER TABLE `DEPARTMENT`
   MODIFY `DEPARTMENT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT for table `division`
+-- AUTO_INCREMENT for table `DIVISION`
 --
-ALTER TABLE `division`
+ALTER TABLE `DIVISION`
   MODIFY `DIVISION_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT for table `programme`
+-- AUTO_INCREMENT for table `PROGRAMME`
 --
-ALTER TABLE `programme`
+ALTER TABLE `PROGRAMME`
   MODIFY `PROGRAMME_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT for table `teacher`
+-- AUTO_INCREMENT for table `TEACHER`
 --
-ALTER TABLE `teacher`
+ALTER TABLE `TEACHER`
   MODIFY `TEACHER_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `teaches`
+-- AUTO_INCREMENT for table `TEACHES`
 --
-ALTER TABLE `teaches`
+ALTER TABLE `TEACHES`
   MODIFY `WORKLOAD_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
--- AUTO_INCREMENT for table `timeslot`
+-- AUTO_INCREMENT for table `TIMESLOT`
 --
-ALTER TABLE `timeslot`
+ALTER TABLE `TIMESLOT`
   MODIFY `SLOT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
--- AUTO_INCREMENT for table `timetable`
+-- AUTO_INCREMENT for table `TIMETABLE`
 --
-ALTER TABLE `timetable`
+ALTER TABLE `TIMETABLE`
   MODIFY `ALLOTMENT_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
@@ -1029,74 +1029,74 @@ ALTER TABLE `timetable`
 --
 
 --
--- Constraints for table `availability`
+-- Constraints for table `AVAILABILITY`
 --
-ALTER TABLE `availability`
-  ADD CONSTRAINT `fk_slotId_avlbtTbl` FOREIGN KEY (`SLOT_ID`) REFERENCES `timeslot` (`SLOT_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_tchrId_avlbtTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `teacher` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+ALTER TABLE `AVAILABILITY`
+  ADD CONSTRAINT `fk_slotId_avlbtTbl` FOREIGN KEY (`SLOT_ID`) REFERENCES `TIMESLOT` (`SLOT_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_tchrId_avlbtTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `TEACHER` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_wkdy_avlbtTbl` FOREIGN KEY (`WEEKDAY`) REFERENCES `weekday` (`WEEKDAY`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `consists`
+-- Constraints for table `CONSISTS`
 --
-ALTER TABLE `consists`
-  ADD CONSTRAINT `fk_pgrmId_cnstTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `programme` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+ALTER TABLE `CONSISTS`
+  ADD CONSTRAINT `fk_pgrmId_cnstTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `PROGRAMME` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_yearId_cnstTbl` FOREIGN KEY (`YEAR_NUMBER`) REFERENCES `year` (`YEAR_NUMBER`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `course`
+-- Constraints for table `COURSE`
 --
-ALTER TABLE `course`
-  ADD CONSTRAINT `fk_opnlId_crseTbl` FOREIGN KEY (`OPTIONAL_ID`) REFERENCES `course` (`COURSE_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_pgrmId_crseTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `programme` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+ALTER TABLE `COURSE`
+  ADD CONSTRAINT `fk_opnlId_crseTbl` FOREIGN KEY (`OPTIONAL_ID`) REFERENCES `COURSE` (`COURSE_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pgrmId_crseTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `PROGRAMME` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_yearId_crseTbl` FOREIGN KEY (`YEAR_NUMBER`) REFERENCES `year` (`YEAR_NUMBER`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `division`
+-- Constraints for table `DIVISION`
 --
-ALTER TABLE `division`
-  ADD CONSTRAINT `fk_clsrmId_dvsnTbl` FOREIGN KEY (`CLASSROOM_ID`) REFERENCES `classroom` (`CLASSROOM_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_eTmeId_dvsnTbl` FOREIGN KEY (`END_TIME_ID`) REFERENCES `timeslot` (`SLOT_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_pgrmId_dvsnTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `programme` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_sTmeId_dvsnTbl` FOREIGN KEY (`START_TIME_ID`) REFERENCES `timeslot` (`SLOT_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+ALTER TABLE `DIVISION`
+  ADD CONSTRAINT `fk_clsrmId_dvsnTbl` FOREIGN KEY (`CLASSROOM_ID`) REFERENCES `CLASSROOM` (`CLASSROOM_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_eTmeId_dvsnTbl` FOREIGN KEY (`END_TIME_ID`) REFERENCES `TIMESLOT` (`SLOT_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pgrmId_dvsnTbl` FOREIGN KEY (`PROGRAMME_ID`) REFERENCES `PROGRAMME` (`PROGRAMME_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sTmeId_dvsnTbl` FOREIGN KEY (`START_TIME_ID`) REFERENCES `TIMESLOT` (`SLOT_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_yrId_dvsnTbl` FOREIGN KEY (`YEAR_NUMBER`) REFERENCES `year` (`YEAR_NUMBER`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `opted_by`
+-- Constraints for table `OPTED_BY`
 --
-ALTER TABLE `opted_by`
-  ADD CONSTRAINT `fk_crseId_optdByTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `course` (`COURSE_ID`),
-  ADD CONSTRAINT `fk_dvsnId_optdByTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `division` (`DIVISION_ID`);
+ALTER TABLE `OPTED_BY`
+  ADD CONSTRAINT `fk_crseId_optdByTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `COURSE` (`COURSE_ID`),
+  ADD CONSTRAINT `fk_dvsnId_optdByTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `DIVISION` (`DIVISION_ID`);
 
 --
--- Constraints for table `programme`
+-- Constraints for table `PROGRAMME`
 --
-ALTER TABLE `programme`
-  ADD CONSTRAINT `fk_deptId_pgrmTbl` FOREIGN KEY (`DEPARTMENT_ID`) REFERENCES `department` (`DEPARTMENT_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `PROGRAMME`
+  ADD CONSTRAINT `fk_deptId_pgrmTbl` FOREIGN KEY (`DEPARTMENT_ID`) REFERENCES `DEPARTMENT` (`DEPARTMENT_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `teacher`
+-- Constraints for table `TEACHER`
 --
-ALTER TABLE `teacher`
-  ADD CONSTRAINT `fk_deptId_tchrTbl` FOREIGN KEY (`DEPARTMENT_ID`) REFERENCES `department` (`DEPARTMENT_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `TEACHER`
+  ADD CONSTRAINT `fk_deptId_tchrTbl` FOREIGN KEY (`DEPARTMENT_ID`) REFERENCES `DEPARTMENT` (`DEPARTMENT_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `teaches`
+-- Constraints for table `TEACHES`
 --
-ALTER TABLE `teaches`
-  ADD CONSTRAINT `fk_crseId_tchsTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `course` (`COURSE_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_dvsn_tchsTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `division` (`DIVISION_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_tchrId_tchsTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `teacher` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `TEACHES`
+  ADD CONSTRAINT `fk_crseId_tchsTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `COURSE` (`COURSE_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_dvsn_tchsTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `DIVISION` (`DIVISION_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_tchrId_tchsTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `TEACHER` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `timetable`
+-- Constraints for table `TIMETABLE`
 --
-ALTER TABLE `timetable`
-  ADD CONSTRAINT `fk_clsrmId_tTbl` FOREIGN KEY (`CLASSROOM_ID`) REFERENCES `classroom` (`CLASSROOM_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_crseId_tTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `course` (`COURSE_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_dvsnId_tTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `division` (`DIVISION_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_slotId_tTbl` FOREIGN KEY (`SLOT_ID`) REFERENCES `timeslot` (`SLOT_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_tchrId_tTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `teacher` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+ALTER TABLE `TIMETABLE`
+  ADD CONSTRAINT `fk_clsrmId_tTbl` FOREIGN KEY (`CLASSROOM_ID`) REFERENCES `CLASSROOM` (`CLASSROOM_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_crseId_tTbl` FOREIGN KEY (`COURSE_ID`) REFERENCES `COURSE` (`COURSE_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_dvsnId_tTbl` FOREIGN KEY (`DIVISION_ID`) REFERENCES `DIVISION` (`DIVISION_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_slotId_tTbl` FOREIGN KEY (`SLOT_ID`) REFERENCES `TIMESLOT` (`SLOT_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_tchrId_tTbl` FOREIGN KEY (`TEACHER_ID`) REFERENCES `TEACHER` (`TEACHER_ID`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_wkdy_tTbl` FOREIGN KEY (`WEEKDAY`) REFERENCES `weekday` (`WEEKDAY`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 

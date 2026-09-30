@@ -120,9 +120,9 @@
 applyValidityChecker();
 async function populateDepartment() {
     // debugger;
-    const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $(`#departmentId`);
+    var minimalData = await getPrerequisits('department');
+    var depts = await minimalData.responseBody.departments;
+    var departmentSelect = $(`#departmentId`);
     departmentSelect.empty().append(`<option value='' disabled selected>Select Department</option>`);
     await depts.forEach(dept => {
         departmentSelect.append(`
@@ -135,10 +135,10 @@ async function populateDepartment() {
 }
 async function populateProgramme(select) {
     // debugger;
-    const chosenDepartment = select.value;
-    const minimalData = await getPrerequisits('programme');
-    const pgrms = minimalData.responseBody.programmes;
-    const programmeSelect = $('#programmeId');
+    var chosenDepartment = select.value;
+    var minimalData = await getPrerequisits('programme');
+    var pgrms = minimalData.responseBody.programmes;
+    var programmeSelect = $('#programmeId');
     programmeSelect.empty().append('<option value="" disabled selected>Select Programme</option>');
     pgrms.forEach(pgrm => {
         if (String(pgrm.DEPARTMENT_ID) === String(chosenDepartment)) {
@@ -153,16 +153,16 @@ async function populateProgramme(select) {
 }
 async function populateYear(select) {
     // debugger;
-    const chosenProgramme = select.value;
-    const minimalData1 = await getPrerequisits('consists');
-    const consists = minimalData1.responseBody.consists;
-    const minimalData2 = await getPrerequisits('year');
-    const years = minimalData2.responseBody.years;
-    const yearSelect = $(`#yearId`);
+    var chosenProgramme = select.value;
+    var minimalData1 = await getPrerequisits('consists');
+    var consists = minimalData1.responseBody.consists;
+    var minimalData2 = await getPrerequisits('year');
+    var years = minimalData2.responseBody.years;
+    var yearSelect = $(`#yearId`);
     yearSelect.empty().append(`<option value='' disabled selected>Select Year</option>`);
     consists.forEach(consist => {
         if (consist.PROGRAMME_ID == chosenProgramme) {
-            const year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
+            var year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
             if (year) {
                 yearSelect.append(`
                     <option value="${year.YEAR_NUMBER}">
@@ -175,10 +175,10 @@ async function populateYear(select) {
     yearSelect.prop('disabled', false);
 }
 async function populateOptionalCourse(select) {
-    const chosenProgramme = select.value;
-    const minimalData = await getPrerequisits('course');
-    const crses = minimalData.responseBody.courses;
-    const courseSelect = $(`#optionalCourseId`);
+    var chosenProgramme = select.value;
+    var minimalData = await getPrerequisits('course');
+    var crses = minimalData.responseBody.courses;
+    var courseSelect = $(`#optionalCourseId`);
     crses.forEach(crse => {
         if (
             crse.PROGRAMME_ID == chosenProgramme &&
@@ -194,8 +194,8 @@ async function populateOptionalCourse(select) {
     courseSelect.prop('disabled', false);
 }
 function toggleOptionalCourseSelection(){
-    const optionalCourseSelect = $('#optionalCourseId');
-    const isOptional = $('#isOptional').prop('checked');
+    var optionalCourseSelect = $('#optionalCourseId');
+    var isOptional = $('#isOptional').prop('checked');
     optionalCourseSelect.prop('disabled',isOptional ? false : true);
     optionalCourseSelect.css('display',isOptional ? 'flex' : 'none');
 }
@@ -211,7 +211,7 @@ async function add_course() {
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'course');
     formData.append('formType', 'add_course');
     
@@ -237,7 +237,7 @@ async function add_course() {
     });
 }
 async function get_one_course(courseId){
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("formCategory","course");
     formData.append("formType","get_one_course");
     formData.append("courseId",courseId);
@@ -250,8 +250,8 @@ async function get_one_course(courseId){
     });
 }
 async function prefillUpdateform(recordId) {
-    const oldData = await get_one_course(recordId);
-    const parsedOldData = await oldData.responseBody;
+    var oldData = await get_one_course(recordId);
+    var parsedOldData = await oldData.responseBody;
     turnOn();
     $('#courseId').val(parsedOldData.COURSE_ID);
     $('#fullname').val(parsedOldData.LONG_NAME);
@@ -298,7 +298,7 @@ async function update_course(recordId){
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'course');
     formData.append('formType','update_course');
     $.ajax({
@@ -350,11 +350,11 @@ function cancelPrefilledUpdateform() {
     showInfoInline("Update Cancelled");
 }
 async function delete_course(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'course');
     formData.append('formType', 'delete_course');
     formData.append('courseId', recordId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -368,7 +368,7 @@ async function delete_course(recordId) {
 
 async function createCourseTable(departmentId = false, programmeId = false, semester = false, ...kwargs) {
     
-        const result = await getPrerequisits('course');
+        var result = await getPrerequisits('course');
         let courses = result.responseBody.courses;
         // Filter by department or programme
         if (departmentId) {
@@ -386,7 +386,7 @@ async function createCourseTable(departmentId = false, programmeId = false, seme
                 String(course.SEMESTER) === String(semester)
             );
         }
-        const tbody = $('.recordTable');
+        var tbody = $('.recordTable');
         tbody.empty();
         if (!courses || courses.length === 0) {
             tbody.append(`<tr><td colspan="10">No courses found.</td></tr>`);

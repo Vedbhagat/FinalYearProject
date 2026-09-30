@@ -83,12 +83,12 @@
 
 <script>
 applyValidityChecker();
-const form = document.getElementById('form');
+var form = document.getElementById('form');
 
 async function populateDepartment() {
-    const minimalData = await getPrerequisits('department');
-    const depts = minimalData.responseBody?.departments || [];
-    const departmentSelect = $('#departmentId');
+    var minimalData = await getPrerequisits('department');
+    var depts = minimalData.responseBody?.departments || [];
+    var departmentSelect = $('#departmentId');
 
     departmentSelect.find('option:not(:first)').remove();
     depts.forEach(dept => {
@@ -99,11 +99,11 @@ async function populateDepartment() {
 
 function createDivisionInputs(duration) {
     duration = parseInt(duration) || 0;
-    const wrapper = $('#divisionCountWrapper');
-    const existingValues = {};
+    var wrapper = $('#divisionCountWrapper');
+    var existingValues = {};
 
     wrapper.find('input[type="radio"]:checked').each(function () {
-        const year = $(this).attr('name').replace('division', '');
+        var year = $(this).attr('name').replace('division', '');
         existingValues[year] = $(this).val();
     });
 
@@ -146,7 +146,7 @@ async function add_programme() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'programme');
     formData.append('formType', 'add_programme');
 
@@ -165,7 +165,7 @@ async function add_programme() {
         createProgrammeTable();
     })
     .fail(function(xhr) {
-        const msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
+        var msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
         showInfoInline(msg);
     })
     .always(function() {
@@ -174,10 +174,10 @@ async function add_programme() {
 }
 
 async function prefillUpdateform(recordId) {
-    const response = await get_one_programme(recordId);
+    var response = await get_one_programme(recordId);
     if (!response.responseBody) return;
 
-    const data = response.responseBody;
+    var data = response.responseBody;
     turnOn();
 
     $('#programmeId').val(data.PROGRAMME_ID);
@@ -189,7 +189,7 @@ async function prefillUpdateform(recordId) {
     createDivisionInputs(data.DURATION);
 
     if (data.DIVISIONS) {
-        for (const year in data.DIVISIONS) {
+        for (var year in data.DIVISIONS) {
             $(`input[name="division${year}"][value="${data.DIVISIONS[year]}"]`).prop('checked', true);
         }
     }
@@ -215,7 +215,7 @@ async function update_programme() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'programme');
     formData.append('formType', 'update_programme');
 
@@ -234,7 +234,7 @@ async function update_programme() {
         createProgrammeTable();
     })
     .fail(function(xhr) {
-        const msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
+        var msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
         showInfoInline(msg);
     })
     .always(function() {
@@ -243,7 +243,7 @@ async function update_programme() {
 }
 
 async function get_one_programme(programmeId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'programme');
     formData.append('formType', 'get_one_programme');
     formData.append('programmeId', programmeId);
@@ -262,14 +262,14 @@ async function get_one_programme(programmeId) {
 }
 
 async function delete_programme(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'programme');
     formData.append('formType', 'delete_programme');
     formData.append('programmeId', recordId);
 
     timer = showLoader("Deleting Programme");
     try {
-        const result = await $.ajax({
+        var result = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -280,7 +280,7 @@ async function delete_programme(recordId) {
         showInfoInline(result.responseBody);
         createProgrammeTable();
     } catch (xhr) {
-        const msg = xhr.responseJSON?.responseBody || "Deletion failed";
+        var msg = xhr.responseJSON?.responseBody || "Deletion failed";
         showInfoInline(msg);
     } finally {
         hideLoader(timer);
@@ -288,23 +288,23 @@ async function delete_programme(recordId) {
 }
 
 async function createProgrammeTable() {
-    const programme = await load_existing('programme');
-    const consists = await load_existing('consists');
-    const depts = await getPrerequisits('department');
+    var programme = await load_existing('programme');
+    var consists = await load_existing('consists');
+    var depts = await getPrerequisits('department');
 
-    const programmes = programme.responseBody || [];
-    const consistsData = consists.responseBody || [];
-    const deptsParsed = depts.responseBody?.departments || [];
+    var programmes = await programme.responseBody || [];
+    var consistsData = await consists.responseBody || [];
+    var deptsParsed = await depts.responseBody?.departments || [];
 
-    const tableBody = $('.recordTable');
+    var tableBody = $('.recordTable');
     tableBody.empty();
 
     let count = 1;
-    programmes.forEach(element => {
-        const currDept = deptsParsed.find(d => d.DEPARTMENT_ID == element[1])?.SHORT_NAME || 'N/A';
-        const duration = consistsData.filter(c => c[1] == element[0]).length;
+    await programmes.forEach(element => {
+        var currDept = deptsParsed.find(d => d.DEPARTMENT_ID == element[1])?.SHORT_NAME || 'N/A';
+        var duration = consistsData.filter(c => c[1] == element[0]).length;
 
-        const template = `
+        var template = `
             <tr>
                 <td>${count++}</td>
                 <td>${element[0]}</td>

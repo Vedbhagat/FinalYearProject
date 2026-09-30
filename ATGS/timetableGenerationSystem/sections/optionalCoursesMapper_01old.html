@@ -58,23 +58,23 @@ applyValidityChecker();
 var selectedGroupPath = [];
 
 async function populateOptionalCourseGroup() {
-    const result = await getPrerequisits('optionalcoursemapper');
-    const courses = result.responseBody.optionalcourses;
-    const optionalCourses = courses.filter(
+    var result = await getPrerequisits('optionalcoursemapper');
+    var courses = result.responseBody.optionalcourses;
+    var optionalCourses = courses.filter(
         c => c.ISOPTIONAL == true
     );
     $('#optionGroup').data(
         'optionalCourses',
         optionalCourses
     );
-    const options = optionalCourses
+    var options = optionalCourses
 
         // Only create one option for the pair
         .filter(course =>
             course.COURSE_ID < course.OPTIONAL_ID
         )
         .map(course => {
-            const optionalCourse = courses.find(c =>
+            var optionalCourse = courses.find(c =>
                 String(c.COURSE_ID) ===
                 String(course.OPTIONAL_ID)
             );
@@ -109,28 +109,28 @@ async function populateOptionalCourseGroup() {
 }
 
 $('#optionGroup').on('change', function () {
-    const option = $(this).find('option:selected');
+    var option = $(this).find('option:selected');
     createDivisionMappingSection(option);
 });
 
 
 async function createDivisionMappingSection(option) {
-    const course1Name = option.data('course1-name');
-    const course1Id = option.data('course1-id');
-    const course2Name = option.data('course2-name');
-    const course2Id = option.data('course2-id');
-    const programmeId = option.data('programme-id');
-    const yearNumber = option.data('year-number');
-    const result = await getPrerequisits('division');
-    const allDivisions = result.responseBody.divisions || [];
-    const divisions = allDivisions.filter(div =>
+    var course1Name = option.data('course1-name');
+    var course1Id = option.data('course1-id');
+    var course2Name = option.data('course2-name');
+    var course2Id = option.data('course2-id');
+    var programmeId = option.data('programme-id');
+    var yearNumber = option.data('year-number');
+    var result = await getPrerequisits('division');
+    var allDivisions = result.responseBody.divisions || [];
+    var divisions = allDivisions.filter(div =>
             String(div.PROGRAMME_ID) ===
             String(programmeId)
             &&
             String(div.YEAR_NUMBER) ===
             String(yearNumber)
         );
-    const divisionOptions =
+    var divisionOptions =
         divisions
             .map(div => {
                 return `
@@ -140,7 +140,7 @@ async function createDivisionMappingSection(option) {
                 `;
             })
             .join('');
-    const noDivisionOption = divisions.length === 0
+    var noDivisionOption = divisions.length === 0
         ? `<option value="" disabled>No divisions available</option>`
         : '';
     $('#divisionMappingSection').html(`
@@ -184,8 +184,8 @@ populateOptionalCourseGroup();
 var form =document.getElementById('form');
 
 async function prefillMapForm(recordId) {
-    const oldData =await load_existing('course');
-    const parsedOldData =await oldData.responseBody;
+    var oldData =await load_existing('course');
+    var parsedOldData =await oldData.responseBody;
     turnOn();
     await $('#course1').prop('disabled', false).val(parsedOldData.COURSE_NAME);
     $('#prmyBtn').text('Update').attr('data-recordId',recordId).attr('onclick','update_pre_requisite(' +recordId +')');
@@ -198,7 +198,7 @@ async function map_course() {
         form.reportValidity();
         return;
     }
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory','optionalcourse');
     formData.append('formType','map_course');
     $.ajax({
@@ -221,7 +221,7 @@ async function map_course() {
 }
 
 async function unmap_course(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory','optionalcourse');
     formData.append('formType','unmap_course');
     formData.append('mainCourse',recordId);
@@ -245,9 +245,9 @@ async function unmap_course(recordId) {
 }
 
 async function createOptionalCourseTable() {
-    const result = await getPrerequisits('optionalcourse');
-    const courses = result.responseBody.optionalcourses;
-    const tbody = $('.recordTable');
+    var result = await getPrerequisits('optionalcourse');
+    var courses = result.responseBody.optionalcourses;
+    var tbody = $('.recordTable');
 
     tbody.empty();
 
@@ -257,24 +257,24 @@ async function createOptionalCourseTable() {
     }
 
     courses.forEach((course, index) => {
-        const course1Division = course.COURSE1_DIVISION_NAME ?? course.DIVISION1_NAME ?? null;
-        const course2Division = course.COURSE2_DIVISION_NAME ?? course.DIVISION2_NAME ?? null;
+        var course1Division = course.COURSE1_DIVISION_NAME ?? course.DIVISION1_NAME ?? null;
+        var course2Division = course.COURSE2_DIVISION_NAME ?? course.DIVISION2_NAME ?? null;
 
-        const course1Display = `<div><strong>${course.COURSE_SHORT_NAME ?? ''}</strong><br><small>Division: ${course1Division ?? 'N.A'}</small></div>`;
-        const course2Display = `<div><strong>${course.OPTIONAL_COURSE_NAME ?? 'null'}</strong><br><small>Division: ${course2Division ?? 'N.A'}</small></div>`;
+        var course1Display = `<div><strong>${course.COURSE_SHORT_NAME ?? ''}</strong><br><small>Division: ${course1Division ?? 'N.A'}</small></div>`;
+        var course2Display = `<div><strong>${course.OPTIONAL_COURSE_NAME ?? 'null'}</strong><br><small>Division: ${course2Division ?? 'N.A'}</small></div>`;
 
-        const isAllocated = course1Division !== null && course1Division !== '' &&
+        var isAllocated = course1Division !== null && course1Division !== '' &&
             course2Division !== null && course2Division !== '';
 
-        const status = isAllocated
+        var status = isAllocated
             ? `<span class="chip chip-green">Allotted</span>`
             : `<span class="chip chip-red">Pending</span>`;
 
-        const action = isAllocated
+        var action = isAllocated
             ? `<button class="btn primary" data-recordId="${course.COURSE_ID}" onclick="confirmDeleteDialog('Unmap?', 'Confirm the Unmap operation', ${course.COURSE_ID}, unmap_course);">Unmap</button>`
             : `<button class="btn primary" data-recordId="${course.COURSE_ID}">Map</button>`;
 
-        const year = course.YEAR_NUMBER == 1 ? "FIRST YEAR"
+        var year = course.YEAR_NUMBER == 1 ? "FIRST YEAR"
             : course.YEAR_NUMBER == 2 ? "SECOND YEAR"
             : course.YEAR_NUMBER == 3 ? "THIRD YEAR"
             : course.YEAR_NUMBER ?? '';

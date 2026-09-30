@@ -74,13 +74,13 @@ function togglePartTimeSection(){
     }
 }
 function togglePartTimeDay(event){
-    const fieldset = event.target.closest('fieldset');
-    const timepicker = fieldset.querySelector('.timePicker');
+    var fieldset = event.target.closest('fieldset');
+    var timepicker = fieldset.querySelector('.timePicker');
     timepicker.style.display = event.target.checked ? "flex" : "none";
 }
 async function makePartTimeDay() {
-    const result = await getPrerequisits("timeslot");
-    const days = [
+    var result = await getPrerequisits("timeslot");
+    var days = [
         "Monday",
         "Tuesday",
         "Wednesday",
@@ -89,22 +89,22 @@ async function makePartTimeDay() {
         "Saturday"
     ];
     
-    const data = await result.responseBody.timeslots;
-    // const data = result.responseBody.slots;
+    var data = await result.responseBody.timeslots;
+    // var data = result.responseBody.slots;
     // console.log(data)
-    const punchInOptions = await data
+    var punchInOptions = await data
         .map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`)
         .join("");
 
-    const punchOutOptions = await data
+    var punchOutOptions = await data
         .map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`)
         .join("");
 
-    const container = $("#partTimeSection");
+    var container = $("#partTimeSection");
     container.html("");
     days.forEach(day => {
         
-        const id = day.toLowerCase();
+        var id = day.toLowerCase();
         container.append(`
             <fieldset>
                 <div>
@@ -141,14 +141,14 @@ async function makePartTimeDay() {
 }
 
 function makePunchOutTime(select) {
-    const startSlot = parseInt($(select).val());
-    const day = $(select).attr("id").replace("punchIn_", "");
-    const punchOut = $(`#punchOut_${day}`);
+    var startSlot = parseInt($(select).val());
+    var day = $(select).attr("id").replace("punchIn_", "");
+    var punchOut = $(`#punchOut_${day}`);
 
     punchOut.val("");
 
     punchOut.find("option").each(function () {
-        const endSlot = parseInt($(this).val());
+        var endSlot = parseInt($(this).val());
 
         if (!isNaN(endSlot)) {
             $(this).prop("disabled", endSlot < startSlot);
@@ -157,9 +157,9 @@ function makePunchOutTime(select) {
 }
 
 async function extractDepartment() {
-    const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $('#departmentDropdown');
+    var minimalData = await getPrerequisits('department');
+    var depts = await minimalData.responseBody.departments;
+    var departmentSelect = $('#departmentDropdown');
     await depts.forEach(dept => {
         departmentSelect.append(`
             <option value=${dept.DEPARTMENT_ID}>
@@ -183,7 +183,7 @@ async function add_teacher() {
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'teacher');
     formData.append('formType', 'add_teacher');
     
@@ -210,7 +210,7 @@ async function add_teacher() {
 }
 
 async function get_one_teacher(teacherId){
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("formCategory","teacher");
     formData.append("formType","get_one_teacher");
     formData.append("teacherId",teacherId);
@@ -251,7 +251,7 @@ function cancelPrefilledUpdateform(){
 }
 
 async function update_teacher(){
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append("formCategory","teacher");
     formData.append("formType","update_teacher");
     $.ajax({
@@ -274,11 +274,11 @@ async function update_teacher(){
 }
 
 async function delete_teacher(recordId){
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("formCategory","teacher");
     formData.append("formType","delete_teacher");
     formData.append("teacherId",recordId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url:"api.php",
         type:"POST",
         data:formData,
@@ -290,13 +290,13 @@ async function delete_teacher(recordId){
 }
 
 async function createTeacherTable(){
-    const slots = await load_existing('teacher');
-    const depts = await getPrerequisits('department');
-    const deptsParsed = await depts.responseBody.departments;
+    var slots = await load_existing('teacher');
+    var depts = await getPrerequisits('department');
+    var deptsParsed = await depts.responseBody.departments;
     var count = 1;
     $('.recordTable').html('');
     (slots.responseBody).forEach(element => {
-        const currDept = deptsParsed.find(
+        var currDept = deptsParsed.find(
             department => department.DEPARTMENT_ID == element[1]
         )?.SHORT_NAME ?? '';
         var template =

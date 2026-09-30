@@ -93,16 +93,16 @@
 <script src="https://kit.fontawesome.com/1042c9c102.js" crossorigin="anonymous"></script>
 <script>
     
-    const logoutButton = document.getElementById('logoutButton');
+    var logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener('click', async function () {
             try {
-                const response = await fetch('auth.php?action=logout', {
+                var response = await fetch('auth.php?action=logout', {
                     method: 'post', // or POST depending on how you trigger it
                     credentials: 'same-origin'
                 });
                 
-                const data = await response.json();
+                var data = await response.json();
                 if (response.ok && data.responseBody) {
                     window.location.href = data.responseBody;
                 } else {
@@ -134,7 +134,7 @@
 
     async function checkLogin(){
         console.log("Checking valid login..");
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('action', 'status');
         $.ajax({
             url: 'auth.php',
@@ -160,10 +160,10 @@
     }
 
     async function load_existing(tablename){
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('formCategory', 'load_existing');
         formData.append('tablename', tablename);
-        const result = await $.ajax({
+        var result = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -174,7 +174,7 @@
     }
     
     async function confirmDeleteDialog(heading, description, recordId, callback) {
-        const popup = $(`
+        var popup = $(`
             <div class="tempPopup dull-bg">
                 <div class="dialog dialog-question">
                     <p class="dialog-heading">${heading}</p>
@@ -217,7 +217,7 @@
         }  
     } 
     function showInfoInline(infoBody){
-        const info = $(`<p id="formInfoLine" class="none" ><span>${infoBody}</span></p>`);
+        var info = $(`<p id="formInfoLine" class="none" ><span>${infoBody}</span></p>`);
         $('body').append(info);
         setTimeout(()=>{info.remove();},2500);
     }   
@@ -230,10 +230,10 @@
         $("#loader_data").empty()
     }  
     async function getPrerequisits(tablename){
-        const formData = new FormData();
+        var formData = new FormData();
             formData.append('formCategory', 'getMinimalData');
             formData.append('formType', tablename);
-            const result = await $.ajax({
+            var result = await $.ajax({
                 url: 'api.php',
                 type: 'POST',
                 data: formData,
@@ -244,8 +244,8 @@
             return result;
     }
     function applyValidityCheckerDEPRECIATED() {
-        const form = document.querySelector('form');
-        const submitButton = document.querySelector('.formSubmit');
+        var form = document.querySelector('form');
+        var submitButton = document.querySelector('.formSubmit');
         function updateSubmitButton() {
             submitButton.disabled = !form.checkValidity();
         }
@@ -262,12 +262,12 @@
         updateSubmitButton();
     }
     function applyValidityCheckerV2() {
-        const form = document.querySelector('form');
+        var form = document.querySelector('form');
         if (!form) {
             console.warn('Form not found');
             return;
         }
-        const submitButton = form.querySelector('.formSubmit');
+        var submitButton = form.querySelector('.formSubmit');
         if (!submitButton) {
             console.warn('Submit button .formSubmit not found');
             return;
@@ -288,12 +288,12 @@
         updateSubmitButton();
     }
     function applyValidityChecker() {
-        const form = document.querySelector('form');
+        var form = document.querySelector('form');
         if (!form) {
             console.warn('Form not found');
             return;
         }
-        const submitButton = form.querySelector('.formSubmit');
+        var submitButton = form.querySelector('.formSubmit');
         if (!submitButton) {
             console.warn('Submit button .formSubmit not found');
             return;

@@ -72,7 +72,7 @@ async function add_timeslot() {
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'add_timeslot');
     timer = showLoader("Adding new Timeslot");
@@ -135,7 +135,7 @@ async function update_timeslot(recordId){
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'timeslot');
     formData.append('formType','update_timeslot');
     // console.log(form);
@@ -167,12 +167,12 @@ async function update_timeslot(recordId){
 }
 
 async function get_one_timeslot(slotId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'get_one_timeslot');
     formData.append('slotId', slotId);
     timer = showLoader("Fetching Timeslot");
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -186,12 +186,12 @@ async function get_one_timeslot(slotId) {
 }
 
 async function delete_timeslot(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'timeslot');
     formData.append('formType', 'delete_timeslot');
     formData.append('slotId', recordId);
     timer = showLoader("Deleting Timeslot");
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -222,11 +222,11 @@ function calculateEndTime(){
 }
 
 async function createTimeslotTable(){
-    const slots = await load_existing('timeslot');
+    var slots = await load_existing('timeslot');
     var count = 1;
     // console.log(slots.responseBody);
     $('.recordTable').html('');
-    (slots.responseBody).forEach(element => {
+    await (slots.responseBody).forEach(element => {
         var template =
             `<tr>
                 <td>${count++}</td>

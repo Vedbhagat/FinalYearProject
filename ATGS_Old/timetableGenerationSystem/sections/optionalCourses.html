@@ -59,13 +59,13 @@
 applyValidityChecker();
 async function populateOptionalCourse() {
 
-    const minimalData = await getPrerequisits('optionalcourse');
-    const crses = minimalData.responseBody.optionalcourses;
+    var minimalData = await getPrerequisits('optionalcourse');
+    var crses = minimalData.responseBody.optionalcourses;
 
     console.log('All courses:', crses);
 
     // Only optional courses that are not mapped yet
-    const optionalCourses = crses.filter(
+    var optionalCourses = crses.filter(
         crse => crse.ISOPTIONAL == true && crse.OPTIONAL_ID == null
     );
 
@@ -74,7 +74,7 @@ async function populateOptionalCourse() {
     // Store the courses so the change event can use them
     $('#course1').data('optionalCourses', optionalCourses);
 
-    const options = optionalCourses
+    var options = optionalCourses
         .map(crse => `
             <option value="${crse.COURSE_ID}">
                 ${crse.DEPARTMENT_SHORT_NAME} -
@@ -103,12 +103,12 @@ async function populateOptionalCourse() {
 // When course1 changes
 $('#course1').on('change', function () {
 
-    const selectedCourseId = $(this).val();
+    var selectedCourseId = $(this).val();
 
-    const optionalCourses = $(this).data('optionalCourses') || [];
+    var optionalCourses = $(this).data('optionalCourses') || [];
 
     // Find the selected course
-    const selectedCourse = optionalCourses.find(
+    var selectedCourse = optionalCourses.find(
         crse => String(crse.COURSE_ID) === String(selectedCourseId)
     );
 
@@ -124,7 +124,7 @@ $('#course1').on('change', function () {
 
     // Only courses from the same department, programme and year
     // and exclude the course selected in course1
-    const matchingCourses = optionalCourses.filter(crse =>
+    var matchingCourses = optionalCourses.filter(crse =>
         String(crse.DEPARTMENT_ID) === String(selectedCourse.DEPARTMENT_ID) &&
         String(crse.PROGRAMME_ID) === String(selectedCourse.PROGRAMME_ID) &&
         String(crse.YEAR_NUMBER) === String(selectedCourse.YEAR_NUMBER) &&
@@ -134,7 +134,7 @@ $('#course1').on('change', function () {
 
     console.log('Matching courses:', matchingCourses);
 
-    const options = matchingCourses
+    var options = matchingCourses
         .map(crse => `
             <option value="${crse.COURSE_ID}">
                 ${crse.DEPARTMENT_SHORT_NAME} -
@@ -160,8 +160,8 @@ var form = document.getElementById('form');
 
 async function prefillMapForm(recordId) {
     debugger;
-        const oldData = await load_existing('course');
-        const parsedOldData = await oldData.responseBody;
+        var oldData = await load_existing('course');
+        var parsedOldData = await oldData.responseBody;
         turnOn();
         await $('#course1')
             .prop('disabled', false)
@@ -182,7 +182,7 @@ async function map_course() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'map_course');
 
@@ -208,7 +208,7 @@ async function map_course() {
 }
 
 async function unmap_course(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
 
     formData.append('formCategory', 'optionalcourse');
     formData.append('formType', 'unmap_course');
@@ -236,10 +236,10 @@ async function unmap_course(recordId) {
 }
 
 async function createOptionalCourseTable() {
-    const result = await getPrerequisits('optionalcourse');
+    var result = await getPrerequisits('optionalcourse');
     let courses = result.responseBody.optionalcourses;
     
-    const tbody = $('.recordTable');
+    var tbody = $('.recordTable');
     tbody.empty();
     if (!courses || courses.length === 0) {
         tbody.append(`<tr><td colspan="10">No courses found.</td></tr>`);

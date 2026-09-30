@@ -75,7 +75,7 @@ function validateTimeslot($startTime, $endTime, $slotType, $slotId = null) {
     if ($parsedStartTime >= $parsedEndTime) {
         return 4; // Inverted timeslot
     }else {
-        $query = "SELECT slot_Id, start_time, end_time, slot_type FROM TIMESLOT WHERE ? < end_Time AND ? > start_Time AND SLOT_ID != ? AND SLOT_TYPE = ? LIMIT 1";
+        $query = "SELECT SLOT_ID, START_TIME, END_TIME, SLOT_TYPE FROM TIMESLOT WHERE ? < END_TIME AND ? > START_TIME AND SLOT_ID != ? AND SLOT_TYPE = ? LIMIT 1";
         $result = $conn->execute_query($query, [$startTime, $endTime, $slotId ?? 0, $slotType]);
         if ($result->num_rows > 0) {
             return 5; // Overlapping Timeslot
@@ -631,7 +631,7 @@ try {
         }
         elseif($formtype == 'get_one_timeslot'){ 
             $slotId = $_POST['slotId'];
-            $query = "SELECT * FROM timeslot WHERE slot_id = ?;";
+            $query = "SELECT * FROM TIMESLOT WHERE slot_id = ?;";
             $result = $conn->execute_query($query,[$slotId]);
             if($result->num_rows>0){
                 sendJsonResponse(200,"Timeslot found.",$result->fetch_assoc());
@@ -712,7 +712,7 @@ try {
         }
         elseif($formtype == 'get_one_classroom'){ 
                 $classroomId = $_POST['classroomId'];
-                $query = "SELECT * FROM CLASSROOM WHERE classroom_id = ?;";
+                $query = "SELECT * FROM CLASSROOM WHERE CLASSROOM_ID = ?;";
                 $result = $conn->execute_query($query,[$classroomId]);
                 if($result->num_rows>0){
                     sendJsonResponse(200,"Classroom found.",$result->fetch_assoc());
@@ -1432,23 +1432,41 @@ try {
                 $conn->rollback();
                 sendJsonResponse(400, "Error in mapping", "Mapping was unsuccessful");
             }
-        } elseif($formtype == 'unmap_course') {
-            $courseId1 = (int) $_POST['courseId1'];
-            $query = "SELECT OPTIONAL_ID FROM COURSE WHERE COURSE_ID = ?";
-            $result = $conn->execute_query($query, [$courseId1]);
-            $row = $result->fetch_assoc();
-            $courseId2 = $row ? (int) $row['OPTIONAL_ID'] : 0;
+        } elseif ($formtype == 'unmap_course') {
+            $courseId1 = (int) ($_POST['courseId1'] ?? 0);
 
-            if ($courseId2 > 0) {
-                $query = "DELETE FROM OPTED_BY WHERE COURSE_ID IN (?, ?)";
-                $result = $conn->execute_query($query, [$courseId1, $courseId2]);
-            } else {
-                $query = "DELETE FROM OPTED_BY WHERE COURSE_ID = ?";
-                $result = $conn->execute_query($query, [$courseId1]);
+            if ($courseId1 <= 0) {
+                sendJsonResponse(400, 'Invalid Input', 'Valid course ID is required.');
             }
 
+            // Find the paired optional course ID by checking both COURSE_ID and OPTIONAL_ID
+            $query = "SELECT COURSE_ID, OPTIONAL_ID 
+                    FROM COURSE 
+                    WHERE COURSE_ID = ? OR OPTIONAL_ID = ?";
+            $result = $conn->execute_query($query, [$courseId1, $courseId1]);
+
+            $coursesToDelete = [$courseId1];
+
+            while ($row = $result->fetch_assoc()) {
+                if (!empty($row['COURSE_ID'])) {
+                    $coursesToDelete[] = (int) $row['COURSE_ID'];
+                }
+                if (!empty($row['OPTIONAL_ID'])) {
+                    $coursesToDelete[] = (int) $row['OPTIONAL_ID'];
+                }
+            }
+
+            // Remove duplicates and re-index array
+            $coursesToDelete = array_unique(array_filter($coursesToDelete));
+
+            // Prepare placeholders dynamically (?, ?, ...)
+            $placeholders = implode(',', array_fill(0, count($coursesToDelete), '?'));
+            $deleteQuery = "DELETE FROM OPTED_BY WHERE COURSE_ID IN ($placeholders)";
+
+            $result = $conn->execute_query($deleteQuery, $coursesToDelete);
+
             if ($result) {
-                sendJsonResponse(200, 'Unmapped', 'Course unmapped successfully');
+                sendJsonResponse(200, 'Unmapped', 'Course and its pair unmapped successfully');
             } else {
                 sendJsonResponse(400, 'Failed', 'Course unmapping failed');
             }

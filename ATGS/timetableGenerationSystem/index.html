@@ -51,16 +51,16 @@
 <script src="https://kit.fontawesome.com/1042c9c102.js" crossorigin="anonymous"></script>
 <script>
     let timer;
-    const logoutButton = document.getElementById('logoutButton');
+    var logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener('click', async function () {
             try {
-                const response = await fetch('auth.php?action=logout', {
+                var response = await fetch('auth.php?action=logout', {
                     method: 'post', // or POST depending on how you trigger it
                     credentials: 'same-origin'
                 });
                 
-                const data = await response.json();
+                var data = await response.json();
                 if (response.ok && data.responseBody) {
                     window.location.href = data.responseBody;
                 } else {
@@ -79,10 +79,10 @@
             dataType: 'json'
         }).done(function(response) {
             if (response && response.responseBody) {
-                const modules = response.responseBody;
+                var modules = response.responseBody;
                 // Verify all modules (0 through 9) are locked
-                const allLocked = modules.every(m => m.isLocked === true);
-                const btn = $('#timetableBtn');
+                var allLocked = modules.every(m => m.isLocked === true);
+                var btn = $('#timetableBtn');
                 var oldBtnState = btn.prop("disabled");
                 if (allLocked) {
                     btn.prop('disabled', false).css({ 'opacity': '1', 'pointer-events': 'auto' });
@@ -120,7 +120,7 @@
 
     async function checkLogin(){
         // console.log("Checking valid login..");
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('action', 'status');
         $.ajax({
             url: 'auth.php',
@@ -147,11 +147,11 @@
     }
 
     async function load_existing(tablename){
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('formCategory', 'load_existing');
         formData.append('tablename', tablename);
         timer = showLoader("Fetching Data");
-        const result = await $.ajax({
+        var result = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -165,7 +165,7 @@
     }
     
     async function confirmDeleteDialog(heading, description, recordId, callback) {
-        const popup = $(`
+        var popup = $(`
             <div class="tempPopup dull-bg">
                 <div class="dialog dialog-question">
                     <p class="dialog-heading">${heading}</p>
@@ -212,7 +212,7 @@
         $('#formInfoLine').remove();
 
         // Small compact element
-        const info = $(`
+        var info = $(`
             <p id="formInfoLine">
                 <i class="fa-solid fa-circle-info" style="color: #60a5fa; font-size: 14px;"></i>
                 <span>${infoBody}</span>
@@ -253,11 +253,11 @@
         turnOff();
     }
     async function getPrerequisits(tablename){
-        const formData = new FormData();
+        var formData = new FormData();
             formData.append('formCategory', 'getMinimalData');
             formData.append('formType', tablename);
             timer = showLoader("Fetching Data From Server");
-            const result = await $.ajax({
+            var result = await $.ajax({
                 url: 'api.php',
                 type: 'POST',
                 data: formData,
@@ -271,8 +271,8 @@
             return result;
     }
     function applyValidityCheckerDEPRECIATED() {
-        const form = document.querySelector('form');
-        const submitButton = document.querySelector('.formSubmit');
+        var form = document.querySelector('form');
+        var submitButton = document.querySelector('.formSubmit');
         function updateSubmitButton() {
             submitButton.disabled = !form.checkValidity();
         }
@@ -289,12 +289,12 @@
         updateSubmitButton();
     }
     function applyValidityCheckerV2() {
-        const form = document.querySelector('form');
+        var form = document.querySelector('form');
         if (!form) {
             console.warn('Form not found');
             return;
         }
-        const submitButton = form.querySelector('.formSubmit');
+        var submitButton = form.querySelector('.formSubmit');
         if (!submitButton) {
             console.warn('Submit button .formSubmit not found');
             return;
@@ -315,12 +315,12 @@
         updateSubmitButton();
     }
     function applyValidityChecker() {
-        const form = document.querySelector('form');
+        var form = document.querySelector('form');
         if (!form) {
             console.warn('Form not found');
             return;
         }
-        const submitButton = form.querySelector('.formSubmit');
+        var submitButton = form.querySelector('.formSubmit');
         if (!submitButton) {
             console.warn('Submit button .formSubmit not found');
             return;

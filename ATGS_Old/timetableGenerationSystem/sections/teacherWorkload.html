@@ -101,9 +101,9 @@
 applyValidityChecker();
 async function populateDepartment() {
     // debugger;
-    const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $(`#departmentId`);
+    var minimalData = await getPrerequisits('department');
+    var depts = await minimalData.responseBody.departments;
+    var departmentSelect = $(`#departmentId`);
     departmentSelect.empty().append(`<option value='' disabled selected>Select Department</option>`);
     await depts.forEach(dept => {
         departmentSelect.append(`
@@ -116,10 +116,10 @@ async function populateDepartment() {
 }
 async function populateProgramme(select) {
     // debugger;
-    const chosenDepartment = select.value;
-    const minimalData = await getPrerequisits('programme');
-    const pgrms = minimalData.responseBody.programmes;
-    const programmeSelect = $('#programmeId');
+    var chosenDepartment = select.value;
+    var minimalData = await getPrerequisits('programme');
+    var pgrms = minimalData.responseBody.programmes;
+    var programmeSelect = $('#programmeId');
     programmeSelect.empty().append('<option value="" disabled selected>Select Programme</option>');
     pgrms.forEach(pgrm => {
         if (String(pgrm.DEPARTMENT_ID) === String(chosenDepartment)) {
@@ -134,16 +134,16 @@ async function populateProgramme(select) {
 }
 async function populateYear(select) {
     // debugger;
-    const chosenProgramme = select.value;
-    const minimalData1 = await getPrerequisits('consists');
-    const consists = minimalData1.responseBody.consists;
-    const minimalData2 = await getPrerequisits('year');
-    const years = minimalData2.responseBody.years;
-    const yearSelect = $(`#yearId`);
+    var chosenProgramme = select.value;
+    var minimalData1 = await getPrerequisits('consists');
+    var consists = minimalData1.responseBody.consists;
+    var minimalData2 = await getPrerequisits('year');
+    var years = minimalData2.responseBody.years;
+    var yearSelect = $(`#yearId`);
     yearSelect.empty().append(`<option value='' disabled selected>Select Year</option>`);
     consists.forEach(consist => {
         if (consist.PROGRAMME_ID == chosenProgramme) {
-            const year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
+            var year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
             if (year) {
                 yearSelect.append(`
                     <option value="${year.YEAR_NUMBER}">
@@ -157,11 +157,11 @@ async function populateYear(select) {
 }
 async function populateTeacher(select) {
     // debugger;
-    const chosenDepartment = select.value;
-    const minimalData = await load_existing('teacher');
+    var chosenDepartment = select.value;
+    var minimalData = await load_existing('teacher');
 
-    const tchrs = minimalData.responseBody;
-    const teacherSelect = $('#teacherId');
+    var tchrs = minimalData.responseBody;
+    var teacherSelect = $('#teacherId');
     teacherSelect.empty().append('<option value="" disabled selected>Select Teacher</option>');
     tchrs.forEach(tchr => {
         if (String(tchr[1]) === String(chosenDepartment)) {
@@ -176,19 +176,19 @@ async function populateTeacher(select) {
 }
 async function populateDivision(select) {
     
-        const chosenDepartment = $('#departmentId').val();
-        const chosenProgramme = $('#programmeId').val();
-        const chosenYear = $(select).val();
-        const result = await getPrerequisits('division');
-        const divisions = result?.responseBody?.divisions ?? [];
-        const divisionSelect = $('#divisionId');
+        var chosenDepartment = $('#departmentId').val();
+        var chosenProgramme = $('#programmeId').val();
+        var chosenYear = $(select).val();
+        var result = await getPrerequisits('division');
+        var divisions = result?.responseBody?.divisions ?? [];
+        var divisionSelect = $('#divisionId');
         divisionSelect.empty();
-        const filteredDivisions = divisions.filter(division =>
+        var filteredDivisions = divisions.filter(division =>
             String(division.DEPARTMENT_ID) === String(chosenDepartment) &&
             String(division.PROGRAMME_ID) === String(chosenProgramme) &&
             String(division.YEAR_NUMBER) === String(chosenYear)
         );
-        const divisionIds = filteredDivisions.map(
+        var divisionIds = filteredDivisions.map(
             division => Number(division.DIVISION_ID)
         );
         divisionSelect.append(`
@@ -206,12 +206,12 @@ async function populateDivision(select) {
         divisionSelect.prop('disabled', false);
 }
 async function populateCourse(sem) {
-    const minimalData = await getPrerequisits('course');
-    const courses = minimalData.responseBody.courses;
-    const programmeId = $('#programmeId').val();
-    const yearId = $('#yearId').val();
-    const semester = sem == 1 ? 'EVEN' : 'ODD';
-    const courseSelect = $('#courseId');
+    var minimalData = await getPrerequisits('course');
+    var courses = minimalData.responseBody.courses;
+    var programmeId = $('#programmeId').val();
+    var yearId = $('#yearId').val();
+    var semester = sem == 1 ? 'EVEN' : 'ODD';
+    var courseSelect = $('#courseId');
     courseSelect.empty().append('<option value="" disabled selected>Select Course</option>');
     courses.forEach(course => {
         if(String(course.PROGRAMME_ID) === String(programmeId) &&
@@ -236,7 +236,7 @@ async function create_workload() {
         form.reportValidity();
         return;
     }
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'workload');
     formData.append('formType', 'create_workload');
     $.ajax({
@@ -260,7 +260,7 @@ async function create_workload() {
 }
 
 async function delete_workload(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'workload');
     formData.append('formType', 'delete_workload');
     formData.append('workloadId', recordId);
@@ -286,10 +286,10 @@ async function delete_workload(recordId) {
 
 async function createWorkloadTable() {
     try {
-        const result = await getPrerequisits('workload');
-        const teaches = result?.responseBody?.teaches ?? [];
+        var result = await getPrerequisits('workload');
+        var teaches = result?.responseBody?.teaches ?? [];
 
-        const tbody = $('.recordTable');
+        var tbody = $('.recordTable');
         tbody.empty();
 
         if (teaches.length === 0) {

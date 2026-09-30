@@ -132,17 +132,17 @@
         </div>
     </main>
     <script>
-        const registerForm = document.getElementById('registerForm');
-        const registerButton = document.getElementById('registerButton');
-        const registerError = document.getElementById('registerError');
+        var registerForm = document.getElementById('registerForm');
+        var registerButton = document.getElementById('registerButton');
+        var registerError = document.getElementById('registerError');
 
         registerForm.addEventListener('submit', async function (event) {
             event.preventDefault();
             registerError.hidden = true;
             registerError.textContent = '';
 
-            const password = document.getElementById('password').value;
-            const cnfPassword = document.getElementById('cnf_password').value;
+            var password = document.getElementById('password').value;
+            var cnfPassword = document.getElementById('cnf_password').value;
 
             if (password !== cnfPassword) {
                 registerError.textContent = 'Passwords do not match.';
@@ -153,16 +153,16 @@
             registerButton.disabled = true;
             registerButton.textContent = 'Registering...';
             
-            const formData = new FormData(registerForm);
+            var formData = new FormData(registerForm);
             
             try {
-                const response = await fetch('auth.php?action=register', {
+                var response = await fetch('auth.php?action=register', {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
                 });
                 
-                const data = await response.json();
+                var data = await response.json();
                 
                 if (!response.ok) {
                     throw new Error(data.statusDescription || 'Registration failed.');

@@ -128,9 +128,9 @@
         </div>
     </main>
     <script>
-        const loginForm = document.getElementById('loginForm');
-        const loginButton = document.getElementById('loginButton');
-        const loginError = document.getElementById('loginError');
+        var loginForm = document.getElementById('loginForm');
+        var loginButton = document.getElementById('loginButton');
+        var loginError = document.getElementById('loginError');
 
         loginForm.addEventListener('submit', async function (event) {
             event.preventDefault();
@@ -139,16 +139,16 @@
             loginButton.disabled = true;
             loginButton.textContent = 'Logging in...';
             
-            const formData = new FormData(loginForm);
+            var formData = new FormData(loginForm);
             
             try {
-                const response = await fetch('auth.php', {
+                var response = await fetch('auth.php', {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
                 });
                 
-                const data = await response.json();
+                var data = await response.json();
                 
                 if (!response.ok) {
                     throw new Error(data.statusDescription || 'Login failed.');

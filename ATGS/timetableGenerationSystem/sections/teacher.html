@@ -70,8 +70,8 @@ function togglePartTimeSection() {
 }
 
 function togglePartTimeDay(event) {
-    const fieldset = $(event.target).closest('fieldset');
-    const timepicker = fieldset.find('.timePicker');
+    var fieldset = $(event.target).closest('fieldset');
+    var timepicker = fieldset.find('.timePicker');
     if (event.target.checked) {
         timepicker.css('display', 'flex');
     } else {
@@ -80,18 +80,18 @@ function togglePartTimeDay(event) {
 }
 
 async function makePartTimeDay() {
-    const result = await getPrerequisits("timeslot");
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const data = result.responseBody?.timeslots || [];
+    var result = await getPrerequisits("timeslot");
+    var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    var data = result.responseBody?.timeslots || [];
 
-    const punchInOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`).join("");
-    const punchOutOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`).join("");
+    var punchInOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.START_TIME}</option>`).join("");
+    var punchOutOptions = data.map(item => `<option value="${item.SLOT_ID}">${item.END_TIME}</option>`).join("");
 
-    const container = $("#partTimeSection");
+    var container = $("#partTimeSection");
     container.html("");
 
     days.forEach(day => {
-        const id = day.toLowerCase();
+        var id = day.toLowerCase();
         container.append(`
             <fieldset>
                 <div>
@@ -121,13 +121,13 @@ async function makePartTimeDay() {
 }
 
 function makePunchOutTime(select) {
-    const startSlot = parseInt($(select).val());
-    const day = $(select).attr("id").replace("punchIn_", "");
-    const punchOut = $(`#punchOut_${day}`);
+    var startSlot = parseInt($(select).val());
+    var day = $(select).attr("id").replace("punchIn_", "");
+    var punchOut = $(`#punchOut_${day}`);
 
     punchOut.val("");
     punchOut.find("option").each(function () {
-        const endSlot = parseInt($(this).val());
+        var endSlot = parseInt($(this).val());
         if (!isNaN(endSlot)) {
             $(this).prop("disabled", endSlot < startSlot);
         }
@@ -135,9 +135,9 @@ function makePunchOutTime(select) {
 }
 
 async function extractDepartment() {
-    const minimalData = await getPrerequisits('department');
-    const depts = minimalData.responseBody?.departments || [];
-    const departmentSelect = $('#departmentDropdown');
+    var minimalData = await getPrerequisits('department');
+    var depts = minimalData.responseBody?.departments || [];
+    var departmentSelect = $('#departmentDropdown');
     
     departmentSelect.find('option:not(:first)').remove();
     depts.forEach(dept => {
@@ -149,7 +149,7 @@ async function extractDepartment() {
 makePartTimeDay();
 extractDepartment();
 
-const form = document.getElementById('form');
+var form = document.getElementById('form');
 
 async function add_teacher() {
     if (!form.checkValidity()) {
@@ -157,7 +157,7 @@ async function add_teacher() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'teacher');
     formData.append('formType', 'add_teacher');
 
@@ -176,7 +176,7 @@ async function add_teacher() {
         createTeacherTable();
     })
     .fail(function(xhr) {   
-        const msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
+        var msg = xhr.responseJSON?.responseBody || "An unexpected error occurred.";
         showInfoInline(msg);
     })
     .always(function() {
@@ -185,7 +185,7 @@ async function add_teacher() {
 }
 
 async function get_one_teacher(teacherId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("formCategory", "teacher");
     formData.append("formType", "get_one_teacher");
     formData.append("teacherId", teacherId);
@@ -204,10 +204,10 @@ async function get_one_teacher(teacherId) {
 }
 
 async function prefillUpdateform(recordId) {
-    const oldData = await get_one_teacher(recordId);
+    var oldData = await get_one_teacher(recordId);
     if (!oldData.responseBody) return;
 
-    const data = oldData.responseBody;
+    var data = oldData.responseBody;
     turnOn();
 
     $('#teacherId').val(data.TEACHER_ID);
@@ -215,15 +215,15 @@ async function prefillUpdateform(recordId) {
     $('#fname').val(data.FIRST_NAME);
     $('#lname').val(data.LAST_NAME);
 
-    const isPartTime = (data.ISPARTTIME == 1);
+    var isPartTime = (data.ISPARTTIME == 1);
     $('#isPartTime').prop('checked', isPartTime);
     togglePartTimeSection();
 
     // Prefill Part-Time Availability slots
     if (isPartTime && data.availability) {
         Object.keys(data.availability).forEach(day => {
-            const avail = data.availability[day];
-            const checkbox = $(`#${day}`);
+            var avail = data.availability[day];
+            var checkbox = $(`#${day}`);
             if (checkbox.length) {
                 checkbox.prop('checked', true);
                 checkbox.prop('checked', true).trigger('change');
@@ -257,7 +257,7 @@ async function update_teacher() {
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append("formCategory", "teacher");
     formData.append("formType", "update_teacher");
 
@@ -276,7 +276,7 @@ async function update_teacher() {
         createTeacherTable();
     })
     .fail(function(xhr) {
-        const msg = xhr.responseJSON?.responseBody || "Unexpected Error";
+        var msg = xhr.responseJSON?.responseBody || "Unexpected Error";
         showInfoInline(msg);
     })
     .always(function() {
@@ -285,14 +285,14 @@ async function update_teacher() {
 }
 
 async function delete_teacher(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append("formCategory", "teacher");
     formData.append("formType", "delete_teacher");
     formData.append("teacherId", recordId);
 
     timer = showLoader("Deleting Teacher");
     try {
-        const result = await $.ajax({
+        var result = await $.ajax({
             url: "api.php",
             type: "POST",
             data: formData,
@@ -303,7 +303,7 @@ async function delete_teacher(recordId) {
         showInfoInline(result.responseBody);
         createTeacherTable();
     } catch(xhr) {
-        const msg = xhr.responseJSON?.responseBody || "Deletion failed";
+        var msg = xhr.responseJSON?.responseBody || "Deletion failed";
         showInfoInline(msg);
     } finally {
         hideLoader(timer);
@@ -311,21 +311,21 @@ async function delete_teacher(recordId) {
 }
 
 async function createTeacherTable() {
-    const teacherRes = await load_existing('teacher');
-    const deptRes = await getPrerequisits('department');
+    var teacherRes = await load_existing('teacher');
+    var deptRes = await getPrerequisits('department');
 
-    const teachers = teacherRes.responseBody || [];
-    const depts = deptRes.responseBody?.departments || [];
+    var teachers = await teacherRes.responseBody || [];
+    var depts = await deptRes.responseBody?.departments || [];
 
-    const tableBody = $('.recordTable');
+    var tableBody = $('.recordTable');
     tableBody.empty();
 
     let count = 1;
-    teachers.forEach(element => {
-        const deptName = depts.find(d => d.DEPARTMENT_ID == element[1])?.SHORT_NAME || 'N/A';
-        const isPartTime = element[4] == 1 ? "Yes" : "No";
+    await teachers.forEach(element => {
+        var deptName = depts.find(d => d.DEPARTMENT_ID == element[1])?.SHORT_NAME || 'N/A';
+        var isPartTime = element[4] == 1 ? "Yes" : "No";
 
-        const row = `
+        var row = `
             <tr>
                 <td>${count++}</td>
                 <td>${element[0]}</td>

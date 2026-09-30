@@ -101,9 +101,9 @@
 applyValidityChecker();
 async function populateDepartment() {
     // debugger;
-    const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $(`#departmentId`);
+    var minimalData = await getPrerequisits('department');
+    var depts = await minimalData.responseBody.departments;
+    var departmentSelect = $(`#departmentId`);
     departmentSelect.empty().append(`<option value='' disabled selected>Select Department</option>`);
     await depts.forEach(dept => {
         departmentSelect.append(`
@@ -116,10 +116,10 @@ async function populateDepartment() {
 }
 async function populateProgramme(select) {
     // debugger;
-    const chosenDepartment = select.value;
-    const minimalData = await getPrerequisits('programme');
-    const pgrms = minimalData.responseBody.programmes;
-    const programmeSelect = $('#programmeId');
+    var chosenDepartment = select.value;
+    var minimalData = await getPrerequisits('programme');
+    var pgrms = minimalData.responseBody.programmes;
+    var programmeSelect = $('#programmeId');
     programmeSelect.empty().append('<option value="" disabled selected>Select Programme</option>');
     pgrms.forEach(pgrm => {
         if (String(pgrm.DEPARTMENT_ID) === String(chosenDepartment)) {
@@ -134,16 +134,16 @@ async function populateProgramme(select) {
 }
 async function populateYear(select) {
     // debugger;
-    const chosenProgramme = select.value;
-    const minimalData1 = await getPrerequisits('consists');
-    const consists = minimalData1.responseBody.consists;
-    const minimalData2 = await getPrerequisits('year');
-    const years = minimalData2.responseBody.years;
-    const yearSelect = $(`#yearId`);
+    var chosenProgramme = select.value;
+    var minimalData1 = await getPrerequisits('consists');
+    var consists = minimalData1.responseBody.consists;
+    var minimalData2 = await getPrerequisits('year');
+    var years = minimalData2.responseBody.years;
+    var yearSelect = $(`#yearId`);
     yearSelect.empty().append(`<option value='' disabled selected>Select Year</option>`);
     consists.forEach(consist => {
         if (consist.PROGRAMME_ID == chosenProgramme) {
-            const year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
+            var year = years.find(y => y.YEAR_NUMBER == consist.YEAR_NUMBER);
             if (year) {
                 yearSelect.append(`
                     <option value="${year.YEAR_NUMBER}">
@@ -157,14 +157,14 @@ async function populateYear(select) {
 }
 async function populateDivision(select) {
     try {
-        const chosenDepartment = $('#departmentId').val();
-        const chosenProgramme = $('#programmeId').val();
-        const chosenYear = $(select).val();
+        var chosenDepartment = $('#departmentId').val();
+        var chosenProgramme = $('#programmeId').val();
+        var chosenYear = $(select).val();
 
-        const result = await getPrerequisits('division');
-        const divisions = result?.responseBody?.divisions ?? [];
+        var result = await getPrerequisits('division');
+        var divisions = result?.responseBody?.divisions ?? [];
 
-        const divisionSelect = $('#divisionId');
+        var divisionSelect = $('#divisionId');
 
         divisionSelect
             .empty()
@@ -172,7 +172,7 @@ async function populateDivision(select) {
                 '<option value="" disabled selected>Select Division</option>'
             );
 
-        const filteredDivisions = divisions.filter(division =>
+        var filteredDivisions = divisions.filter(division =>
             String(division.DEPARTMENT_ID) === String(chosenDepartment) &&
             String(division.PROGRAMME_ID) === String(chosenProgramme) &&
             String(division.YEAR_NUMBER) === String(chosenYear)
@@ -194,9 +194,9 @@ async function populateDivision(select) {
 }
 async function populateClassroom(select) {
     
-    const classrooms = await getPrerequisits('classroom');
-    const StudentCount = $('#studentCount').val();
-    const formattedClassrooms = classrooms.responseBody.classrooms;
+    var classrooms = await getPrerequisits('classroom');
+    var StudentCount = $('#studentCount').val();
+    var formattedClassrooms = classrooms.responseBody.classrooms;
     if(select == -1){
         select = $('#classroomId')
     }
@@ -220,9 +220,9 @@ async function populateClassroom(select) {
     });
 }
 async function populateTimeBound(select) {
-    const timeslots = await getPrerequisits('timeslot');
-    const isStartTime = $('#startPref').prop('checked')? true:false;
-    const formattedTimeslots = timeslots.responseBody.timeslots;
+    var timeslots = await getPrerequisits('timeslot');
+    var isStartTime = $('#startPref').prop('checked')? true:false;
+    var formattedTimeslots = timeslots.responseBody.timeslots;
     if(select == -1){
         select = $('#timeBound')
     }
@@ -262,7 +262,7 @@ async function add_divisionDetails() {
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'division');
     formData.append('formType', 'add_divisionDetails');
     timer = showLoader("Updating Division");
@@ -293,7 +293,7 @@ async function add_divisionDetails() {
 }
 
 async function delete_divisionDetails(recordId) {
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'division');
     formData.append('formType', 'delete_divisionDetails');
     formData.append('divisionId', recordId);
@@ -325,9 +325,9 @@ async function delete_divisionDetails(recordId) {
 
 async function prefillUpdateform(divId) {
     
-        const result = await getPrerequisits('division');
-        const divisions = result?.responseBody?.divisions ?? [];
-        const division = divisions.find(d =>
+        var result = await getPrerequisits('division');
+        var divisions = result?.responseBody?.divisions ?? [];
+        var division = divisions.find(d =>
             String(d.DIVISION_ID) === String(divId)
         );
         if (!division) {
@@ -356,7 +356,7 @@ async function prefillUpdateform(divId) {
         if (division.CLASSROOM_ID != null) {
             $('#classroomId').val(String(division.CLASSROOM_ID));
         }
-        const hasPreferredTime =
+        var hasPreferredTime =
             division.START_TIME_ID != null ||
             division.END_TIME_ID != null;
 
@@ -366,11 +366,11 @@ async function prefillUpdateform(divId) {
             .prop('hidden', !hasPreferredTime)
             .prop('disabled', !hasPreferredTime);
         if (hasPreferredTime) {
-            const hasStartTime = division.START_TIME_ID != null;
+            var hasStartTime = division.START_TIME_ID != null;
             $('#startPref').prop('checked', hasStartTime);
             $('#endPref').prop('checked', !hasStartTime);
             await populateTimeBound(-1);
-            const timeBound =
+            var timeBound =
                 hasStartTime
                     ? division.START_TIME_ID
                     : division.END_TIME_ID;
@@ -385,8 +385,8 @@ async function prefillUpdateform(divId) {
 
 
 async function createDivisionTable(departmentId = false, programmeId = false, year = false, ...kwargs) {
-        const result = await getPrerequisits('division');
-        let divisions = result.responseBody.divisions;
+        var result = await getPrerequisits('division');
+        let divisions = await result.responseBody.divisions;
         // Filter by department or programme
         if (departmentId) {
             divisions = divisions.filter(division =>
@@ -403,14 +403,14 @@ async function createDivisionTable(departmentId = false, programmeId = false, ye
                 String(division.YEAR_NUMBER) === String(year)
             );
         }
-        const tbody = $('.recordTable');
+        var tbody = $('.recordTable');
         tbody.empty();
         if (!divisions || divisions.length === 0) {
             tbody.append(`<tr><td colspan="10">No divisions found.</td></tr>`);
             return;
         }
 
-        divisions.forEach((division, index) => {
+        await divisions.forEach((division, index) => {
             tbody.append(`
                 <tr>
                     <td>${index + 1}</td>

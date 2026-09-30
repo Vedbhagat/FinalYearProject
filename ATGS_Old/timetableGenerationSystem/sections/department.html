@@ -54,7 +54,7 @@ async function add_department() {
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     
     formData.append('formCategory', 'department');
     formData.append('formType', 'add_department');
@@ -111,7 +111,7 @@ async function update_department(recordId){
         form.reportValidity();
         return;
     };
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'department');
     formData.append('formType','update_department');
     
@@ -139,11 +139,11 @@ async function update_department(recordId){
 }
 
 async function get_one_department(departmentId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'department');
     formData.append('formType', 'get_one_department');
     formData.append('departmentId', departmentId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -153,11 +153,11 @@ async function get_one_department(departmentId) {
     return result;
 }
 async function delete_department(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'department');
     formData.append('formType', 'delete_department');
     formData.append('departmentId', recordId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -170,7 +170,7 @@ async function delete_department(recordId) {
 }
 
 async function createDepartmentTable(){
-    const slots = await load_existing('department');
+    var slots = await load_existing('department');
     var count = 1;
     $('.recordTable').html('');
     (slots.responseBody).forEach(element => {

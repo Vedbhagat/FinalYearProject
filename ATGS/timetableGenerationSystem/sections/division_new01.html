@@ -289,9 +289,9 @@ applyValidityChecker();
    GLOBALS
 ================================================================ */
 
-const divisionForm = document.getElementById('divisionForm');
+var divisionForm = document.getElementById('divisionForm');
 
-const divisionCodes = ['A', 'B', 'C', 'D', 'E'];
+var divisionCodes = ['A', 'B', 'C', 'D', 'E'];
 
 let allTimeslots = [];
 let allClassrooms = [];
@@ -322,12 +322,12 @@ async function populateDepartment(selectedId = '') {
 
     try {
 
-        const result = await getPrerequisits('department');
+        var result = await getPrerequisits('department');
 
-        const departments =
+        var departments =
             result?.responseBody?.departments ?? [];
 
-        const select = $('#departmentId');
+        var select = $('#departmentId');
 
         resetDivisionSelect(
             select,
@@ -381,8 +381,8 @@ async function populateProgramme(
     selectedId = ''
 ) {
 
-    const programmeSelect = $('#programmeId');
-    const yearSelect = $('#yearId');
+    var programmeSelect = $('#programmeId');
+    var yearSelect = $('#yearId');
 
 
     resetDivisionSelect(
@@ -409,10 +409,10 @@ async function populateProgramme(
 
     try {
 
-        const result =
+        var result =
             await getPrerequisits('programme');
 
-        const programmes =
+        var programmes =
             result?.responseBody?.programmes ?? [];
 
 
@@ -473,7 +473,7 @@ async function populateYear(
     selectedYear = ''
 ) {
 
-    const yearSelect = $('#yearId');
+    var yearSelect = $('#yearId');
 
 
     resetDivisionSelect(
@@ -496,7 +496,7 @@ async function populateYear(
 
     try {
 
-        const [
+        var [
             consistsResult,
             yearsResult
         ] = await Promise.all([
@@ -507,10 +507,10 @@ async function populateYear(
         ]);
 
 
-        const consists =
+        var consists =
             consistsResult?.responseBody?.consists ?? [];
 
-        const years =
+        var years =
             yearsResult?.responseBody?.years ?? [];
 
 
@@ -530,7 +530,7 @@ async function populateYear(
 
             .forEach(c => {
 
-                const year = years.find(
+                var year = years.find(
                     y =>
                         String(y.YEAR_NUMBER) ===
                         String(c.YEAR_NUMBER)
@@ -595,10 +595,10 @@ async function loadTimeslots(
 
     try {
 
-        const result =
+        var result =
             await getPrerequisits('timeslot');
 
-        const timeslots =
+        var timeslots =
             result?.responseBody?.timeslots ?? [];
 
 
@@ -619,10 +619,10 @@ async function loadTimeslots(
         }));
 
 
-        const startSelect =
+        var startSelect =
             $('#startTimeId');
 
-        const endSelect =
+        var endSelect =
             $('#endTimeId');
 
 
@@ -644,7 +644,7 @@ async function loadTimeslots(
          */
         allTimeslots.forEach(slot => {
 
-            const text =
+            var text =
                 formatTime(slot.START_TIME) +
                 ' - ' +
                 formatTime(slot.END_TIME);
@@ -721,10 +721,10 @@ async function loadClassrooms(
 
     try {
 
-        const result =
+        var result =
             await getPrerequisits('classroom');
 
-        const classrooms =
+        var classrooms =
             result?.responseBody?.classrooms ?? [];
 
 
@@ -762,13 +762,13 @@ async function loadClassrooms(
 
 function filterClassroomsByCapacity() {
 
-    const select =
+    var select =
         $('#classroomId');
 
-    const studentCount =
+    var studentCount =
         Number($('#studentCount').val() || 0);
 
-    const selectedClassroom =
+    var selectedClassroom =
         String(
             select.data('selectedClassroom') || ''
         );
@@ -827,10 +827,10 @@ function filterClassroomsByCapacity() {
 
 function validateTimePreference() {
 
-    const startId =
+    var startId =
         $('#startTimeId').val();
 
-    const endId =
+    var endId =
         $('#endTimeId').val();
 
 
@@ -843,14 +843,14 @@ function validateTimePreference() {
     }
 
 
-    const startSlot =
+    var startSlot =
         allTimeslots.find(
             slot =>
                 String(slot.SLOT_ID) ===
                 String(startId)
         );
 
-    const endSlot =
+    var endSlot =
         allTimeslots.find(
             slot =>
                 String(slot.SLOT_ID) ===
@@ -865,12 +865,12 @@ function validateTimePreference() {
     }
 
 
-    const start =
+    var start =
         timeToMinutes(
             startSlot.START_TIME
         );
 
-    const end =
+    var end =
         timeToMinutes(
             endSlot.END_TIME
         );
@@ -919,7 +919,7 @@ function timeToMinutes(time) {
     }
 
 
-    const parts =
+    var parts =
         String(time).split(':');
 
 
@@ -940,17 +940,17 @@ function formatTime(time) {
     }
 
 
-    const parts =
+    var parts =
         String(time).split(':');
 
     let hour =
         Number(parts[0]);
 
-    const minute =
+    var minute =
         parts[1];
 
 
-    const suffix =
+    var suffix =
         hour >= 12
             ? 'PM'
             : 'AM';
@@ -971,10 +971,10 @@ function formatTime(time) {
 
 async function refreshDivisionPreview() {
 
-    const programmeId =
+    var programmeId =
         $('#programmeId').val();
 
-    const yearId =
+    var yearId =
         $('#yearId').val();
 
 
@@ -987,14 +987,14 @@ async function refreshDivisionPreview() {
 
     try {
 
-        const result =
+        var result =
             await getPrerequisits('division');
 
-        const divisions =
+        var divisions =
             result?.responseBody?.divisions ?? [];
 
 
-        const existing =
+        var existing =
             divisions.filter(
                 d =>
                     String(d.PROGRAMME_ID) ===
@@ -1005,7 +1005,7 @@ async function refreshDivisionPreview() {
             );
 
 
-        const used =
+        var used =
             existing
 
                 .map(
@@ -1024,7 +1024,7 @@ async function refreshDivisionPreview() {
         $('#divisionName option')
             .each(function () {
 
-                const code =
+                var code =
                     $(this).val();
 
 
@@ -1035,11 +1035,11 @@ async function refreshDivisionPreview() {
                 }
 
 
-                const currentId =
+                var currentId =
                     $('#divisionId').val();
 
 
-                const current =
+                var current =
                     existing.find(
                         d =>
                             String(
@@ -1049,7 +1049,7 @@ async function refreshDivisionPreview() {
                     );
 
 
-                const isCurrent =
+                var isCurrent =
                     current &&
                     String(
                         current.DIVISION_NAME
@@ -1103,10 +1103,10 @@ async function saveDivision() {
     }
 
 
-    const formData =
+    var formData =
         new FormData(divisionForm);
 
-    const divisionId =
+    var divisionId =
         $('#divisionId').val();
 
 
@@ -1156,7 +1156,7 @@ async function saveDivision() {
 
     .fail(function (xhr) {
 
-        const message =
+        var message =
             xhr.responseJSON?.responseBody ||
             'An unexpected error occurred while saving the division.';
 
@@ -1178,7 +1178,7 @@ async function prefillUpdateform(
 
     try {
 
-        const formData =
+        var formData =
             new FormData();
 
 
@@ -1200,7 +1200,7 @@ async function prefillUpdateform(
         );
 
 
-        const result =
+        var result =
             await $.ajax({
 
                 url: 'api.php',
@@ -1218,7 +1218,7 @@ async function prefillUpdateform(
             });
 
 
-        const data =
+        var data =
             result.responseBody;
 
 
@@ -1420,7 +1420,7 @@ async function delete_division(
     recordId
 ) {
 
-    const formData =
+    var formData =
         new FormData();
 
 
@@ -1444,7 +1444,7 @@ async function delete_division(
 
     try {
 
-        const result =
+        var result =
             await $.ajax({
 
                 url: 'api.php',
@@ -1501,7 +1501,7 @@ async function createDivisionTable(
 
     try {
 
-        const result =
+        var result =
             await getPrerequisits('division');
 
 
@@ -1551,7 +1551,7 @@ async function createDivisionTable(
         }
 
 
-        const tbody =
+        var tbody =
             $('.recordTable');
 
 
@@ -1576,7 +1576,7 @@ async function createDivisionTable(
         divisions.forEach(
             (division, index) => {
 
-                const yearName =
+                var yearName =
                     division.YEAR_NAME ||
 
                     ({

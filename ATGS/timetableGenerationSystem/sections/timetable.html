@@ -99,12 +99,12 @@ var currentMetadata = null;
 
 // Initial Verification on Page Load
 async function checkTimetableStatus() {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'check_status');
     
     try {
-        const res = await $.ajax({
+        var res = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -129,19 +129,19 @@ async function checkTimetableStatus() {
 
 // Trigger timetable generation algorithm
 async function generateTimetable() {
-    const form = document.getElementById('generateTimetableForm');
+    var form = document.getElementById('generateTimetableForm');
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
 
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'generate_and_save');
 
     timer =showLoader("Generating Timetable...");
     try {
-        const res = await $.ajax({
+        var res = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -154,7 +154,7 @@ async function generateTimetable() {
         checkTimetableStatus();
     } catch (xhr) {
         hideLoader(timer);
-        const msg = xhr.responseJSON?.responseBody || "Failed to generate timetable.";
+        var msg = xhr.responseJSON?.responseBody || "Failed to generate timetable.";
         showInfoInline(msg);
     }
 }
@@ -162,12 +162,12 @@ async function generateTimetable() {
 // Fetch generated timetable grid data
 async function loadTimetableData() {
     timer =showLoader("Loading Timetable...");
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'get_division_view');
 
     try {
-        const res = await $.ajax({
+        var res = await $.ajax({
             url: 'api.php',
             type: 'POST',
             data: formData,
@@ -183,10 +183,10 @@ async function loadTimetableData() {
         $('#metaBadgeAY').text(`A.Y: ${currentMetadata.ACADEMIC_YEAR} | Semester: ${currentMetadata.SEMESTER}`);
 
         // Populate Division Selector
-        const selector = $('#divisionSelector');
+        var selector = $('#divisionSelector');
         selector.empty();
         Object.keys(currentTimetableData).forEach(divId => {
-            const d = currentTimetableData[divId];
+            var d = currentTimetableData[divId];
             selector.append(`<option value="${divId}">${d.PROGRAMME_NAME} - ${d.YEAR_NAME} (Div ${d.DIVISION_NAME})</option>`);
         });
 
@@ -202,8 +202,8 @@ async function loadTimetableData() {
 function renderSelectedDivisionTimetable(divisionId) {
     if (!currentTimetableData || !currentTimetableData[divisionId]) return;
 
-    const data = currentTimetableData[divisionId];
-    const weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    var data = currentTimetableData[divisionId];
+    var weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
     // Update Header Text Values safely
     $('#valDept').text(data.DEPARTMENT_NAME || 'N/A');
@@ -213,7 +213,7 @@ function renderSelectedDivisionTimetable(divisionId) {
     $('#valSem').text(currentMetadata ? currentMetadata.SEMESTER : 'N/A');
     $('#valAY').text(currentMetadata ? currentMetadata.ACADEMIC_YEAR : 'N/A');
 
-    const allSlots = (currentMetadata && currentMetadata.timeslots) ? currentMetadata.timeslots : [];
+    var allSlots = (currentMetadata && currentMetadata.timeslots) ? currentMetadata.timeslots : [];
 
     // --- 1. FILTER ACTIVE NON-BREAK SLOTS ---
     let filteredSlots = allSlots.filter(function(slot) {
@@ -221,7 +221,7 @@ function renderSelectedDivisionTimetable(divisionId) {
             return true;
         }
         for (let i = 0; i < weekdays.length; i++) {
-            const day = weekdays[i];
+            var day = weekdays[i];
             if (data.schedule && data.schedule[day] && data.schedule[day][slot.SLOT_ID]) {
                 return true;
             }
@@ -240,7 +240,7 @@ function renderSelectedDivisionTimetable(divisionId) {
     }
 
     // --- 4. MERGE CONSECUTIVE BREAKS ---
-    const processedSlots = [];
+    var processedSlots = [];
     let tempBreak = null;
 
     filteredSlots.forEach(function(slot) {
@@ -264,18 +264,18 @@ function renderSelectedDivisionTimetable(divisionId) {
     }
 
     // --- 5. BUILD TABLE HEADERS ---
-    const headerRow = $('#tableHeaderRow');
+    var headerRow = $('#tableHeaderRow');
     headerRow.empty().append('<th>Day / Time</th>');
 
     processedSlots.forEach(function(slot) {
-        const start = slot.START_TIME ? slot.START_TIME.slice(0, 5) : '';
-        const end = slot.END_TIME ? slot.END_TIME.slice(0, 5) : '';
-        const type = slot.SLOT_TYPE || '';
+        var start = slot.START_TIME ? slot.START_TIME.slice(0, 5) : '';
+        var end = slot.END_TIME ? slot.END_TIME.slice(0, 5) : '';
+        var type = slot.SLOT_TYPE || '';
         headerRow.append('<th>' + start + ' - ' + end + '<br><span class="text-[10px] text-zinc-400 font-normal">(' + type + ')</span></th>');
     });
 
     // --- 6. BUILD TABLE ROWS ---
-    const tbody = $('#timetableGridBody');
+    var tbody = $('#timetableGridBody');
     tbody.empty();
 
     weekdays.forEach(function(day) {
@@ -285,12 +285,12 @@ function renderSelectedDivisionTimetable(divisionId) {
             if (slot.SLOT_TYPE === 'BREAK') {
                 trHtml += '<td class="break">BREAK</td>';
             } else {
-                const entry = (data.schedule && data.schedule[day]) ? data.schedule[day][slot.SLOT_ID] : null;
+                var entry = (data.schedule && data.schedule[day]) ? data.schedule[day][slot.SLOT_ID] : null;
 
                 if (entry) {
-                    const course = entry.COURSE_SHORT_NAME || entry.COURSE_NAME || '';
-                    const teacher = entry.TEACHER_NAME || '';
-                    const room = entry.ROOM_NUMBER || '';
+                    var course = entry.COURSE_SHORT_NAME || entry.COURSE_NAME || '';
+                    var teacher = entry.TEACHER_NAME || '';
+                    var room = entry.ROOM_NUMBER || '';
 
                     trHtml += '<td class="course">' +
                                 '<div class="font-bold text-zinc-900">' + course + '</div>' +
@@ -323,7 +323,7 @@ function confirmRegenerate() {
     if (!confirm("Regenerating will clear the currently saved timetable for this period. Do you wish to continue?")) {
         return;
     }
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'timetable');
     formData.append('formType', 'clear_timetable');
 

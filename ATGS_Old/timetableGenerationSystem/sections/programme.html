@@ -96,9 +96,9 @@ applyValidityChecker();
 var form = document.getElementById('form');
 
 async function populateDepartment() {
-    const minimalData = await getPrerequisits('department');
-    const depts = await minimalData.responseBody.departments;
-    const departmentSelect = $('#departmentId');
+    var minimalData = await getPrerequisits('department');
+    var depts = await minimalData.responseBody.departments;
+    var departmentSelect = $('#departmentId');
     depts.forEach(dept => {
         departmentSelect.append(`
             <option value="${dept.DEPARTMENT_ID}">
@@ -111,10 +111,10 @@ async function populateDepartment() {
 
 function createDivisionInputs(duration) {
     duration = parseInt(duration) || 0;
-    const wrapper = $('#divisionCountWrapper');
-    const existingValues = {};
+    var wrapper = $('#divisionCountWrapper');
+    var existingValues = {};
     wrapper.find('input[type="radio"]:checked').each(function () {
-        const year = $(this)
+        var year = $(this)
             .attr('name')
             .replace('division', '');
         existingValues[year] = $(this).val();
@@ -154,7 +154,7 @@ async function add_programme() {
         form.reportValidity();
         return;
     }
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'programme');
     formData.append('formType', 'add_programme');
     console.log([...formData.entries()]);
@@ -184,8 +184,8 @@ async function add_programme() {
 }
 
 async function prefillUpdateform(recordId) {
-    const response = await get_one_programme(recordId);
-    const data = response.responseBody;
+    var response = await get_one_programme(recordId);
+    var data = response.responseBody;
     turnOn();
     $('#programmeId').val(data.PROGRAMME_ID);
     $('#departmentId').val(data.DEPARTMENT_ID);
@@ -195,7 +195,7 @@ async function prefillUpdateform(recordId) {
         .prop('checked', true);
     createDivisionInputs(data.DURATION);
     if (data.DIVISIONS) {
-        for (const year in data.DIVISIONS) {
+        for (var year in data.DIVISIONS) {
             $(`input[name="division${year}"][value="${data.DIVISIONS[year]}"]`)
                 .prop('checked', true);
         }
@@ -232,7 +232,7 @@ async function update_programme(recordId) {
         form.reportValidity();
         return;
     }
-    const formData = new FormData(form);
+    var formData = new FormData(form);
     formData.append('formCategory', 'programme');
     formData.append('formType', 'update_programme');
     console.log([...formData.entries()]);
@@ -260,11 +260,11 @@ async function update_programme(recordId) {
 }
 
 async function get_one_programme(programmeId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'programme');
     formData.append('formType', 'get_one_programme');
     formData.append('programmeId', programmeId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -276,11 +276,11 @@ async function get_one_programme(programmeId) {
 }
 
 async function delete_programme(recordId) {
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('formCategory', 'programme');
     formData.append('formType', 'delete_programme');
     formData.append('programmeId', recordId);
-    const result = await $.ajax({
+    var result = await $.ajax({
         url: 'api.php',
         type: 'POST',
         data: formData,
@@ -294,21 +294,21 @@ async function delete_programme(recordId) {
 }
 
 async function createProgrammeTable() {
-    const programme = await load_existing('programme');
-    const consists = await load_existing('consists');
-    const depts = await getPrerequisits('department');
-    const deptsParsed = depts.responseBody.departments;
+    var programme = await load_existing('programme');
+    var consists = await load_existing('consists');
+    var depts = await getPrerequisits('department');
+    var deptsParsed = depts.responseBody.departments;
     let count = 1;
     $('.recordTable').html('');
     programme.responseBody.forEach(element => {
-        const currDept = deptsParsed.find(
+        var currDept = deptsParsed.find(
             department =>
                 department.DEPARTMENT_ID == element[1]
         )?.SHORT_NAME ?? '';
-        const duration = consists.responseBody.filter(
+        var duration = consists.responseBody.filter(
             c => c[1] == element[0]
         ).length;
-        const template = `
+        var template = `
             <tr>
                 <td>${count++}</td>
                 <td>${element[0]}</td>
