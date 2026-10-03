@@ -1,7 +1,7 @@
 [
     {
         "sequence": 0,
-        "dataCount": 8,
+        "dataCount": 12,
         "label": "Timeslot",
         "module": "timeslot",
         "isLocked": true,
@@ -56,7 +56,7 @@
     },
     {
         "sequence": 5,
-        "dataCount": 9,
+        "dataCount": 10,
         "label": "Course",
         "module": "course",
         "isLocked": true,
@@ -67,7 +67,7 @@
     },
     {
         "sequence": 6,
-        "dataCount": 0,
+        "dataCount": 2,
         "label": "Optional Course",
         "module": "optionalCourses",
         "isLocked": true,
@@ -89,7 +89,7 @@
     },
     {
         "sequence": 8,
-        "dataCount": 0,
+        "dataCount": 2,
         "label": "Map Optional Course",
         "module": "optionalCoursesMapper",
         "isLocked": true,
