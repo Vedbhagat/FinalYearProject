@@ -727,7 +727,7 @@ try {
             $capacity = $_POST['capacity'] ?? '';
             $startTime = $_POST['startTime'] ?? '';
             $endTime = $_POST['endTime'] ?? '';
-            $roomType = ($_POST['roomType']) ?? '';
+            $roomType = ($_POST['roomType']) ?? 'LECTURE_HALL';
             
             $isValid = validateClassroom($floor, $room, $capacity, $startTime, $endTime);
             if ($isValid === 1) {

@@ -1,7 +1,7 @@
 [
     {
         "sequence": 0,
-        "dataCount": 16,
+        "dataCount": 8,
         "label": "Timeslot",
         "module": "timeslot",
         "isLocked": true,
@@ -12,7 +12,7 @@
     },
     {
         "sequence": 1,
-        "dataCount": 4,
+        "dataCount": 6,
         "label": "Classroom",
         "module": "classroom",
         "isLocked": true,
@@ -23,7 +23,7 @@
     },
     {
         "sequence": 2,
-        "dataCount": 1,
+        "dataCount": 2,
         "label": "Department",
         "module": "department",
         "isLocked": true,
@@ -34,7 +34,7 @@
     },
     {
         "sequence": 3,
-        "dataCount": 7,
+        "dataCount": 6,
         "label": "Teacher",
         "module": "teacher",
         "isLocked": true,
@@ -45,7 +45,7 @@
     },
     {
         "sequence": 4,
-        "dataCount": 1,
+        "dataCount": 2,
         "label": "Programme",
         "module": "programme",
         "isLocked": true,
@@ -56,7 +56,7 @@
     },
     {
         "sequence": 5,
-        "dataCount": 16,
+        "dataCount": 9,
         "label": "Course",
         "module": "course",
         "isLocked": true,
@@ -67,7 +67,7 @@
     },
     {
         "sequence": 6,
-        "dataCount": 2,
+        "dataCount": 0,
         "label": "Optional Course",
         "module": "optionalCourses",
         "isLocked": true,
@@ -78,7 +78,7 @@
     },
     {
         "sequence": 7,
-        "dataCount": 4,
+        "dataCount": 3,
         "label": "Division",
         "module": "division",
         "isLocked": true,
@@ -89,7 +89,7 @@
     },
     {
         "sequence": 8,
-        "dataCount": 2,
+        "dataCount": 0,
         "label": "Map Optional Course",
         "module": "optionalCoursesMapper",
         "isLocked": true,
@@ -100,7 +100,7 @@
     },
     {
         "sequence": 9,
-        "dataCount": 22,
+        "dataCount": 19,
         "label": "Workload",
         "module": "teacherWorkload",
         "isLocked": true,
