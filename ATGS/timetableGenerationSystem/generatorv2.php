@@ -379,4 +379,5 @@ function allocateClassrooms($state) {
     
     return $timetable;
 }
+
 ?>
